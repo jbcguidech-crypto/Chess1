@@ -837,17 +837,6 @@ function buildSplash() {
     const SZ = 26; // taille case
     const letters = 'abcdefgh';
 
-    // Ligne du haut : espace + lettres a-h
-    const topRow = document.createElement('div');
-    topRow.style.cssText = 'display:flex;padding-left:'+SZ+'px;';
-    letters.split('').forEach(l => {
-      const d = document.createElement('div');
-      d.style.cssText = 'width:'+SZ+'px;text-align:center;font-size:8px;font-weight:800;color:#f0c040;font-family:Nunito,sans-serif;line-height:1.8;text-shadow:0 1px 3px rgba(0,0,0,.9);';
-      d.textContent = l;
-      topRow.appendChild(d);
-    });
-    sb.appendChild(topRow);
-
     // 8 rangées avec numéro à gauche
     for(let r=0;r<8;r++){
       const rowDiv = document.createElement('div');
