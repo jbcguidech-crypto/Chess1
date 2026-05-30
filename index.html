@@ -1427,6 +1427,7 @@ let stockfish=null, sfDepth=10, gameMode='ai', aiThinking=false;
 
 function initStockfish(){
   const URLS = [
+    'https://cdn.jsdelivr.net/npm/stockfish@16.0.0/src/stockfish-nnue-16.js',
     'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js',
     'https://unpkg.com/stockfish@10.0.2/stockfish.js',
   ];
@@ -1488,7 +1489,14 @@ function askStockfish(){
   document.getElementById('voiceBtn').disabled=true;
   configureStockfishStrength();
   stockfish.postMessage('position fen '+boardToFen());
-  stockfish.postMessage('go depth '+sfDepth);
+  const moveTime = eloToTime(currentElo);
+  if(currentElo >= 2000){
+    // Niveau fort : profondeur + temps
+    stockfish.postMessage('go depth '+sfDepth+' movetime '+moveTime);
+  } else {
+    // Niveau faible : temps limité seulement
+    stockfish.postMessage('go movetime '+moveTime);
+  }
   // Timeout de sécurité: si pas de réponse en 15s, reset
   setTimeout(()=>{
     if(aiThinking){
@@ -2217,25 +2225,31 @@ function updateEloUI(){
   document.getElementById('eloSlider').style.setProperty('--pct',pct+'%');
   sfDepth=eloToDepth(currentElo);
 }
+function eloToTime(elo){
+  // Temps de réflexion en ms selon ELO
+  if(elo <= 400)  return 50;
+  if(elo <= 600)  return 100;
+  if(elo <= 800)  return 200;
+  if(elo <= 1000) return 400;
+  if(elo <= 1200) return 700;
+  if(elo <= 1500) return 1200;
+  if(elo <= 1800) return 2000;
+  if(elo <= 2000) return 3000;
+  if(elo <= 2200) return 5000;
+  if(elo <= 2500) return 8000;
+  return 15000; // Max 😈
+}
+
 function configureStockfishStrength(){
   if(!stockfish) return;
-  // Recalcule la profondeur à chaque coup
   sfDepth = eloToDepth(currentElo);
-  if(currentElo >= 2000){
-    // Niveau élevé : utilise UCI_Elo + profondeur élevée
-    stockfish.postMessage('setoption name UCI_LimitStrength value true');
-    stockfish.postMessage('setoption name UCI_Elo value '+currentElo);
-    stockfish.postMessage('setoption name Skill Level value 20');
-  } else if(currentElo >= 1000){
-    // Niveau moyen
-    const skill = Math.round((currentElo-1000)/1000*15)+5;
+  const skill = Math.min(20, Math.round((currentElo - 400) / 2600 * 20));
+  stockfish.postMessage('setoption name Skill Level value ' + Math.max(0, skill));
+  if(currentElo >= 1800){
     stockfish.postMessage('setoption name UCI_LimitStrength value false');
-    stockfish.postMessage('setoption name Skill Level value '+Math.min(20,skill));
   } else {
-    // Niveau faible
-    const skill = Math.round((currentElo-400)/600*5);
-    stockfish.postMessage('setoption name UCI_LimitStrength value false');
-    stockfish.postMessage('setoption name Skill Level value '+Math.max(0,skill));
+    stockfish.postMessage('setoption name UCI_LimitStrength value true');
+    stockfish.postMessage('setoption name UCI_Elo value ' + currentElo);
   }
 }
 
