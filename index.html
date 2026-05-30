@@ -875,6 +875,16 @@ function buildSplash() {
       }
       sb.appendChild(rowDiv);
     }
+    // Lettres a-h en bas
+    const botRow = document.createElement('div');
+    botRow.style.cssText = 'display:flex;padding-left:'+SZ+'px;margin-top:2px;';
+    'abcdefgh'.split('').forEach(l=>{
+      const d=document.createElement('div');
+      d.style.cssText='width:'+SZ+'px;text-align:center;font-size:8px;font-weight:800;color:#f0c040;font-family:sans-serif;';
+      d.textContent=l;
+      botRow.appendChild(d);
+    });
+    sb.appendChild(botRow);
   }
 }
 
