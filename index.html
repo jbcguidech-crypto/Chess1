@@ -1423,7 +1423,7 @@ function showToast(msg, type) {
 }
 
 // ===== STOCKFISH =====
-let stockfish=null, sfDepth=1, gameMode='ai', aiThinking=false;
+let stockfish=null, sfDepth=10, gameMode='ai', aiThinking=false;
 
 function initStockfish(){
   const URLS = [
@@ -1497,7 +1497,7 @@ function askStockfish(){
       document.getElementById('voiceBtn').disabled=false;
       setStatus(currentLang==='fr'?'IA timeout — réessayez':'AI timeout — retry','error');
     }
-  }, 15000);
+  }, 30000);
 }
 
 function applyStockfishMove(uciMove){
@@ -2198,7 +2198,16 @@ const ELO_TIERS=[
   {min:2700,max:3000,label:'Magnus Mode 😈',color:'#ff4444'},
 ];
 function getTier(elo){return ELO_TIERS.find(t=>elo>=t.min&&elo<=t.max)||ELO_TIERS[ELO_TIERS.length-1];}
-function eloToDepth(elo){return elo<=400?1:elo>=3000?20:Math.round(1+(elo-400)/2600*19);}
+function eloToDepth(elo){
+  if(elo <= 400)  return 1;
+  if(elo <= 800)  return 3;
+  if(elo <= 1200) return 6;
+  if(elo <= 1500) return 9;
+  if(elo <= 1800) return 12;
+  if(elo <= 2200) return 16;
+  if(elo <= 2500) return 20;
+  return 25; // max / Magnus mode
+}
 function onEloSlide(val){currentElo=parseInt(val);updateEloUI();}
 function setElo(elo){currentElo=elo;document.getElementById('eloSlider').value=elo;updateEloUI();}
 function updateEloUI(){
@@ -2209,9 +2218,25 @@ function updateEloUI(){
   sfDepth=eloToDepth(currentElo);
 }
 function configureStockfishStrength(){
-  if(!stockfish)return;
-  if(currentElo>=1500){stockfish.postMessage('setoption name UCI_LimitStrength value true');stockfish.postMessage('setoption name UCI_Elo value '+currentElo);}
-  else{const skill=Math.round((currentElo-400)/1100*12);stockfish.postMessage('setoption name UCI_LimitStrength value false');stockfish.postMessage('setoption name Skill Level value '+Math.max(0,skill));}
+  if(!stockfish) return;
+  // Recalcule la profondeur à chaque coup
+  sfDepth = eloToDepth(currentElo);
+  if(currentElo >= 2000){
+    // Niveau élevé : utilise UCI_Elo + profondeur élevée
+    stockfish.postMessage('setoption name UCI_LimitStrength value true');
+    stockfish.postMessage('setoption name UCI_Elo value '+currentElo);
+    stockfish.postMessage('setoption name Skill Level value 20');
+  } else if(currentElo >= 1000){
+    // Niveau moyen
+    const skill = Math.round((currentElo-1000)/1000*15)+5;
+    stockfish.postMessage('setoption name UCI_LimitStrength value false');
+    stockfish.postMessage('setoption name Skill Level value '+Math.min(20,skill));
+  } else {
+    // Niveau faible
+    const skill = Math.round((currentElo-400)/600*5);
+    stockfish.postMessage('setoption name UCI_LimitStrength value false');
+    stockfish.postMessage('setoption name Skill Level value '+Math.max(0,skill));
+  }
 }
 
 function setPlayerColor(color){
