@@ -249,7 +249,13 @@ body {
   pointer-events:none;animation:dot-pop .2s cubic-bezier(.34,1.56,.64,1);
 }
 @keyframes dot-pop{from{transform:scale(0)}to{transform:scale(1)}}
-.cell.possible-capture { box-shadow:inset 0 0 0 4px rgba(224,82,82,.7); }
+.cell.possible-capture { box-shadow:inset 0 0 0 4px rgba(224,82,82,.85); }
+.cell.possible-capture::after {
+  content:'';position:absolute;
+  width:90%;height:90%;border-radius:50%;
+  border:4px solid rgba(224,82,82,.7);
+  pointer-events:none;
+}
 .cell.last-move { background:rgba(212,160,23,.3)!important; }
 .cell.in-check  { background:rgba(224,82,82,.5)!important;animation:shake-chk .4s ease; }
 @keyframes shake-chk{0%,100%{transform:none}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
