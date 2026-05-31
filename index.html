@@ -2268,18 +2268,21 @@ function applyStockfishMove(uciMove){
   const files={a:0,b:1,c:2,d:3,e:4,f:5,g:6,h:7};
   const fc=files[uciMove[0]],fr=8-parseInt(uciMove[1]),tc=files[uciMove[2]],tr=8-parseInt(uciMove[3]);
   const promo=uciMove[4];
+  const promoU=promo?({q:'Q',r:'R',b:'B',n:'N'}[promo]||'Q'):null;
   const piece=board[fr][fc],captured=board[tr][tc];
-  const moveStr=toAlg(fr,fc,tr,tc,piece,captured);
+  const moveStr=toAlg(fr,fc,tr,tc,piece,captured,promoU);
   updateCastlingRights(fr,fc,piece);
   enPassant=null;
   if(piece&&type(piece)==='P'&&Math.abs(tr-fr)===2)enPassant=[(fr+tr)/2,fc];
   board=applyMove(board,fr,fc,tr,tc);
   if(piece&&type(piece)==='P'&&fc!==tc&&!captured)board[fr][tc]=null;
   if(piece&&type(piece)==='K'){if(fc===4&&tc===6){board[fr][5]=board[fr][7];board[fr][7]=null;}if(fc===4&&tc===2){board[fr][3]=board[fr][0];board[fr][0]=null;}}
-  if(promo){const pm={q:'Q',r:'R',b:'B',n:'N'};board[tr][tc]='b'+(pm[promo]||'Q');}
+  if(promo){board[tr][tc]=color(piece)+(promoU||'Q');}
   lastMove=[fr,fc,tr,tc];history.push({move:moveStr,color:turn});
   moveHistoryUCI.push(uciMove);
   turn=turn==='w'?'b':'w';selected=null;possibleMoves=[];
+  if(type(piece)==='P' || captured) halfmoveClock=0; else halfmoveClock++;
+  positionHistory.push(posKey());
   renderBoard();updateSidebar();
   // Réinitialise l'état IA (fonctionne pour Stockfish ET coups du livre)
   aiThinking=false;
@@ -2316,6 +2319,8 @@ const PIECES={wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',bK:'♚',bQ:
 let board=[],turn='w',selected=null,possibleMoves=[],history=[],lastMove=null,enPassant=null;
 let castling={wK:true,wR_k:true,wR_q:true,bK:true,bR_k:true,bR_q:true};
 let undoStack=[]; // instantanés pour annuler
+let halfmoveClock=0;      // demi-coups depuis le dernier pion bougé/capture (règle des 50 coups)
+let positionHistory=[];   // clés de position pour la triple répétition
 let aiGen=0, aiReqGen=-1; // génération : invalide un coup d'IA si on annule entre-temps
 let moveJustPlayed=false;
 let listening=false,recognition=null;
@@ -2370,6 +2375,8 @@ function undoMove(){
     castling = Object.assign({}, snap.castling);
     history.length = snap.histLen;
     moveHistoryUCI.length = snap.uciLen;
+    if(typeof snap.halfmove==='number') halfmoveClock = snap.halfmove;
+    if(typeof snap.posLen==='number') positionHistory.length = snap.posLen;
   };
   const histBefore = history.slice(); // copie avant troncature (pour décrire le coup annulé)
   // Défait au moins un coup ; en mode IA, on revient jusqu'au trait du joueur
@@ -2421,7 +2428,7 @@ function undoMove(){
   speak(msg, ()=>{ if(typeof voiceContinuous!=='undefined' && voiceContinuous && !listening) startListening(); });
 }
 
-function makeMove(fr,fc,tr,tc,castleType){
+function makeMove(fr,fc,tr,tc,castleType,promo){
   if(!gameActive) return; // aucun coup hors d'une partie en cours
   // Instantané AVANT modification (pour annuler)
   undoStack.push({
@@ -2431,20 +2438,25 @@ function makeMove(fr,fc,tr,tc,castleType){
     lastMove: lastMove ? lastMove.slice() : null,
     castling: Object.assign({}, castling),
     histLen: history.length,
-    uciLen: moveHistoryUCI.length
+    uciLen: moveHistoryUCI.length,
+    halfmove: halfmoveClock,
+    posLen: positionHistory.length
   });
-  const piece=board[fr][fc],captured=board[tr][tc],moveStr=toAlg(fr,fc,tr,tc,piece,captured);
+  const piece=board[fr][fc],captured=board[tr][tc],moveStr=toAlg(fr,fc,tr,tc,piece,captured,promo);
   updateCastlingRights(fr,fc,piece);enPassant=null;
   if(type(piece)==='P'&&Math.abs(tr-fr)===2)enPassant=[(fr+tr)/2,fc];
   board=applyMove(board,fr,fc,tr,tc);
   if(type(piece)==='P'&&fc!==tc&&!captured)board[fr][tc]=null;
   if(castleType==='castle-k'){board[fr][5]=board[fr][7];board[fr][7]=null;}
   if(castleType==='castle-q'){board[fr][3]=board[fr][0];board[fr][0]=null;}
+  if(promo && type(piece)==='P' && (tr===0||tr===7)) board[tr][tc]=color(piece)+promo;
   lastMove=[fr,fc,tr,tc];history.push({move:moveStr,color:turn});
-  { const _pr=(type(piece)==='P'&&(tr===0||tr===7))?'q':null; moveHistoryUCI.push(toUCI(fr,fc,tr,tc,_pr)); }
+  { const _pr=(type(piece)==='P'&&(tr===0||tr===7))?((promo||'Q').toLowerCase()):null; moveHistoryUCI.push(toUCI(fr,fc,tr,tc,_pr)); }
   const humanSpoken = toSpeech(fr,fc,tr,tc,piece,captured,castleType);
   if(history.length){ history[history.length-1].spoken = humanSpoken; history[history.length-1].from=[fr,fc]; history[history.length-1].ptype=type(piece); }
   turn=turn==='w'?'b':'w';selected=null;possibleMoves=[];
+  if(type(piece)==='P' || captured) halfmoveClock=0; else halfmoveClock++;
+  positionHistory.push(posKey());
   renderBoard();updateSidebar();
   const over=checkGameState();
   if(!over && gameMode==='ai' && turn!==playerColor){
@@ -2455,11 +2467,11 @@ function makeMove(fr,fc,tr,tc,castleType){
   }
 }
 
-function toAlg(fr,fc,tr,tc,piece,captured){
+function toAlg(fr,fc,tr,tc,piece,captured,promo){
   const f='abcdefgh', t=type(piece), col=color(piece);
   // Roque (le roi se déplace de 2 cases)
   if(t==='K' && Math.abs(tc-fc)===2){
-    return (tc>fc ? 'O-O' : 'O-O-O') + _checkSuffix(fr,fc,tr,tc,piece);
+    return (tc>fc ? 'O-O' : 'O-O-O') + _checkSuffix(fr,fc,tr,tc,piece,promo);
   }
   const L={K:'R',Q:'D',R:'T',B:'F',N:'C',P:''}; // lettres françaises
   const isCap = captured ? true : (t==='P' && fc!==tc); // capture (inclut la prise en passant)
@@ -2467,7 +2479,7 @@ function toAlg(fr,fc,tr,tc,piece,captured){
   if(t==='P'){
     if(isCap) s += f[fc] + 'x';
     s += f[tc] + (8-tr);
-    if(tr===0 || tr===7) s += '=D'; // promotion (toujours en Dame)
+    if(tr===0 || tr===7) s += '=' + ({Q:'D',R:'T',B:'F',N:'C'}[promo||'Q']); // promotion
   } else {
     s += L[t];
     // Désambiguïsation : une autre pièce du même type peut-elle aller sur la même case ?
@@ -2491,14 +2503,14 @@ function toAlg(fr,fc,tr,tc,piece,captured){
     if(isCap) s += 'x';
     s += f[tc] + (8-tr);
   }
-  return s + _checkSuffix(fr,fc,tr,tc,piece);
+  return s + _checkSuffix(fr,fc,tr,tc,piece,promo);
 }
 
 // Plateau simulé APRÈS le coup (gère prise en passant, roque, promotion)
-function _simBoard(fr,fc,tr,tc,piece){
+function _simBoard(fr,fc,tr,tc,piece,promo){
   const b=board.map(row=>row.slice()), t=type(piece), col=color(piece);
   if(t==='P' && fc!==tc && b[tr][tc]===null) b[fr][tc]=null; // prise en passant
-  b[tr][tc] = (t==='P' && (tr===0||tr===7)) ? col+'Q' : piece;
+  b[tr][tc] = (t==='P' && (tr===0||tr===7)) ? col+(promo||'Q') : piece;
   b[fr][fc] = null;
   if(t==='K' && Math.abs(tc-fc)===2){
     if(tc>fc){ b[tr][5]=b[tr][7]; b[tr][7]=null; }   // petit roque
@@ -2508,9 +2520,9 @@ function _simBoard(fr,fc,tr,tc,piece){
 }
 
 // Suffixe + (échec) ou # (mat)
-function _checkSuffix(fr,fc,tr,tc,piece){
+function _checkSuffix(fr,fc,tr,tc,piece,promo){
   const col=color(piece), opp=(col==='w'?'b':'w');
-  const b=_simBoard(fr,fc,tr,tc,piece);
+  const b=_simBoard(fr,fc,tr,tc,piece,promo);
   if(!isInCheck(b,opp)) return '';
   // En échec → mat si l'adversaire n'a aucun coup légal
   const saved=board; board=b;
@@ -2551,6 +2563,34 @@ function toSpeech(fr,fc,tr,tc,piece,captured,castleType){
   return (names[t]||'pawn')+' to '+dest;
 }
 
+// Clé de position (placement + trait + roques + prise en passant) pour la répétition
+function posKey(){
+  let s='';
+  for(let r=0;r<8;r++){ for(let cc=0;cc<8;cc++){ s += board[r][cc]||'.'; } }
+  s += '|'+turn+'|'+[castling.wK,castling.wR_k,castling.wR_q,castling.bK,castling.bR_k,castling.bR_q].map(b=>b?1:0).join('');
+  s += '|'+(enPassant?(enPassant[0]+''+enPassant[1]):'-');
+  return s;
+}
+
+// Triple répétition de la position courante
+function isThreefold(){
+  if(!positionHistory.length) return false;
+  const cur=positionHistory[positionHistory.length-1];
+  let n=0; for(const k of positionHistory) if(k===cur) n++;
+  return n>=3;
+}
+
+// Matériel insuffisant pour mater (nulle théorique)
+function insufficientMaterial(){
+  const ps=[];
+  for(let r=0;r<8;r++)for(let cc=0;cc<8;cc++){ const p=board[r][cc]; if(p&&type(p)!=='K') ps.push({t:type(p),col:color(p),sqc:(r+cc)%2}); }
+  if(ps.length===0) return true;                                   // R contre R
+  if(ps.length===1 && (ps[0].t==='B'||ps[0].t==='N')) return true; // R+mineur contre R
+  // R+F contre R+F avec fous de même couleur de case
+  if(ps.length===2 && ps.every(p=>p.t==='B') && ps[0].sqc===ps[1].sqc) return true;
+  return false;
+}
+
 function checkGameState(){
   const opp=turn;let has=false;
   outer:for(let r=0;r<8;r++)for(let c=0;c<8;c++){if(color(board[r][c])===opp&&legalMoves(r,c).length>0){has=true;break outer;}}
@@ -2567,6 +2607,17 @@ function checkGameState(){
     document.getElementById('gameOver').classList.add('show');
     if(result===1||inCk)spawnStars();
     speak(msg);return true;
+  }
+  // Nulles : matériel insuffisant / règle des 50 coups / triple répétition
+  let drawMsg=null;
+  if(insufficientMaterial()) drawMsg=(currentLang==='fr')?'Nulle — matériel insuffisant.':'Draw — insufficient material.';
+  else if(halfmoveClock>=100) drawMsg=(currentLang==='fr')?'Nulle — règle des 50 coups.':'Draw — fifty-move rule.';
+  else if(isThreefold()) drawMsg=(currentLang==='fr')?'Nulle — triple répétition.':'Draw — threefold repetition.';
+  if(drawMsg){
+    if(gameMode==='ai'){ const delta=recordGameResult(0.5,currentElo); drawMsg+='\n'+(delta>0?'+'+delta:delta)+' Elo → '+userProfile.elo; }
+    document.getElementById('gameOverText').textContent=drawMsg;
+    document.getElementById('gameOver').classList.add('show');
+    speak(drawMsg); return true;
   }
   if(isInCheck(board,opp))speak(L().check);
   return false;
@@ -3089,10 +3140,46 @@ function detectCastle(t){
   return 'k'; // par défaut : petit roque (côté roi)
 }
 
+function detectPromoPiece(t){
+  t=(t||'').toLowerCase();
+  if(/\b(dame|reine|queen)\b/.test(t)) return 'Q';
+  if(/\b(tour|rook)\b/.test(t)) return 'R';
+  if(/\b(fou|bishop)\b/.test(t)) return 'B';
+  if(/\b(cavalier|cheval|knight)\b/.test(t)) return 'N';
+  return null;
+}
+
+// Promotion vocale : un pion du trait atteint la dernière rangée
+function _parsePromotion(text){
+  const norm = (phoneticNormalize(text)||'').toLowerCase();
+  const sqs = [...norm.matchAll(/([a-h])\s*([1-8])/g)].map(m=>({c:m[1].charCodeAt(0)-97, r:8-parseInt(m[2])}));
+  if(!sqs.length) return null;
+  const lastRank = (turn==='w') ? 0 : 7;
+  const dest = sqs.find(s=>s.r===lastRank);
+  if(!dest) return null;
+  const cands=[];
+  for(let r=0;r<8;r++)for(let cc=0;cc<8;cc++){
+    const p=board[r][cc];
+    if(p && color(p)===turn && type(p)==='P' && legalMoves(r,cc).some(([mr,mc])=>mr===dest.r&&mc===dest.c)) cands.push({r,c:cc});
+  }
+  if(!cands.length) return null;
+  let chosen=cands[0];
+  if(cands.length>1){
+    const fromFile = sqs.find(s=>s.c!==dest.c);
+    const byFile = fromFile && cands.find(k=>k.c===fromFile.c);
+    const adv = cands.find(k=>k.c===dest.c);
+    chosen = byFile || adv || cands[0];
+  }
+  return {kind:'move', fr:chosen.r, fc:chosen.c, tr:dest.r, tc:dest.c, promo: detectPromoPiece(norm)||'Q'};
+}
+
 function parseVoiceToAction(text){
   // 0) Roque détecté sur le texte BRUT en priorité (avant normalisation)
   const cs = detectCastle(text);
   if(cs) return {kind:'castle', side:cs};
+  // 0bis) Promotion d'un pion (priorité, pour choisir la pièce)
+  const promoAct = _parsePromotion(text);
+  if(promoAct) return promoAct;
   // 1) Strict sur le texte CORRIGÉ phonétiquement (canonise les noms de pièce : caval→cavalier…)
   const phon = phoneticNormalize(text);
   let act = _parseStrict(phon);
@@ -3233,7 +3320,7 @@ function executeVoiceAction(act, verbose){
     case 'castle': trycastling(act.side); return true;
     case 'move':
       if(verbose) setStatus((currentLang==='fr'?'✓ Joué en ':'✓ Played to ')+String.fromCharCode(97+act.tc)+(8-act.tr),'success');
-      makeMove(act.fr,act.fc,act.tr,act.tc,act.promo);
+      makeMove(act.fr,act.fc,act.tr,act.tc,null,act.promo);
       return true;
     case 'ambiguous': {
       if(verbose){
@@ -3503,6 +3590,7 @@ function resetGame(){
   if(typeof updateNavLeft==='function') updateNavLeft();
   lastMove=null;enPassant=null;aiThinking=false;
   castling={wK:true,wR_k:true,wR_q:true,bK:true,bR_k:true,bR_q:true};
+  halfmoveClock=0; positionHistory=[posKey()];
   renderBoard();updateSidebar();
   document.getElementById('voiceBtn').disabled=false;
   setStatus(currentLang==='fr'?'Parlez ou cliquez pour jouer':'Speak or click to play','');
