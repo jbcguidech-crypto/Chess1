@@ -237,7 +237,7 @@ body {
   aspect-ratio:1;
   display:flex;align-items:center;justify-content:center;
   cursor:pointer;position:relative;
-  font-size:clamp(28px,9vw,64px);
+  font-size:clamp(34px,11vw,80px);
 }
 .cell.light { background:#f0d9b5; }
 .cell.dark  { background:#b58863; }
@@ -1679,6 +1679,9 @@ function applyStockfishMove(uciMove){
   moveHistoryUCI.push(uciMove);
   turn=turn==='w'?'b':'w';selected=null;possibleMoves=[];
   renderBoard();updateSidebar();
+  // Réinitialise l'état IA (fonctionne pour Stockfish ET coups du livre)
+  aiThinking=false;
+  document.getElementById('aiSpinner').classList.remove('show');
   document.getElementById('voiceBtn').disabled=false;
   checkGameState();
   const spokenMove = toSpeech(fr,fc,tr,tc,piece,captured,null);
@@ -1877,7 +1880,16 @@ function handleClick(r,c){
 function updateSidebar(){
   const dot=document.getElementById('turnGem'),txt=document.getElementById('turnText');
   dot.className='turn-gem '+(turn==='w'?'white':'black');
-  txt.textContent=turn==='w'?L().whites:(gameMode==='ai'?L().ai_turn:L().blacks);
+  // L'indicateur dépend de QUI doit jouer (joueur vs IA), pas de la couleur
+  if(gameMode==='ai'){
+    txt.textContent = (turn===playerColor) ? (turn==='w'?L().whites:L().blacks) : L().ai_turn;
+    // Cache le spinner si c'est au joueur de jouer
+    if(turn===playerColor && !aiThinking){
+      document.getElementById('aiSpinner').classList.remove('show');
+    }
+  } else {
+    txt.textContent = turn==='w'?L().whites:L().blacks;
+  }
   const hist=document.getElementById('history');hist.innerHTML='';
   const pairs=[];for(let i=0;i<history.length;i+=2)pairs.push({n:Math.floor(i/2)+1,w:history[i].move,b:history[i+1]?.move||''});
   if(!pairs.length){hist.innerHTML='<span style="color:#333;font-size:.68rem">Aucun coup</span>';return;}
