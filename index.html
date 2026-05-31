@@ -2807,7 +2807,30 @@ function fuzzyMatchMove(rawText){
   return null;
 }
 
+function detectCastle(t){
+  // Détecte l'intention de roque sur le texte BRUT (avant toute normalisation
+  // qui pourrait transformer "rock" en "rook"/tour). Renvoie 'k', 'q' ou null.
+  const s = ' ' + t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ') + ' ';
+  const ooo = /\bo o o\b|\booo\b/.test(s);
+  const oo  = /\bo o\b|\boo\b/.test(s);
+  // mots qui signalent un roque (incluant erreurs de reconnaissance fréquentes)
+  const castleWord = /\b(roque|roques|roquer|roc|rock|rauque|rok|castle|castling|chateau)\b/.test(s);
+  const sideWord = /\bcote (dame|reine|roi)\b/.test(s);
+  if(!castleWord && !oo && !ooo && !sideWord) return null;
+  // grand roque (côté dame)
+  const isLong = ooo
+    || /\b(grand|grande|gran|long|longue)\b/.test(s)
+    || /\bcote (dame|reine)\b/.test(s)
+    || (castleWord && /\b(dame|reine|queen|queenside)\b/.test(s));
+  if(isLong) return 'q';
+  return 'k'; // par défaut : petit roque (côté roi)
+}
+
 function parseVoiceToAction(text){
+  // 0) Roque détecté sur le texte BRUT en priorité (avant normalisation)
+  const cs = detectCastle(text);
+  if(cs) return {kind:'castle', side:cs};
   // 1) Strict sur le texte CORRIGÉ phonétiquement (canonise les noms de pièce : caval→cavalier…)
   const phon = phoneticNormalize(text);
   let act = _parseStrict(phon);
@@ -2826,8 +2849,8 @@ function _parseStrict(text){
   // PARSEUR PUR — renvoie une action sans aucun effet de bord (pour tester en silence)
   if(!text) return {kind:'none'};
   if(text.includes(L().new_game)||text.includes(L().resign)) return {kind:'reset'};
-  if(L().queenside.some(q=>text.includes(q))) return {kind:'castle', side:'q'};
-  if(text.includes(L().kingside)) return {kind:'castle', side:'k'};
+  const _cs = detectCastle(text);
+  if(_cs) return {kind:'castle', side:_cs};
 
   const files={a:0,b:1,c:2,d:3,e:4,f:5,g:6,h:7};
   let norm = L().normalize(text);
