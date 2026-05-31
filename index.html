@@ -124,6 +124,9 @@ body {
 
 .splash-mini-board {
   display:inline-block;
+  flex-shrink:0;              /* empêche la compression flex à 0 */
+  flex-grow:0;
+  width:auto;min-height:198px;  /* hauteur garantie, largeur = contenu */
   border-radius:8px;overflow:hidden;
   border:3px solid var(--gold);
   box-shadow:0 0 30px rgba(212,160,23,.3);
@@ -189,6 +192,20 @@ body {
 .boardtheme-opt.active { border-color:var(--gold);background:rgba(212,160,23,.2); }
 .boardtheme-prev { width:40px;height:40px;border-radius:6px;margin:0 auto;border:1px solid rgba(0,0,0,.2); }
 .boardtheme-opt span { font-size:.55rem;color:var(--text-muted);font-weight:700;display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.voice-row { display:flex;gap:8px;align-items:center; }
+.voice-select {
+  flex:1;min-width:0;padding:10px 12px;border-radius:10px;
+  background:rgba(240,217,181,.92);color:#2a1e10;
+  border:1px solid var(--border-gold);font-family:'Nunito',sans-serif;
+  font-size:.85rem;font-weight:700;cursor:pointer;
+}
+.voice-test {
+  flex:0 0 auto;padding:10px 16px;border-radius:10px;border:none;cursor:pointer;
+  background:linear-gradient(180deg,var(--gold-light),var(--gold));
+  color:var(--text-dark);font-family:'Fredoka One',cursive;font-size:.85rem;
+  box-shadow:0 3px 0 var(--gold-dark);transition:transform .1s;
+}
+.voice-test:active { transform:translateY(2px);box-shadow:0 1px 0 var(--gold-dark); }
 .splash-btns {
   display:flex;gap:12px;flex-wrap:wrap;justify-content:center;
 }
@@ -680,6 +697,14 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     <div class="splash-pieceset-title">▦ Style de l'échiquier</div>
     <div class="pieceset-grid" id="boardThemeGrid"></div>
   </div>
+  <!-- Sélecteur de voix -->
+  <div class="splash-pieceset">
+    <div class="splash-pieceset-title">🔊 Voix de l'IA</div>
+    <div class="voice-row">
+      <select id="voiceSelect" class="voice-select" onchange="setVoice(this.value)"></select>
+      <button class="voice-test" onclick="testVoice()">▶ Tester</button>
+    </div>
+  </div>
   <div class="splash-btns">
     <button class="splash-btn splash-white" onclick="splashChooseColor('w')">♙ Blancs</button>
     <button class="splash-btn splash-random" onclick="splashChooseColor('r')">🎲 Aléa</button>
@@ -1083,76 +1108,55 @@ function buildSplash() {
   if(sb) {
     sb.innerHTML = '';
     const _bt0 = (typeof getBoardTheme==='function') ? getBoardTheme() : {type:'css',light:'#f0d9b5',dark:'#b58863'};
+    const SZ = 24;
+    const PSZ = 21;
+    // Conteneur en grille 8x8 (robuste, pas de dépendance circulaire)
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(8,'+SZ+'px);grid-template-rows:repeat(8,'+SZ+'px);width:'+(SZ*8)+'px;height:'+(SZ*8)+'px;';
     if(_bt0.type==='img'){
-      sb.style.backgroundImage = 'url('+BOARD_CDN+_bt0.id+'.jpg)';
-      sb.style.backgroundSize = '100% 100%';
-      sb.style.background = '';
-    } else {
-      sb.style.backgroundImage = 'none';
+      grid.style.backgroundImage = 'url('+BOARD_CDN+_bt0.id+'.jpg)';
+      grid.style.backgroundSize = '100% 100%';
     }
     const BOARD_INIT = [
-      ['♜','♞','♝','♛','♚','♝','♞','♜'],
-      ['♟','♟','♟','♟','♟','♟','♟','♟'],
+      ['bR','bN','bB','bQ','bK','bB','bN','bR'],
+      ['bP','bP','bP','bP','bP','bP','bP','bP'],
       [null,null,null,null,null,null,null,null],
       [null,null,null,null,null,null,null,null],
       [null,null,null,null,null,null,null,null],
       [null,null,null,null,null,null,null,null],
-      ['♙','♙','♙','♙','♙','♙','♙','♙'],
-      ['♖','♘','♗','♕','♔','♗','♘','♖'],
+      ['wP','wP','wP','wP','wP','wP','wP','wP'],
+      ['wR','wN','wB','wQ','wK','wB','wN','wR'],
     ];
-    const GLYPH2CODE = {'♔':'wK','♕':'wQ','♖':'wR','♗':'wB','♘':'wN','♙':'wP','♚':'bK','♛':'bQ','♜':'bR','♝':'bB','♞':'bN','♟':'bP'};
-    const SZ = 22;       // taille case en px
-    const PSZ = 19;      // taille pièce en px (fixe, pas de %)
-
+    const GLYPHS = {wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'};
     for(let r=0;r<8;r++){
-      const rowDiv = document.createElement('div');
-      rowDiv.style.cssText = 'display:flex;align-items:center;height:'+SZ+'px;';
-
-      const num = document.createElement('div');
-      num.style.cssText = 'width:'+SZ+'px;height:'+SZ+'px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#f0c040;font-family:Nunito,sans-serif;flex:0 0 auto;';
-      num.textContent = 8-r;
-      rowDiv.appendChild(num);
-
       for(let c=0;c<8;c++){
         const cell = document.createElement('div');
         const isLight = (r+c)%2===0;
-        const piece = BOARD_INIT[r][c];
         let bg;
         if(_bt0.type==='css'){ bg = isLight ? _bt0.light : _bt0.dark; }
         else { bg = isLight ? 'transparent' : 'rgba(0,0,0,0.18)'; }
-        cell.style.cssText = 'width:'+SZ+'px;height:'+SZ+'px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;background:'+bg+';';
-
-        if(piece){
-          const code = GLYPH2CODE[piece];
+        cell.style.cssText = 'width:'+SZ+'px;height:'+SZ+'px;display:flex;align-items:center;justify-content:center;background:'+bg+';';
+        const code = BOARD_INIT[r][c];
+        if(code){
           const img = document.createElement('img');
           img.src = pieceImgURL(code);
           img.width = PSZ; img.height = PSZ;
           img.style.cssText = 'width:'+PSZ+'px;height:'+PSZ+'px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.3));';
           img.draggable = false;
-          // Repli Unicode si l'image ne charge pas
-          const isW = piece && '♙♖♘♗♕♔'.includes(piece);
+          const glyph = GLYPHS[code];
+          const isW = code[0]==='w';
           img.onerror = function(){
             const span = document.createElement('span');
-            span.textContent = piece;
-            span.style.cssText = 'font-size:16px;line-height:1;color:'+(isW?'#fff':'#1a1a1a')+';text-shadow:0 1px 2px rgba(0,0,0,.5);';
+            span.textContent = glyph;
+            span.style.cssText = 'font-size:17px;line-height:1;color:'+(isW?'#fff':'#1a1a1a')+';text-shadow:0 1px 2px rgba(0,0,0,.5);';
             if(img.parentNode){ img.parentNode.replaceChild(span, img); }
           };
           cell.appendChild(img);
         }
-        rowDiv.appendChild(cell);
+        grid.appendChild(cell);
       }
-      sb.appendChild(rowDiv);
     }
-    // Lettres a-h en bas
-    const botRow = document.createElement('div');
-    botRow.style.cssText = 'display:flex;padding-left:'+SZ+'px;margin-top:2px;';
-    'abcdefgh'.split('').forEach(l=>{
-      const d=document.createElement('div');
-      d.style.cssText='width:'+SZ+'px;text-align:center;font-size:8px;font-weight:800;color:#f0c040;font-family:sans-serif;flex:0 0 auto;';
-      d.textContent=l;
-      botRow.appendChild(d);
-    });
-    sb.appendChild(botRow);
+    sb.appendChild(grid);
   }
 }
 
@@ -1288,6 +1292,7 @@ buildSplash();
 buildCoords();
 buildPieceSetSelector();
 buildBoardThemeSelector();
+if(typeof loadVoices==='function') loadVoices();
 
 // ===== USER PROFILE & STATS =====
 const AVATARS = ['🦁','🐯','🦊','🐺','🦅','🐉','👑','⚡','🔥','🌙'];
@@ -2566,6 +2571,73 @@ function trycastling(side){const row=turn==='w'?7:0,tc=side==='k'?6:2;const piec
 function setStatus(msg,cls){const el=document.getElementById('status');el.textContent=msg;el.className=cls||'';}
 let pendingSpeech = null;
 
+// ── GESTION DES VOIX ──────────────────────────
+let availableVoices = [];
+let selectedVoiceURI = '';
+try { selectedVoiceURI = localStorage.getItem('dysc_voice') || ''; } catch(e){}
+
+function loadVoices(){
+  if(!window.speechSynthesis) return;
+  availableVoices = window.speechSynthesis.getVoices() || [];
+  buildVoiceSelector();
+}
+if(window.speechSynthesis){
+  loadVoices();
+  window.speechSynthesis.onvoiceschanged = loadVoices;
+}
+
+function getVoicesForLang(){
+  const prefix = (currentLang==='fr') ? 'fr' : 'en';
+  const matching = availableVoices.filter(v => v.lang && v.lang.toLowerCase().startsWith(prefix));
+  return matching.length ? matching : availableVoices;
+}
+
+function getSelectedVoice(){
+  if(!availableVoices.length) return null;
+  if(selectedVoiceURI){
+    const v = availableVoices.find(v => v.voiceURI === selectedVoiceURI);
+    if(v) return v;
+  }
+  // Par défaut : 1re voix de la langue courante
+  const list = getVoicesForLang();
+  return list[0] || null;
+}
+
+function setVoice(uri){
+  selectedVoiceURI = uri;
+  try { localStorage.setItem('dysc_voice', uri); } catch(e){}
+}
+
+function buildVoiceSelector(){
+  const sel = document.getElementById('voiceSelect');
+  if(!sel) return;
+  const list = getVoicesForLang();
+  sel.innerHTML = '';
+  if(!list.length){
+    const o = document.createElement('option');
+    o.textContent = 'Voix par défaut';
+    sel.appendChild(o);
+    return;
+  }
+  list.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v.voiceURI;
+    // Nom lisible : "Google français" → garde tel quel, ajoute drapeau
+    o.textContent = v.name + (v.localService===false ? ' ☁️' : '');
+    if(v.voiceURI === selectedVoiceURI) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+function testVoice(){
+  const phrases = currentLang==='fr'
+    ? ['Cavalier f3. À vous de jouer !', 'Échec au roi !', 'Le fou prend en c4.', 'Bien joué, partie serrée.']
+    : ['Knight f3. Your move!', 'Check!', 'Bishop takes c4.', 'Well played, close game.'];
+  const t = phrases[Math.floor(Math.random()*phrases.length)];
+  userInteracted = true; // l'utilisateur vient de cliquer
+  speak(t);
+}
+
 function speak(text, onEnd){
   if(!window.speechSynthesis || !text) return;
   if(!userInteracted){
@@ -2582,6 +2654,8 @@ function speak(text, onEnd){
   setTimeout(()=>{
     const u = new SpeechSynthesisUtterance(text);
     u.lang = currentLang==='fr' ? 'fr-FR' : 'en-US';
+    const chosen = getSelectedVoice();
+    if(chosen) u.voice = chosen;
     u.rate = 1;
     u.volume = 1;
     u.onend = ()=>{
