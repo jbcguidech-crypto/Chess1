@@ -2129,7 +2129,9 @@ function playRandomMove(){
   }
   if(moves.length===0) return;
   const mv = moves[Math.floor(Math.random()*moves.length)];
+  const gen = aiGen;
   setTimeout(()=>{
+    if(gen !== aiGen){ aiThinking=false; return; } // annulé entre-temps
     aiThinking=false;
     document.getElementById('aiSpinner').classList.remove('show');
     document.getElementById('voiceBtn').disabled=false;
@@ -2150,6 +2152,7 @@ function askStockfish(){
     }
   }
   askStockfish._retries = 0;
+  aiReqGen = aiGen; // marque cette requête
   // 📖 Livre d'ouvertures : joue instantanément un coup théorique connu
   const bookMv = getBookMove();
   if(bookMv){
@@ -2196,6 +2199,7 @@ function askStockfish(){
 }
 
 function applyStockfishMove(uciMove){
+  if(aiReqGen !== aiGen){ aiThinking=false; return; } // annulé entre-temps → on n'applique pas
   const files={a:0,b:1,c:2,d:3,e:4,f:5,g:6,h:7};
   const fc=files[uciMove[0]],fr=8-parseInt(uciMove[1]),tc=files[uciMove[2]],tr=8-parseInt(uciMove[3]);
   const promo=uciMove[4];
@@ -2246,6 +2250,7 @@ const PIECES={wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',bK:'♚',bQ:
 let board=[],turn='w',selected=null,possibleMoves=[],history=[],lastMove=null,enPassant=null;
 let castling={wK:true,wR_k:true,wR_q:true,bK:true,bR_k:true,bR_q:true};
 let undoStack=[]; // instantanés pour annuler
+let aiGen=0, aiReqGen=-1; // génération : invalide un coup d'IA si on annule entre-temps
 let moveJustPlayed=false;
 let listening=false,recognition=null;
 let gameStartElo=1200;
@@ -2281,8 +2286,10 @@ function legalMoves(r,c){
 function updateCastlingRights(fr,fc,piece){if(type(piece)==='K'){if(piece==='wK'){castling.wK=false;castling.wR_k=false;castling.wR_q=false;}else{castling.bK=false;castling.bR_k=false;castling.bR_q=false;}}if(piece==='wR'){if(fr===7&&fc===7)castling.wR_k=false;if(fr===7&&fc===0)castling.wR_q=false;}if(piece==='bR'){if(fr===0&&fc===7)castling.bR_k=false;if(fr===0&&fc===0)castling.bR_q=false;}}
 
 function undoMove(){
-  if(aiThinking){ setStatus(currentLang==='fr'?'Patientez, l\'IA réfléchit…':'Wait, AI is thinking…','error'); return; }
   if(!undoStack.length){ setStatus(currentLang==='fr'?'Aucun coup à annuler':'No move to undo','error'); return; }
+  // Invalide toute réflexion d'IA en cours (avant ou pendant qu'elle joue)
+  aiGen++;
+  if(stockfish){ try{ stockfish.postMessage('stop'); }catch(e){} }
   const restore = (snap)=>{
     board = snap.board.map(r=>r.slice());
     turn = snap.turn;
@@ -2300,6 +2307,7 @@ function undoMove(){
   selected=null; possibleMoves=[]; aiThinking=false;
   const go=document.getElementById('gameOver'); if(go) go.classList.remove('show');
   const sp=document.getElementById('aiSpinner'); if(sp) sp.classList.remove('show');
+  const vb=document.getElementById('voiceBtn'); if(vb) vb.disabled=false;
   renderBoard(); updateSidebar();
   setStatus(currentLang==='fr'?'↩ Coup annulé':'↩ Move undone','success');
 }
@@ -3289,7 +3297,7 @@ function resetGame(){
   document.getElementById('gameOver').classList.remove('show');
   document.getElementById('aiSpinner').classList.remove('show');
   gameStartElo=userProfile.elo;
-  initBoard();turn='w';selected=null;possibleMoves=[];history=[];moveHistoryUCI=[];undoStack=[];
+  initBoard();turn='w';selected=null;possibleMoves=[];history=[];moveHistoryUCI=[];undoStack=[];aiGen++;
   lastMove=null;enPassant=null;aiThinking=false;
   castling={wK:true,wR_k:true,wR_q:true,bK:true,bR_k:true,bR_q:true};
   renderBoard();updateSidebar();
