@@ -52,8 +52,11 @@ body {
 #splash {
   position:fixed;inset:0;z-index:999;
   background:linear-gradient(160deg,#0f2318 0%,#1a3d2b 50%,#0f2318 100%);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:20px;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  gap:16px;
+  padding:24px 16px;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
   transition:opacity .7s,transform .7s;
 }
 #splash.out { opacity:0;transform:scale(1.05);pointer-events:none; }
@@ -929,6 +932,7 @@ function setBoardTheme(id){
   boardTheme = id;
   try { localStorage.setItem('dysc_board', id); } catch(e){}
   if(typeof renderBoard==='function') renderBoard();
+  if(typeof buildSplash==='function') buildSplash(); // aperçu instantané sur le mini-board
   document.querySelectorAll('.boardtheme-opt').forEach(el=>{
     el.classList.toggle('active', el.dataset.board===id);
   });
@@ -1002,11 +1006,12 @@ function buildPieceSetSelector(){
 function buildSplash() {
   const sp = document.getElementById('splashPieces');
   if(sp) {
+    sp.innerHTML = ''; // reset pour éviter les doublons
     [['wK','♔'],['wQ','♕'],['bN','♞'],['bQ','♛'],['wR','♖'],['bP','♟']].forEach(([code,glyph],i) => {
       const d = document.createElement('div');
       const isW = code[0]==='w';
       d.style.cssText = [
-        'font-size:52px','line-height:1','cursor:pointer',
+        'font-size:38px','line-height:1','cursor:pointer',
         'transition:transform .2s','animation:piece-float 2.5s ease infinite',
         'animation-delay:'+(i*.2)+'s',
         'color:'+(isW?'#fffdf5':'#1a0a00'),
@@ -1020,6 +1025,15 @@ function buildSplash() {
   // Mini board — toutes les pièces + coordonnées
   const sb = document.getElementById('splashBoard');
   if(sb) {
+    sb.innerHTML = ''; // reset pour reconstruction propre
+    // Applique la texture de fond si thème image
+    const _bt0 = (typeof getBoardTheme==='function') ? getBoardTheme() : {type:'css'};
+    if(_bt0.type==='img'){
+      sb.style.backgroundImage = 'url('+BOARD_CDN+_bt0.id+'.jpg)';
+      sb.style.backgroundSize = '100% 100%';
+    } else {
+      sb.style.backgroundImage = 'none';
+    }
     // Position initiale complète
     const BOARD_INIT = [
       ['♜','♞','♝','♛','♚','♝','♞','♜'],
@@ -1031,7 +1045,7 @@ function buildSplash() {
       ['♙','♙','♙','♙','♙','♙','♙','♙'],
       ['♖','♘','♗','♕','♔','♗','♘','♖'],
     ];
-    const SZ = 26; // taille case
+    const SZ = 22; // taille case
     const letters = 'abcdefgh';
 
     // 8 rangées avec numéro à gauche
@@ -1052,12 +1066,16 @@ function buildSplash() {
         const piece = BOARD_INIT[r][c];
         const isWhite = piece && ['♙','♖','♘','♗','♕','♔'].includes(piece);
         const isBlack = piece && ['♟','♜','♞','♝','♛','♚'].includes(piece);
-        cell.style.cssText = [
-          'width:'+SZ+'px','height:'+SZ+'px',
-          'display:flex','align-items:center','justify-content:center',
-          'font-size:22px','line-height:1',
-          'background:'+(isLight?'#f0d9b5':'#b58863'),
-        ].join(';');
+        const _bt = (typeof getBoardTheme==='function') ? getBoardTheme() : {type:'css',light:'#f0d9b5',dark:'#b58863'};
+        let _bg;
+        if(_bt.type==='css'){
+          _bg = isLight ? _bt.light : _bt.dark;
+          cell.style.cssText = ['width:'+SZ+'px','height:'+SZ+'px','display:flex','align-items:center','justify-content:center','font-size:22px','line-height:1','background:'+_bg].join(';');
+        } else {
+          // Texture : fond image sur la rangée, voile sombre sur cases foncées
+          _bg = isLight ? 'transparent' : 'rgba(0,0,0,0.18)';
+          cell.style.cssText = ['width:'+SZ+'px','height:'+SZ+'px','display:flex','align-items:center','justify-content:center','font-size:22px','line-height:1','background:'+_bg].join(';');
+        }
         if(piece){
           const GLYPH2CODE = {'♔':'wK','♕':'wQ','♖':'wR','♗':'wB','♘':'wN','♙':'wP','♚':'bK','♛':'bQ','♜':'bR','♝':'bB','♞':'bN','♟':'bP'};
           const code = GLYPH2CODE[piece];
