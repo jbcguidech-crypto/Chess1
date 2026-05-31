@@ -287,36 +287,43 @@ body {
 }
 .voice-test:active { transform:translateY(2px);box-shadow:0 1px 0 var(--gold-dark); }
 .splash-btns {
-  display:flex;gap:12px;flex-wrap:wrap;justify-content:center;
+  display:flex;gap:14px;flex-wrap:wrap;justify-content:center;
 }
 .splash-btn {
-  padding:14px 24px;border-radius:50px;border:none;cursor:pointer;
-  font-family:'Fredoka One',cursive;font-size:1rem;letter-spacing:.5px;
-  transition:all .1s;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  width:92px;padding:14px 8px 12px;border-radius:18px;border:2px solid transparent;cursor:pointer;
+  font-family:'Fredoka One',cursive;font-size:.82rem;letter-spacing:.3px;
+  transition:transform .12s, box-shadow .12s, border-color .12s;
 }
 .splash-btn:hover { transform:translateY(-3px); }
-.splash-btn:active { transform:translateY(2px); }
+.splash-btn:active { transform:translateY(1px); }
+.btn-king { width:46px;height:46px;display:flex;align-items:center;justify-content:center; }
+.king-ico { width:100%;height:100%;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3)); }
+.btn-lbl { line-height:1; }
 
+/* Blancs — carte claire */
 .splash-white {
-  background:linear-gradient(180deg,#fff,#e8d9b0);
-  color:#3d2010;
-  box-shadow:0 5px 0 #8b6914,0 8px 20px rgba(0,0,0,.3),inset 0 2px 0 rgba(255,255,255,.8);
+  background:linear-gradient(180deg,#fdfaf2,#efe4c8);
+  color:#4a3318;border-color:#d8c79a;
+  box-shadow:0 5px 16px rgba(0,0,0,.25);
 }
-.splash-white:hover { box-shadow:0 8px 0 #8b6914,0 12px 28px rgba(0,0,0,.3); }
+.splash-white:hover { border-color:var(--gold);box-shadow:0 8px 22px rgba(0,0,0,.3); }
 
+/* Aléatoire — carte dorée (au centre, mise en avant) */
 .splash-random {
-  background:linear-gradient(180deg,var(--gold-light),var(--gold),var(--gold-dark));
-  color:var(--text-dark);
-  box-shadow:0 5px 0 var(--gold-dark),0 8px 20px rgba(212,160,23,.3),inset 0 2px 0 rgba(255,255,255,.3);
+  background:linear-gradient(180deg,#2a5038,#1c3a27);
+  color:var(--gold-light);border-color:var(--border-gold);
+  box-shadow:0 5px 16px rgba(0,0,0,.3);
 }
-.splash-random:hover { box-shadow:0 8px 0 var(--gold-dark),0 12px 28px rgba(212,160,23,.4); }
+.splash-random:hover { border-color:var(--gold);box-shadow:0 8px 22px rgba(212,160,23,.25); }
 
+/* Noirs — carte sombre élégante (plus de violet) */
 .splash-black {
-  background:linear-gradient(180deg,#4a3060,#1a0a2a);
-  color:#e0c0ff;
-  box-shadow:0 5px 0 #0a0018,0 8px 20px rgba(0,0,0,.4),inset 0 2px 0 rgba(255,255,255,.1);
+  background:linear-gradient(180deg,#2c2c30,#161618);
+  color:#e8e8ec;border-color:#444;
+  box-shadow:0 5px 16px rgba(0,0,0,.45);
 }
-.splash-black:hover { box-shadow:0 8px 0 #0a0018,0 12px 28px rgba(0,0,0,.4); }
+.splash-black:hover { border-color:#888;box-shadow:0 8px 22px rgba(0,0,0,.5); }
 
 /* ── NAV ─────────────────────────────────────── */
 .nav {
@@ -773,9 +780,28 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     <span class="gear-icon">⚙️</span> Personnaliser
   </button>
   <div class="splash-btns">
-    <button class="splash-btn splash-white" onclick="splashChooseColor('w')">♙ Blancs</button>
-    <button class="splash-btn splash-random" onclick="splashChooseColor('r')">🎲 Aléa</button>
-    <button class="splash-btn splash-black" onclick="splashChooseColor('b')">♟ Noirs</button>
+    <button class="splash-btn splash-white" onclick="splashChooseColor('w')">
+      <span class="btn-king"><svg viewBox="0 0 45 45" class="king-ico"><g fill="#fafafa" stroke="#5a4a2a" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M22.5 6v6M20 9h5" stroke="#5a4a2a"/><path d="M22.5 13c-3 0-5 2-5 5 0 2 1 3 1.5 3.5-1.5.5-3 1.5-3 3.5h13c0-2-1.5-3-3-3.5.5-.5 1.5-1.5 1.5-3.5 0-3-2-5-5-5z"/><path d="M11.5 37c6-3 16-3 22 0v-5c-6-3-16-3-22 0z"/><path d="M11.5 32c6-3 16-3 22 0M14 25c5-2 14-2 17 0"/></g></svg></span>
+      <span class="btn-lbl">Blancs</span>
+    </button>
+    <button class="splash-btn splash-random" onclick="splashChooseColor('r')">
+      <span class="btn-king"><svg viewBox="0 0 45 45" class="king-ico">
+        <defs><linearGradient id="biking" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#fafafa"/><stop offset="0.5" stop-color="#fafafa"/>
+          <stop offset="0.5" stop-color="#2a2a2a"/><stop offset="1" stop-color="#2a2a2a"/>
+        </linearGradient></defs>
+        <g fill="url(#biking)" stroke="#7a5a1a" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+          <path d="M22.5 6v6M20 9h5"/>
+          <path d="M22.5 13c-3 0-5 2-5 5 0 2 1 3 1.5 3.5-1.5.5-3 1.5-3 3.5h13c0-2-1.5-3-3-3.5.5-.5 1.5-1.5 1.5-3.5 0-3-2-5-5-5z"/>
+          <path d="M11.5 37c6-3 16-3 22 0v-5c-6-3-16-3-22 0z"/>
+          <path d="M11.5 32c6-3 16-3 22 0M14 25c5-2 14-2 17 0"/>
+        </g></svg></span>
+      <span class="btn-lbl">Aléatoire</span>
+    </button>
+    <button class="splash-btn splash-black" onclick="splashChooseColor('b')">
+      <span class="btn-king"><svg viewBox="0 0 45 45" class="king-ico"><g fill="#2a2a2a" stroke="#000" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M22.5 6v6M20 9h5" stroke="#000"/><path d="M22.5 13c-3 0-5 2-5 5 0 2 1 3 1.5 3.5-1.5.5-3 1.5-3 3.5h13c0-2-1.5-3-3-3.5.5-.5 1.5-1.5 1.5-3.5 0-3-2-5-5-5z"/><path d="M11.5 37c6-3 16-3 22 0v-5c-6-3-16-3-22 0z"/><path d="M11.5 32c6-3 16-3 22 0M14 25c5-2 14-2 17 0"/></g></svg></span>
+      <span class="btn-lbl">Noirs</span>
+    </button>
   </div>
 </div>
 
@@ -1420,22 +1446,24 @@ function splashChooseColor(color) {
   userInteracted = true; // L'utilisateur a cliqué → synthèse vocale autorisée
   // Choisit la couleur puis cache le splash
   if(color==='r'){
-    // Tirage aléatoire IMMÉDIAT puis animation
-    const chosen = (Date.now() % 2 === 0) ? 'w' : 'b'; // timestamp = vraiment aléatoire sur mobile
+    const chosen = (Date.now() % 2 === 0) ? 'w' : 'b';
     const btn = document.querySelector('.splash-random');
+    const ico = btn ? btn.querySelector('.btn-king') : null;
+    const lbl = btn ? btn.querySelector('.btn-lbl') : null;
+    const WK = '<span style="font-size:38px;line-height:1;color:#fafafa;text-shadow:0 1px 3px rgba(0,0,0,.6)">\u2654</span>';
+    const BK = '<span style="font-size:38px;line-height:1;color:#1a1a1a;text-shadow:0 1px 3px rgba(255,255,255,.3)">\u265A</span>';
     let count = 0;
     const interval = setInterval(()=>{
-      btn.textContent = count%2===0 ? '🎲 ♙' : '🎲 ♟';
+      if(ico) ico.innerHTML = count%2===0 ? WK : BK;
       count++;
       if(count > 7){
         clearInterval(interval);
-        btn.textContent = chosen==='w' ? '♙ Blancs !' : '♟ Noirs !';
+        if(ico) ico.innerHTML = chosen==='w' ? WK : BK;
+        if(lbl) lbl.textContent = chosen==='w' ? 'Blancs !' : 'Noirs !';
         playerColor = chosen;
         setTimeout(() => {
           hideSplash();
-          setTimeout(() => {
-            setPlayerColor(chosen);
-          }, 700);
+          setTimeout(() => { setPlayerColor(chosen); }, 700);
         }, 500);
       }
     }, 130);
