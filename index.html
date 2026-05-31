@@ -1424,6 +1424,84 @@ let stockfish=null, sfDepth=10, gameMode='ai', aiThinking=false;
 
 let sfReady = false;
 
+// ── HISTORIQUE UCI + LIVRE D'OUVERTURES ──────────────
+let moveHistoryUCI = []; // ['e2e4','e7e5',...]
+
+function toUCI(fr,fc,tr,tc,promo){
+  const f='abcdefgh';
+  let s = f[fc]+(8-fr)+f[tc]+(8-tr);
+  if(promo) s += promo.toLowerCase();
+  return s;
+}
+
+// Livre d'ouvertures : séquence de coups → réponses possibles
+// Clé = coups joués séparés par espaces, valeur = liste de réponses (une choisie au hasard)
+const OPENING_BOOK = {
+  // Premier coup des blancs
+  '': ['e2e4','d2d4','c2c4','g1f3','e2e4','d2d4'], // favorise e4/d4
+  // Réponses noires à 1.e4
+  'e2e4': ['e7e5','c7c5','e7e6','c7c6','d7d5'], // ouverte, sicilienne, française, caro-kann
+  'e2e4 e7e5': ['g1f3'], // 2.Cf3
+  'e2e4 e7e5 g1f3': ['b8c6','g8f6'], // 2...Cc6 ou Petroff
+  'e2e4 e7e5 g1f3 b8c6': ['f1b5','f1c4','d2d4'], // Espagnole, Italienne, Écossaise
+  'e2e4 e7e5 g1f3 b8c6 f1b5': ['a7a6','g8f6'], // Espagnole
+  'e2e4 e7e5 g1f3 b8c6 f1b5 a7a6': ['b5a4'], // 4.Fa4
+  'e2e4 e7e5 g1f3 b8c6 f1c4': ['f8c5','g8f6'], // Italienne
+  'e2e4 e7e5 g1f3 b8c6 f1c4 f8c5': ['c2c3','d2d3'],
+  // Sicilienne
+  'e2e4 c7c5': ['g1f3','c2c3','b1c3'],
+  'e2e4 c7c5 g1f3': ['d7d6','b8c6','e7e6'],
+  'e2e4 c7c5 g1f3 d7d6': ['d2d4'],
+  'e2e4 c7c5 g1f3 d7d6 d2d4': ['c5d4'],
+  'e2e4 c7c5 g1f3 d7d6 d2d4 c5d4': ['f3d4'],
+  // Française
+  'e2e4 e7e6': ['d2d4'],
+  'e2e4 e7e6 d2d4': ['d7d5'],
+  'e2e4 e7e6 d2d4 d7d5': ['b1c3','b1d2','e4e5'],
+  // Caro-Kann
+  'e2e4 c7c6': ['d2d4'],
+  'e2e4 c7c6 d2d4': ['d7d5'],
+  'e2e4 c7c6 d2d4 d7d5': ['b1c3','e4e5','e4d5'],
+  // Réponses à 1.d4
+  'd2d4': ['d7d5','g8f6','e7e6','f7f5'], // fermé, indienne, hollandaise
+  'd2d4 d7d5': ['c2c4','g1f3'], // Gambit dame
+  'd2d4 d7d5 c2c4': ['e7e6','c7c6','d5c4'], // refusé, slave, accepté
+  'd2d4 g8f6': ['c2c4','g1f3'],
+  'd2d4 g8f6 c2c4': ['e7e6','g7g6','c7c5'], // Nimzo/Ouest-indienne, Grünfeld/Roi-indienne
+  'd2d4 g8f6 c2c4 g7g6': ['b1c3'],
+  'd2d4 g8f6 c2c4 g7g6 b1c3': ['f8g7','d7d5'],
+  // Anglaise
+  'c2c4': ['e7e5','c7c5','g8f6','e7e6'],
+  'c2c4 e7e5': ['b1c3','g1f3'],
+  // Réti
+  'g1f3': ['d7d5','g8f6','c7c5'],
+  'g1f3 d7d5': ['d2d4','c2c4','g2g3'],
+};
+
+function getBookMove(){
+  const key = moveHistoryUCI.join(' ');
+  const options = OPENING_BOOK[key];
+  if(options && options.length){
+    // Vérifie que le coup est légal sur le plateau actuel
+    for(let attempt=0; attempt<options.length; attempt++){
+      const mv = options[Math.floor(Math.random()*options.length)];
+      if(isLegalUCI(mv)) return mv;
+    }
+  }
+  return null;
+}
+
+function isLegalUCI(uci){
+  const files={a:0,b:1,c:2,d:3,e:4,f:5,g:6,h:7};
+  const fc=files[uci[0]], fr=8-parseInt(uci[1]);
+  const tc=files[uci[2]], tr=8-parseInt(uci[3]);
+  if(fr<0||fr>7||fc<0||fc>7||tr<0||tr>7||tc<0||tc>7) return false;
+  const p = board[fr][fc];
+  if(!p || color(p)!==turn) return false;
+  const moves = legalMoves(fr,fc);
+  return moves.some(([mr,mc])=>mr===tr&&mc===tc);
+}
+
 function initStockfish(){
   sfReady = false;
   const dbg = document.getElementById('debugVoice');
@@ -1479,6 +1557,13 @@ function initStockfish(){
         if(!loaded && (line.includes('uciok') || line.includes('Stockfish'))){
           loaded = true; sfReady = true; clearTimeout(timer);
           stockfish = worker;
+          // Optimisations vitesse
+          worker.postMessage('setoption name Hash value 64');
+          if(isolated){
+            const nThreads = Math.max(1, Math.min(4, (navigator.hardwareConcurrency||2)-1));
+            worker.postMessage('setoption name Threads value '+nThreads);
+          }
+          worker.postMessage('setoption name Ponder value false');
           console.log('✅ Moteur chargé:', eng.name);
           if(dbg) dbg.textContent='✅ Moteur IA prêt ('+eng.name+(isolated?' fort':'')+')';
         }
@@ -1530,6 +1615,16 @@ function askStockfish(){
     }
   }
   askStockfish._retries = 0;
+  // 📖 Livre d'ouvertures : joue instantanément un coup théorique connu
+  const bookMv = getBookMove();
+  if(bookMv){
+    aiThinking=true;
+    document.getElementById('aiSpinner').classList.add('show');
+    const dbg=document.getElementById('debugVoice');
+    if(dbg){ dbg.style.display='block'; dbg.textContent='📖 Coup d\'ouverture: '+bookMv; }
+    setTimeout(()=>applyStockfishMove(bookMv), 150); // petit délai pour le réalisme
+    return;
+  }
   if(!stockfish || !sfReady){
     // Pas de Stockfish → IA de secours
     aiThinking=true;
@@ -1544,8 +1639,9 @@ function askStockfish(){
   configureStockfishStrength();
   stockfish.postMessage('position fen '+boardToFen());
   const moveTime = eloToTime(currentElo);
-  // Toujours envoyer profondeur ET temps pour forcer un calcul sérieux
-  stockfish.postMessage('go depth '+sfDepth+' movetime '+moveTime);
+  // Jeu rapide : on limite UNIQUEMENT par le temps (pas la profondeur)
+  // → réponse garantie en 'moveTime' ms, comme les bots Chess.com
+  stockfish.postMessage('go movetime '+moveTime);
   // Diagnostic visible
   const dbg = document.getElementById('debugVoice');
   if(dbg){
@@ -1553,7 +1649,7 @@ function askStockfish(){
     dbg.style.display='block';
     dbg.textContent='🤖 ELO '+currentElo+' · profondeur '+sfDepth+' · skill '+skill+' · '+moveTime+'ms';
   }
-  // Timeout de sécurité: si pas de réponse en 25s, reset
+  // Timeout de sécurité: si pas de réponse en 6s, reset
   setTimeout(()=>{
     if(aiThinking){
       aiThinking=false;
@@ -1561,7 +1657,7 @@ function askStockfish(){
       document.getElementById('voiceBtn').disabled=false;
       setStatus(currentLang==='fr'?'IA timeout — réessayez':'AI timeout — retry','error');
     }
-  }, 30000);
+  }, 6000);
 }
 
 function applyStockfishMove(uciMove){
@@ -1578,6 +1674,7 @@ function applyStockfishMove(uciMove){
   if(piece&&type(piece)==='K'){if(fc===4&&tc===6){board[fr][5]=board[fr][7];board[fr][7]=null;}if(fc===4&&tc===2){board[fr][3]=board[fr][0];board[fr][0]=null;}}
   if(promo){const pm={q:'Q',r:'R',b:'B',n:'N'};board[tr][tc]='b'+(pm[promo]||'Q');}
   lastMove=[fr,fc,tr,tc];history.push({move:moveStr,color:turn});
+  moveHistoryUCI.push(uciMove);
   turn=turn==='w'?'b':'w';selected=null;possibleMoves=[];
   renderBoard();updateSidebar();
   document.getElementById('voiceBtn').disabled=false;
@@ -1652,6 +1749,7 @@ function makeMove(fr,fc,tr,tc,castleType){
   if(castleType==='castle-k'){board[fr][5]=board[fr][7];board[fr][7]=null;}
   if(castleType==='castle-q'){board[fr][3]=board[fr][0];board[fr][0]=null;}
   lastMove=[fr,fc,tr,tc];history.push({move:moveStr,color:turn});
+  { const _pr=(type(piece)==='P'&&(tr===0||tr===7))?'q':null; moveHistoryUCI.push(toUCI(fr,fc,tr,tc,_pr)); }
   const humanSpoken = toSpeech(fr,fc,tr,tc,piece,captured,castleType);
   turn=turn==='w'?'b':'w';selected=null;possibleMoves=[];
   renderBoard();updateSidebar();
@@ -2210,18 +2308,17 @@ function updateEloUI(){
   sfDepth=eloToDepth(currentElo);
 }
 function eloToTime(elo){
-  // asm.js plus lent → temps généreux pour un vrai niveau
-  if(elo <= 400)  return 100;
-  if(elo <= 600)  return 200;
-  if(elo <= 800)  return 400;
-  if(elo <= 1000) return 700;
-  if(elo <= 1200) return 1200;
-  if(elo <= 1500) return 2000;
-  if(elo <= 1800) return 3500;
-  if(elo <= 2000) return 5000;
-  if(elo <= 2200) return 7000;
-  if(elo <= 2500) return 10000;
-  return 18000; // Mode Magnus 😈 — 18 secondes de réflexion
+  // Jeu rapide style Chess.com : réponses quasi-instantanées
+  // Le NNUE atteint un très bon niveau même en peu de temps
+  if(elo <= 400)  return 50;
+  if(elo <= 800)  return 100;
+  if(elo <= 1200) return 200;
+  if(elo <= 1500) return 350;
+  if(elo <= 1800) return 500;
+  if(elo <= 2000) return 700;
+  if(elo <= 2200) return 1000;
+  if(elo <= 2500) return 1500;
+  return 2500; // Mode Magnus 😈 — 2,5s max, reste très fort en NNUE
 }
 
 function configureStockfishStrength(){
@@ -2288,7 +2385,7 @@ function resetGame(){
   document.getElementById('gameOver').classList.remove('show');
   document.getElementById('aiSpinner').classList.remove('show');
   gameStartElo=userProfile.elo;
-  initBoard();turn='w';selected=null;possibleMoves=[];history=[];
+  initBoard();turn='w';selected=null;possibleMoves=[];history=[];moveHistoryUCI=[];
   lastMove=null;enPassant=null;aiThinking=false;
   castling={wK:true,wR_k:true,wR_q:true,bK:true,bR_k:true,bR_q:true};
   renderBoard();updateSidebar();
