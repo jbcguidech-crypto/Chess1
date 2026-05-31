@@ -117,6 +117,39 @@ body {
   font-weight:700;font-size:.65rem;cursor:pointer;transition:all .15s;
 }
 .splash-diff-presets button:hover { border-color:var(--gold-light);color:var(--gold-light); }
+.splash-pieceset {
+  width:100%;max-width:340px;
+  background:rgba(0,0,0,.2);border:1px solid var(--border-gold);
+  border-radius:14px;padding:12px;
+}
+.splash-pieceset-title {
+  font-family:'Nunito',sans-serif;font-weight:700;color:var(--text-muted);
+  font-size:.78rem;text-align:center;margin-bottom:8px;
+}
+.pieceset-grid {
+  display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;
+  scroll-snap-type:x mandatory;
+}
+.pieceset-grid::-webkit-scrollbar { height:4px; }
+.pieceset-grid::-webkit-scrollbar-thumb { background:var(--border-gold);border-radius:2px; }
+.pieceset-opt {
+  flex:0 0 auto;width:52px;cursor:pointer;scroll-snap-align:start;
+  border:2px solid transparent;border-radius:10px;padding:4px;
+  background:rgba(240,217,181,.5);transition:all .15s;text-align:center;
+}
+.pieceset-opt:hover { background:rgba(240,217,181,.8); }
+.pieceset-opt.active { border-color:var(--gold);background:rgba(212,160,23,.2); }
+.pieceset-opt img { width:36px;height:36px;object-fit:contain;display:block;margin:0 auto; }
+.pieceset-opt span { font-size:.55rem;color:var(--text-dark);font-weight:700;display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.boardtheme-opt {
+  flex:0 0 auto;width:52px;cursor:pointer;scroll-snap-align:start;
+  border:2px solid transparent;border-radius:10px;padding:4px;
+  background:rgba(0,0,0,.15);transition:all .15s;text-align:center;
+}
+.boardtheme-opt:hover { background:rgba(255,255,255,.1); }
+.boardtheme-opt.active { border-color:var(--gold);background:rgba(212,160,23,.2); }
+.boardtheme-prev { width:40px;height:40px;border-radius:6px;margin:0 auto;border:1px solid rgba(0,0,0,.2); }
+.boardtheme-opt span { font-size:.55rem;color:var(--text-muted);font-weight:700;display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
 .splash-btns {
   display:flex;gap:12px;flex-wrap:wrap;justify-content:center;
 }
@@ -261,20 +294,13 @@ body {
 @keyframes shake-chk{0%,100%{transform:none}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
 
 .board-piece {
-  pointer-events:none;line-height:1;
+  pointer-events:none;
   transition:transform .12s;
-  display:flex;align-items:center;justify-content:center;
-  width:100%;height:100%;
+  width:92%;height:92%;
+  object-fit:contain;
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));
 }
-.board-piece.wp {
-  color:#fcfcfc;
-  text-shadow:1px 1px 0 #999, 2px 2px 1px #777, 2px 3px 4px rgba(0,0,0,.55);
-}
-.board-piece.bp {
-  color:#2a2a2a;
-  text-shadow:1px 1px 0 #6a6a6a, 2px 2px 1px #4a4a4a, 2px 3px 5px rgba(0,0,0,.65);
-}
-.cell:hover .board-piece { transform:scale(1.06); }
+.board-piece.cell:hover .board-piece { transform:scale(1.06); }
 
 /* ── SIDEBAR ─────────────────────────────────── */
 .sidebar { display:flex;flex-direction:column;gap:12px;width:248px; }
@@ -605,6 +631,16 @@ canvas#eloChart { width:100%!important;height:90px!important; }
       <button onclick="setSplashElo(2500)">2500</button>
     </div>
   </div>
+  <!-- Sélecteur de pièces -->
+  <div class="splash-pieceset">
+    <div class="splash-pieceset-title">♟ Style des pièces</div>
+    <div class="pieceset-grid" id="pieceSetGrid"></div>
+  </div>
+  <!-- Sélecteur d'échiquier -->
+  <div class="splash-pieceset">
+    <div class="splash-pieceset-title">▦ Style de l'échiquier</div>
+    <div class="pieceset-grid" id="boardThemeGrid"></div>
+  </div>
   <div class="splash-btns">
     <button class="splash-btn splash-white" onclick="splashChooseColor('w')">♙ Blancs</button>
     <button class="splash-btn splash-random" onclick="splashChooseColor('r')">🎲 Aléa</button>
@@ -801,6 +837,167 @@ let userInteracted = false; // synthèse vocale autorisée après interaction
 
 const PIECE_GLYPHS = {wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'};
 
+// ── SETS DE PIÈCES LICHESS (libres de droits) ──────────
+const PIECE_SETS = [
+  {id:'cburnett', name:'Cburnett'},
+  {id:'merida', name:'Merida'},
+  {id:'alpha', name:'Alpha'},
+  {id:'pirouetti', name:'Pirouetti'},
+  {id:'chessnut', name:'Chessnut'},
+  {id:'chess7', name:'Chess7'},
+  {id:'reillycraig', name:'Reillycraig'},
+  {id:'companion', name:'Companion'},
+  {id:'fantasy', name:'Fantasy'},
+  {id:'spatial', name:'Spatial'},
+  {id:'california', name:'California'},
+  {id:'pixel', name:'Pixel'},
+  {id:'maestro', name:'Maestro'},
+  {id:'fresca', name:'Fresca'},
+  {id:'cardinal', name:'Cardinal'},
+  {id:'gioco', name:'Gioco'},
+  {id:'tatiana', name:'Tatiana'},
+  {id:'staunty', name:'Staunty'},
+  {id:'governor', name:'Governor'},
+  {id:'dubrovny', name:'Dubrovny'},
+  {id:'icpieces', name:'ICpieces'},
+  {id:'kosal', name:'Kosal'},
+  {id:'leipzig', name:'Leipzig'},
+  {id:'mpchess', name:'MPChess'},
+];
+
+const PIECE_CDN = 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/';
+
+// Set actif (mémorisé)
+let pieceSet = 'cburnett';
+try { const saved = localStorage.getItem('dysc_pieceset'); if(saved) pieceSet = saved; } catch(e){}
+
+// ── THÈMES D'ÉCHIQUIER ──────────────────────────────
+// Couleurs CSS (rapides) + textures Lichess (jpg)
+const BOARD_THEMES = [
+  // Couleurs unies (rendu CSS instantané)
+  {id:'walnut',  name:'Noyer',   type:'css', light:'#f0d9b5', dark:'#b58863'},
+  {id:'green',   name:'Vert',    type:'css', light:'#eeeed2', dark:'#769656'},
+  {id:'blue',    name:'Bleu',    type:'css', light:'#dee3e6', dark:'#8ca2ad'},
+  {id:'brown',   name:'Marron',  type:'css', light:'#f0d9b5', dark:'#946f51'},
+  {id:'purple',  name:'Violet',  type:'css', light:'#e6dcf0', dark:'#9f90b0'},
+  {id:'grey',    name:'Gris',    type:'css', light:'#dcdcdc', dark:'#888888'},
+  {id:'ic',      name:'Glace',   type:'css', light:'#ececec', dark:'#c1c18e'},
+  {id:'pink',    name:'Rose',    type:'css', light:'#f1f1c9', dark:'#f07272'},
+  // Textures Lichess (images)
+  {id:'wood',    name:'Bois',    type:'img'},
+  {id:'wood2',   name:'Bois 2',  type:'img'},
+  {id:'wood3',   name:'Bois 3',  type:'img'},
+  {id:'wood4',   name:'Bois 4',  type:'img'},
+  {id:'maple',   name:'Érable',  type:'img'},
+  {id:'maple2',  name:'Érable 2',type:'img'},
+  {id:'marble',  name:'Marbre',  type:'img'},
+  {id:'blue-marble',name:'Marbre bleu',type:'img'},
+  {id:'leather', name:'Cuir',    type:'img'},
+  {id:'metal',   name:'Métal',   type:'img'},
+  {id:'canvas2', name:'Toile',   type:'img'},
+  {id:'olive',   name:'Olive',   type:'img'},
+  {id:'horsey',  name:'Horsey',  type:'img'},
+  {id:'blue3',   name:'Bleu 3',  type:'img'},
+];
+
+const BOARD_CDN = 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/images/board/';
+
+let boardTheme = 'walnut';
+try { const sv = localStorage.getItem('dysc_board'); if(sv) boardTheme = sv; } catch(e){}
+
+function getBoardTheme(){ return BOARD_THEMES.find(t=>t.id===boardTheme) || BOARD_THEMES[0]; }
+
+function applyBoardTheme(){
+  const t = getBoardTheme();
+  const el = document.getElementById('board');
+  if(!el) return;
+  if(t.type==='css'){
+    el.style.backgroundImage = 'none';
+    document.querySelectorAll('#board .cell.light').forEach(c=>{c.style.background=t.light;c.style.backgroundImage='none';});
+    document.querySelectorAll('#board .cell.dark').forEach(c=>{c.style.background=t.dark;c.style.backgroundImage='none';});
+  } else {
+    // Texture image : appliquée sur tout le board, cases transparentes
+    const url = BOARD_CDN + t.id + '.jpg';
+    el.style.backgroundImage = 'url('+url+')';
+    el.style.backgroundSize = '100% 100%';
+    document.querySelectorAll('#board .cell.light').forEach(c=>{c.style.background='transparent';});
+    document.querySelectorAll('#board .cell.dark').forEach(c=>{c.style.background='rgba(0,0,0,0.18)';});
+  }
+}
+
+function setBoardTheme(id){
+  boardTheme = id;
+  try { localStorage.setItem('dysc_board', id); } catch(e){}
+  if(typeof renderBoard==='function') renderBoard();
+  document.querySelectorAll('.boardtheme-opt').forEach(el=>{
+    el.classList.toggle('active', el.dataset.board===id);
+  });
+}
+
+function buildBoardThemeSelector(){
+  const grid = document.getElementById('boardThemeGrid');
+  if(!grid) return;
+  grid.innerHTML='';
+  BOARD_THEMES.forEach(t=>{
+    const opt = document.createElement('div');
+    opt.className = 'boardtheme-opt' + (t.id===boardTheme?' active':'');
+    opt.dataset.board = t.id;
+    // Mini aperçu 2x2
+    const prev = document.createElement('div');
+    prev.className = 'boardtheme-prev';
+    if(t.type==='css'){
+      prev.style.background = 'linear-gradient(135deg,'+t.light+' 0 50%,'+t.dark+' 50% 100%)';
+    } else {
+      prev.style.backgroundImage = 'url('+BOARD_CDN+t.id+'.thumbnail.jpg)';
+      prev.style.backgroundSize = 'cover';
+      prev.style.backgroundPosition = 'center';
+    }
+    const lbl = document.createElement('span');
+    lbl.textContent = t.name;
+    opt.appendChild(prev);
+    opt.appendChild(lbl);
+    opt.addEventListener('click', ()=>setBoardTheme(t.id));
+    grid.appendChild(opt);
+  });
+}
+
+function pieceImgURL(piece){
+  // piece = 'wK','bQ', etc.
+  return PIECE_CDN + pieceSet + '/' + piece + '.svg';
+}
+
+function setPieceSet(id){
+  pieceSet = id;
+  try { localStorage.setItem('dysc_pieceset', id); } catch(e){}
+  if(typeof renderBoard === 'function') renderBoard();
+  if(typeof buildSplash === 'function') buildSplash();
+  // Met à jour la sélection visuelle
+  document.querySelectorAll('.pieceset-opt').forEach(el=>{
+    el.classList.toggle('active', el.dataset.set===id);
+  });
+}
+
+function buildPieceSetSelector(){
+  const grid = document.getElementById('pieceSetGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  PIECE_SETS.forEach(set=>{
+    const opt = document.createElement('div');
+    opt.className = 'pieceset-opt' + (set.id===pieceSet ? ' active' : '');
+    opt.dataset.set = set.id;
+    const img = document.createElement('img');
+    img.src = PIECE_CDN + set.id + '/wN.svg'; // aperçu = cavalier blanc
+    img.alt = set.name;
+    img.loading = 'lazy';
+    const lbl = document.createElement('span');
+    lbl.textContent = set.name;
+    opt.appendChild(img);
+    opt.appendChild(lbl);
+    opt.addEventListener('click', ()=>setPieceSet(set.id));
+    grid.appendChild(opt);
+  });
+}
+
 // ── SPLASH ──────────────────────────────────────────
 function buildSplash() {
   const sp = document.getElementById('splashPieces');
@@ -862,13 +1059,12 @@ function buildSplash() {
           'background:'+(isLight?'#f0d9b5':'#b58863'),
         ].join(';');
         if(piece){
-          const p = document.createElement('span');
-          if(isWhite){
-            p.style.cssText = 'color:#fcfcfc;text-shadow:1px 1px 0 #999, 1px 2px 2px rgba(0,0,0,.55);';
-          } else {
-            p.style.cssText = 'color:#2a2a2a;text-shadow:1px 1px 0 #6a6a6a, 1px 2px 3px rgba(0,0,0,.6);';
-          }
-          p.textContent = piece;
+          const GLYPH2CODE = {'♔':'wK','♕':'wQ','♖':'wR','♗':'wB','♘':'wN','♙':'wP','♚':'bK','♛':'bQ','♜':'bR','♝':'bB','♞':'bN','♟':'bP'};
+          const code = GLYPH2CODE[piece];
+          const p = document.createElement('img');
+          p.src = pieceImgURL(code);
+          p.style.cssText = 'width:88%;height:88%;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.3));';
+          p.draggable = false;
           cell.appendChild(p);
         }
         rowDiv.appendChild(cell);
@@ -983,6 +1179,8 @@ function spawnStars(){
 
 buildSplash();
 buildCoords();
+buildPieceSetSelector();
+buildBoardThemeSelector();
 
 // ===== USER PROFILE & STATS =====
 const AVATARS = ['🦁','🐯','🦊','🐺','🦅','🐉','👑','⚡','🔥','🌙'];
@@ -1858,15 +2056,17 @@ function renderBoard(){
     if(pm){if(board[r][c]&&color(board[r][c])!==turn)cell.classList.add('possible-capture');else cell.classList.add('possible-move');}
     if(isInCheck(board,turn)&&board[r][c]===turn+'K')cell.classList.add('in-check');
     if(board[r][c]){
-      const p=document.createElement('div');
-      const isW=board[r][c][0]==='w';
-      p.className='board-piece '+(isW?'wp':'bp');
-      // font-size from CSS
-      p.textContent=PIECE_GLYPHS[board[r][c]]||'';
+      const p=document.createElement('img');
+      p.className='board-piece';
+      p.src=pieceImgURL(board[r][c]);
+      p.alt=board[r][c];
+      p.draggable=false;
       cell.appendChild(p);
     }
     cell.addEventListener('click',()=>handleClick(r,c));el.appendChild(cell);
   }
+  // Applique le thème d'échiquier choisi
+  if(typeof applyBoardTheme==='function') applyBoardTheme();
   // Les numéros sont gérés par buildCoords - ne pas reconstruire ici
 }
 
