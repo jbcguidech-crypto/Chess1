@@ -794,8 +794,6 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 <script>
 // ── VARIABLES GLOBALES ──────────────────────────
 let playerColor = 'w'; // couleur que joue l'humain
-let wakeActive = false;
-let wakeRecognition = null;
 let voiceContinuous = false; // écoute continue activée
 let userInteracted = false; // synthèse vocale autorisée après interaction
 
@@ -916,7 +914,7 @@ function splashChooseColor(color) {
   // Choisit la couleur puis cache le splash
   if(color==='r'){
     // Tirage aléatoire IMMÉDIAT puis animation
-    const chosen = Math.random() > 0.5 ? 'w' : 'b'; // calculé UNE FOIS
+    const chosen = (Date.now() % 2 === 0) ? 'w' : 'b'; // timestamp = vraiment aléatoire sur mobile
     const btn = document.querySelector('.splash-random');
     let count = 0;
     const interval = setInterval(()=>{
@@ -954,7 +952,7 @@ function buildCoords(){
   const flip = playerColor==='b';
   const top = document.getElementById('coordsTop');
   if(top){
-    top.innerHTML='<div style="width:22px"></div>';
+    top.innerHTML='<div style="width:20px;flex-shrink:0;"></div>';
     const letters = flip ? 'hgfedcba' : 'abcdefgh';
     letters.split('').forEach(l=>{
       const d=document.createElement('div');d.className='coord-letter';d.textContent=l;top.appendChild(d);
@@ -1424,20 +1422,47 @@ function showToast(msg, type) {
 // ===== STOCKFISH =====
 let stockfish=null, sfDepth=10, gameMode='ai', aiThinking=false;
 
+let sfReady = false;
+
 function initStockfish(){
+  // Moteurs fiables sans en-têtes spéciaux (single-thread asm.js/wasm)
   const URLS = [
-    'https://cdn.jsdelivr.net/npm/stockfish@16.0.0/src/stockfish-nnue-16.js',
     'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js',
     'https://unpkg.com/stockfish@10.0.2/stockfish.js',
+    'https://cdn.jsdelivr.net/npm/stockfish.js@10.0.2/stockfish.js',
   ];
-  function tryLoad(i) {
-    if(i >= URLS.length){ console.warn('Stockfish unavailable'); stockfish=null; return; }
-    try {
-      stockfish = new Worker(URLS[i]);
-      stockfish.onerror = () => { stockfish=null; tryLoad(i+1); };
-      stockfish.onmessage = (e) => {
-        const line = e.data;
-        if(line && line.startsWith('bestmove')){
+  sfReady = false;
+
+  function tryLoad(i){
+    if(i >= URLS.length){
+      console.warn('Stockfish indisponible — IA de secours activée');
+      stockfish = null;
+      const dbg = document.getElementById('debugVoice');
+      if(dbg){ dbg.style.display='block'; dbg.textContent='⚠️ Moteur IA non chargé (mode secours)'; }
+      return;
+    }
+    let loaded = false;
+    try{
+      const sf = new Worker(URLS[i]);
+      // Timeout : si pas de uciok en 5s → essaie le suivant
+      const checkTimer = setTimeout(()=>{
+        if(!loaded){ try{ sf.terminate(); }catch(e){} tryLoad(i+1); }
+      }, 5000);
+
+      sf.onerror = ()=>{ clearTimeout(checkTimer); try{ sf.terminate(); }catch(e){} tryLoad(i+1); };
+
+      sf.onmessage = (e)=>{
+        const line = typeof e.data==='string' ? e.data : '';
+        if(line.includes('uciok') || line.includes('readyok')){
+          if(!loaded){
+            loaded = true;
+            sfReady = true;
+            clearTimeout(checkTimer);
+            stockfish = sf;
+            console.log('✅ Stockfish chargé:', URLS[i]);
+          }
+        }
+        if(line.startsWith('bestmove')){
           const mv = line.split(' ')[1];
           if(mv && mv!=='(none)' && mv.length>=4) applyStockfishMove(mv);
           aiThinking = false;
@@ -1445,9 +1470,10 @@ function initStockfish(){
           document.getElementById('voiceBtn').disabled = false;
         }
       };
-      stockfish.postMessage('uci');
-      stockfish.postMessage('isready');
-    } catch(e) { stockfish=null; tryLoad(i+1); }
+
+      sf.postMessage('uci');
+      sf.postMessage('isready');
+    }catch(e){ tryLoad(i+1); }
   }
   tryLoad(0);
 }
@@ -1475,8 +1501,18 @@ function playRandomMove(){
 function askStockfish(){
   if(gameMode!=='ai')return;
   if(aiThinking) return; // évite double appel
-  if(!stockfish){
-    // Pas de Stockfish → IA aléatoire
+  // Si moteur pas encore prêt, attendre un peu (max ~6s)
+  if(stockfish && !sfReady){
+    if(!askStockfish._retries) askStockfish._retries = 0;
+    if(askStockfish._retries < 12){
+      askStockfish._retries++;
+      setTimeout(askStockfish, 500);
+      return;
+    }
+  }
+  askStockfish._retries = 0;
+  if(!stockfish || !sfReady){
+    // Pas de Stockfish → IA de secours
     aiThinking=true;
     document.getElementById('aiSpinner').classList.add('show');
     playRandomMove();
@@ -1489,12 +1525,14 @@ function askStockfish(){
   configureStockfishStrength();
   stockfish.postMessage('position fen '+boardToFen());
   const moveTime = eloToTime(currentElo);
-  if(currentElo >= 2000){
-    // Niveau fort : profondeur + temps
-    stockfish.postMessage('go depth '+sfDepth+' movetime '+moveTime);
-  } else {
-    // Niveau faible : temps limité seulement
-    stockfish.postMessage('go movetime '+moveTime);
+  // Toujours envoyer profondeur ET temps pour forcer un calcul sérieux
+  stockfish.postMessage('go depth '+sfDepth+' movetime '+moveTime);
+  // Diagnostic visible
+  const dbg = document.getElementById('debugVoice');
+  if(dbg){
+    const skill = Math.max(0, Math.min(20, Math.round((currentElo-400)/2600*20)));
+    dbg.style.display='block';
+    dbg.textContent='🤖 ELO '+currentElo+' · profondeur '+sfDepth+' · skill '+skill+' · '+moveTime+'ms';
   }
   // Timeout de sécurité: si pas de réponse en 15s, reset
   setTimeout(()=>{
@@ -1748,79 +1786,7 @@ function toggleVoice(){
   userInteracted = true;
   startListening();
 }
-// ── WAKE WORD SYSTEM ─────────────────────────────
-// Écoute en continu "ok" pour activer la commande
-function startWakeWord() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR || wakeActive) return;
-  try {
-    wakeRecognition = new SR();
-    wakeRecognition.lang = L().code;
-    wakeRecognition.continuous = true;
-    wakeRecognition.interimResults = true;
-    wakeRecognition.maxAlternatives = 1;
 
-    wakeRecognition.onresult = (e) => {
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const t = e.results[i][0].transcript.toLowerCase().trim();
-        // Détecte le mot clé "ok" suivi optionnellement d'une commande
-        const wakeMatch = t.match(/^(?:ok|okay|chess|échecs|o\.k\.?|joue|jouer|play)\s*(.*)/);
-        if (wakeMatch) {
-          const cmd = wakeMatch[1].trim();
-          if (e.results[i].isFinal) {
-            if (cmd.length > 0) {
-              // "ok e4" → traite directement la commande
-              setStatus('🎙 "'+t+'"','heard');
-              flashVoiceBtn();
-              processVoice(cmd);
-            } else {
-              // "ok" seul → active l'écoute manuelle
-              if (!listening && !aiThinking) {
-                setStatus(currentLang==='fr'?'🎙 Parlez…':'🎙 Speak…','');
-                flashVoiceBtn();
-                startListening();
-              }
-            }
-          } else if (!e.results[i].isFinal && cmd.length > 1) {
-            // Feedback intermédiaire
-            setStatus('👂 "'+t+'"','heard');
-          }
-        }
-      }
-    };
-
-    wakeRecognition.onerror = (e) => {
-      if (e.error === 'not-allowed') {
-        setStatus(currentLang==='fr'?'Micro non autorisé':'Mic not allowed','error');
-        return;
-      }
-      // Redémarre automatiquement en cas d'erreur non fatale
-    };
-
-    wakeRecognition.onend = () => {
-      wakeActive = false;
-      // Redémarre automatiquement si pas en écoute active
-      if (!listening) {
-        setTimeout(startWakeWord, 500);
-      }
-    };
-
-    wakeRecognition.start();
-    wakeActive = true;
-    setStatus(currentLang==='fr'?'Dites "ok e4" pour jouer':'Say "ok e4" to play','');
-    document.getElementById('voiceBtnText').textContent = currentLang==='fr'?'🎙 En attente…':'🎙 Waiting…';
-  } catch(e) {
-    console.warn('Wake word error:', e.message);
-  }
-}
-
-function stopWakeWord() {
-  if (wakeRecognition) {
-    try { wakeRecognition.stop(); } catch(e){}
-    wakeRecognition = null;
-  }
-  wakeActive = false;
-}
 
 function flashVoiceBtn() {
   const btn = document.getElementById('voiceBtn');
@@ -2242,20 +2208,16 @@ function eloToTime(elo){
 function configureStockfishStrength(){
   if(!stockfish) return;
   sfDepth = eloToDepth(currentElo);
-  const skill = Math.min(20, Math.round((currentElo - 400) / 2600 * 20));
-  stockfish.postMessage('setoption name Skill Level value ' + Math.max(0, skill));
-  if(currentElo >= 1800){
-    stockfish.postMessage('setoption name UCI_LimitStrength value false');
-  } else {
-    stockfish.postMessage('setoption name UCI_LimitStrength value true');
-    stockfish.postMessage('setoption name UCI_Elo value ' + currentElo);
-  }
+  // Skill Level (0-20) : seul réglage fiable sur Stockfish 10
+  // 400 ELO → 0 (très faible), 3000 ELO → 20 (max)
+  const skill = Math.max(0, Math.min(20, Math.round((currentElo - 400) / 2600 * 20)));
+  stockfish.postMessage('setoption name Skill Level value ' + skill);
 }
 
 function setPlayerColor(color){
   if(color==='r'){
     // Aléatoire — tirage au sort
-    const chosen = Math.random()<0.5?'w':'b';
+    const chosen = (Date.now() % 2 === 0) ? 'w' : 'b';
     playerColor = chosen;
     const msg = chosen==='w'
       ? (currentLang==='fr'?'🎲 Vous jouez les Blancs !':'🎲 You play White!')
