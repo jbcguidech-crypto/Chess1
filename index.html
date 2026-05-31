@@ -2172,7 +2172,7 @@ function askStockfish(){
     return;
   }
   aiThinking=true;
-  if(recognition && listening) try{ recognition.stop(); }catch(e){}
+  // On laisse le micro actif pour pouvoir dire "annuler" pendant la réflexion
   document.getElementById('aiSpinner').classList.add('show');
   document.getElementById('voiceBtn').disabled=true;
   configureStockfishStrength();
@@ -2669,18 +2669,17 @@ function startListening(){
   recognition.onend = () => {
     listening = false;
     moveJustPlayed = false;
-    // Si toujours en mode écoute continue → redémarre automatiquement (petit délai anti-collision)
-    if(voiceContinuous && !aiThinking){
+    // Toujours en écoute continue → on RELANCE même si l'IA réfléchit ou parle,
+    // pour pouvoir capter "annuler" à tout moment (le filtre onresult n'agit alors que sur l'annulation).
+    if(voiceContinuous){
       setTimeout(()=>{
-        if(!voiceContinuous || aiThinking || listening) return;
+        if(!voiceContinuous || listening) return;
         try{ recognition.start(); }
         catch(e){
-          // déjà démarré ? on ignore. Sinon on réessaie une fois.
           setTimeout(()=>{ try{ if(voiceContinuous && !listening) recognition.start(); }catch(_){} }, 300);
         }
       }, 150);
     } else {
-      listening = false;
       document.getElementById('voiceBtn').classList.remove('listening');
       document.getElementById('voiceBtnText').textContent = currentLang==='fr'?'🎙 Parler':'🎙 Speak';
     }
