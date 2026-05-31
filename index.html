@@ -554,20 +554,17 @@ input[type=range]::-webkit-slider-thumb {
 #voiceBtn:disabled { opacity:.4;cursor:not-allowed;transform:none; }
 @keyframes pulse-mic{0%,100%{box-shadow:0 0 0 0 rgba(224,82,82,.45)}50%{box-shadow:0 0 0 12px rgba(224,82,82,0)}}
 
-/* ── DISPOSITION ÉCHIQUIER + COLONNE LATÉRALE ── */
-.board-row { display:flex;gap:10px;align-items:flex-start;width:100%; }
-.board-row .board-container { flex:1 1 auto;min-width:0; }
-.board-side {
-  flex:0 0 108px;display:flex;flex-direction:column;align-items:stretch;gap:9px;
+/* ── MICRO + HISTORIQUE SOUS L'ÉCHIQUIER ──────── */
+.below-board {
+  display:flex;flex-direction:column;align-items:stretch;gap:10px;width:100%;
 }
 .mic-status {
-  font-size:.6rem;color:var(--text-muted);text-align:center;line-height:1.35;
-  min-height:26px;
+  font-size:.66rem;color:var(--text-muted);text-align:center;line-height:1.4;
+  min-height:20px;
 }
-.side-history { padding:10px;flex:1; }
-.side-history #history { max-height:300px; }
-@media(min-width:760px){ .board-side{ flex-basis:240px; } #voiceBtn{ width:80px;height:80px; } }
-@media(max-width:360px){ .board-side{ flex-basis:96px; } #voiceBtn{ width:64px;height:64px; } }
+.below-board .ai-spinner { justify-content:center; }
+.side-history { padding:14px; }
+.side-history #history { max-height:170px; }
 
 #status {
   font-size:.6rem;color:var(--text-muted);min-height:26px;line-height:1.35;
@@ -860,7 +857,6 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 <div class="page active" id="page-game">
 <div class="game-layout">
 
-  <div class="board-row">
   <!-- BOARD -->
   <div class="board-container">
     <div class="board-mid">
@@ -871,7 +867,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   </div>
 
   <!-- COLONNE LATÉRALE : micro + historique -->
-  <div class="board-side">
+  <div class="below-board">
     <button id="voiceBtn" class="mic-btn" onclick="toggleVoice()" aria-label="Commande vocale" title="Commande vocale">
       <svg class="mic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="9" y="2" width="6" height="12" rx="3"></rect>
@@ -895,7 +891,6 @@ canvas#eloChart { width:100%!important;height:90px!important; }
       <div id="history"><span style="color:rgba(255,255,255,.2);font-size:.65rem">Aucun coup</span></div>
     </div>
   </div>
-  </div><!-- /board-row -->
 
   <!-- SIDEBAR -->
   <div class="sidebar">
@@ -2460,7 +2455,73 @@ function makeMove(fr,fc,tr,tc,castleType){
   }
 }
 
-function toAlg(fr,fc,tr,tc,piece,captured){const f='abcdefgh',t=type(piece);const n={K:'Roi',Q:'Dame',R:'Tour',B:'Fou',N:'Cavalier',P:''};return(n[t]||'')+(t!=='P'?f[fc]:'')+( captured?'x':'')+f[tc]+(8-tr);}
+function toAlg(fr,fc,tr,tc,piece,captured){
+  const f='abcdefgh', t=type(piece), col=color(piece);
+  // Roque (le roi se déplace de 2 cases)
+  if(t==='K' && Math.abs(tc-fc)===2){
+    return (tc>fc ? 'O-O' : 'O-O-O') + _checkSuffix(fr,fc,tr,tc,piece);
+  }
+  const L={K:'R',Q:'D',R:'T',B:'F',N:'C',P:''}; // lettres françaises
+  const isCap = captured ? true : (t==='P' && fc!==tc); // capture (inclut la prise en passant)
+  let s='';
+  if(t==='P'){
+    if(isCap) s += f[fc] + 'x';
+    s += f[tc] + (8-tr);
+    if(tr===0 || tr===7) s += '=D'; // promotion (toujours en Dame)
+  } else {
+    s += L[t];
+    // Désambiguïsation : une autre pièce du même type peut-elle aller sur la même case ?
+    let other=false, sameFile=false, sameRank=false;
+    for(let r=0;r<8;r++) for(let cc=0;cc<8;cc++){
+      if(r===fr && cc===fc) continue;
+      const p=board[r][cc];
+      if(p && color(p)===col && type(p)===t){
+        if(legalMoves(r,cc).some(([mr,mc])=>mr===tr && mc===tc)){
+          other=true;
+          if(cc===fc) sameFile=true;
+          if(r===fr)  sameRank=true;
+        }
+      }
+    }
+    if(other){
+      if(!sameFile)      s += f[fc];          // la colonne suffit
+      else if(!sameRank) s += (8-fr);         // sinon la rangée
+      else               s += f[fc]+(8-fr);   // sinon les deux
+    }
+    if(isCap) s += 'x';
+    s += f[tc] + (8-tr);
+  }
+  return s + _checkSuffix(fr,fc,tr,tc,piece);
+}
+
+// Plateau simulé APRÈS le coup (gère prise en passant, roque, promotion)
+function _simBoard(fr,fc,tr,tc,piece){
+  const b=board.map(row=>row.slice()), t=type(piece), col=color(piece);
+  if(t==='P' && fc!==tc && b[tr][tc]===null) b[fr][tc]=null; // prise en passant
+  b[tr][tc] = (t==='P' && (tr===0||tr===7)) ? col+'Q' : piece;
+  b[fr][fc] = null;
+  if(t==='K' && Math.abs(tc-fc)===2){
+    if(tc>fc){ b[tr][5]=b[tr][7]; b[tr][7]=null; }   // petit roque
+    else     { b[tr][3]=b[tr][0]; b[tr][0]=null; }   // grand roque
+  }
+  return b;
+}
+
+// Suffixe + (échec) ou # (mat)
+function _checkSuffix(fr,fc,tr,tc,piece){
+  const col=color(piece), opp=(col==='w'?'b':'w');
+  const b=_simBoard(fr,fc,tr,tc,piece);
+  if(!isInCheck(b,opp)) return '';
+  // En échec → mat si l'adversaire n'a aucun coup légal
+  const saved=board; board=b;
+  let hasMove=false;
+  for(let r=0;r<8 && !hasMove;r++) for(let cc=0;cc<8 && !hasMove;cc++){
+    const p=board[r][cc];
+    if(p && color(p)===opp && legalMoves(r,cc).length) hasMove=true;
+  }
+  board=saved;
+  return hasMove ? '+' : '#';
+}
 
 function toSpeech(fr,fc,tr,tc,piece,captured,castleType){
   const f='abcdefgh';
