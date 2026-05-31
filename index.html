@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" data-theme="dark">
+<html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,10 +31,8 @@
   --r:14px;
 }
 
-/* THEMES */
-[data-theme="dark"]  { --bg:#0f2318; --surface:#1a3d2b; --surface2:#245c3b; }
-[data-theme="light"] { --bg:#e8f5ec; --surface:#fff;    --surface2:#f0f8f0; }
-[data-theme="psycho"]{ --bg:#000;    --surface:#0d1a0d; --surface2:#001a00; }
+/* Visuel unique (sombre) */
+:root { --bg:#0f2318; --surface:#1a3d2b; --surface2:#245c3b; }
 
 * { margin:0;padding:0;box-sizing:border-box; }
 body {
@@ -353,14 +351,6 @@ body {
   border:1px solid var(--border-gold);
 }
 .nav-right { display:flex;align-items:center;gap:8px; }
-.theme-btns { display:flex;gap:4px; }
-.theme-btn {
-  width:28px;height:28px;border-radius:50%;
-  border:2px solid rgba(255,255,255,.2);
-  cursor:pointer;font-size:.8rem;
-  transition:all .2s;display:flex;align-items:center;justify-content:center;
-}
-.theme-btn:hover { transform:scale(1.15); }
 #langBtn {
   padding:4px 11px;border-radius:50px;border:1px solid var(--border-gold);
   background:transparent;color:var(--gold-light);
@@ -707,36 +697,6 @@ input[type=range]::-webkit-slider-thumb {
 
 canvas#eloChart { width:100%!important;height:90px!important; }
 
-/* ── PSYCHEDELIC OVERRIDES ───────────────────── */
-[data-theme="psycho"] #board { animation:psycho-glow 2s ease infinite; }
-@keyframes psycho-glow{0%{box-shadow:0 0 30px #ff0080}33%{box-shadow:0 0 30px #00ff80}66%{box-shadow:0 0 30px #00ffff}100%{box-shadow:0 0 30px #ff0080}}
-[data-theme="psycho"] .card-title { animation:rainbow 2s linear infinite; }
-[data-theme="psycho"] .nav-logo    { animation:rainbow 1.5s linear infinite;-webkit-text-fill-color:unset;background:none; }
-[data-theme="psycho"] .lb-title    { animation:rainbow 1.5s linear infinite;-webkit-text-fill-color:unset;background:none; }
-[data-theme="psycho"] .my-elo-num  { animation:rainbow 1.5s linear infinite; }
-[data-theme="psycho"] .lb-elo      { animation:rainbow 1.5s linear infinite; }
-[data-theme="psycho"] .cell.dark   { background:#111; }
-[data-theme="psycho"] .cell.light  { background:#fff; }
-[data-theme="psycho"] .nav { border-image:linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f) 1;animation:rainbow-border 3s linear infinite; }
-@keyframes rainbow-border{0%{border-image-source:linear-gradient(0deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f)}100%{border-image-source:linear-gradient(360deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f)}}
-@keyframes rainbow{0%{color:#ff0080}16%{color:#ff8000}33%{color:#ffff00}50%{color:#00ff80}66%{color:#00ffff}83%{color:#8000ff}100%{color:#ff0080}}
-
-/* ── LIGHT THEME ─────────────────────────────── */
-[data-theme="light"] body  { color:var(--text-dark); }
-[data-theme="light"] .nav  { background:rgba(232,245,236,.96); }
-[data-theme="light"] .card { background:#fff;box-shadow:0 4px 16px rgba(26,61,43,.1); }
-[data-theme="light"] .turn-label { color:var(--text-dark); }
-[data-theme="light"] #status { background:rgba(26,61,43,.05); }
-[data-theme="light"] .history-move .mw { color:var(--text-dark); }
-[data-theme="light"] .board-container { background:linear-gradient(160deg,#2e7a4e,#3d9960); }
-[data-theme="light"] .lb-item  { background:#fff; }
-[data-theme="light"] .stat-card{ background:#fff; }
-[data-theme="light"] .recent-card { background:#fff; }
-[data-theme="light"] .auth-card { background:#fff; }
-[data-theme="light"] .my-elo-card { background:linear-gradient(135deg,#2e7a4e,#3d9960); }
-[data-theme="light"] .lb-name  { color:var(--text-dark); }
-[data-theme="light"] .rg-opp   { color:var(--text-dark); }
-
 /* ── TOAST ───────────────────────────────────── */
 #toast { position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:11px 24px;border-radius:50px;font-family:'Nunito',sans-serif;font-weight:700;font-size:.78rem;z-index:999;transition:opacity .4s;background:var(--green-dark);border:1px solid var(--gold);color:var(--cream);white-space:nowrap;pointer-events:none;opacity:0;box-shadow:0 10px 30px rgba(0,0,0,.4); }
 
@@ -842,12 +802,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     <button class="nav-tab" onclick="showPage('leaderboard')">🏆 Classement</button>
   </div>
   <div class="nav-right">
-    <div class="theme-btns">
-      <button class="theme-btn" id="btn-dark"   onclick="setTheme('dark')"   style="background:#0f2318;" title="Sombre">🌙</button>
-      <button class="theme-btn" id="btn-light"  onclick="setTheme('light')"  style="background:#e8f5ec;" title="Clair">☀️</button>
-      <button class="theme-btn" id="btn-psycho" onclick="setTheme('psycho')" style="background:linear-gradient(135deg,#f00,#0f0,#00f);" title="Psychédélique">🌈</button>
-    </div>
-    <button id="langBtn" onclick="toggleLang()">🇫🇷 FR</button>
+        <button id="langBtn" onclick="toggleLang()">🇫🇷 FR</button>
     <div class="nav-user" onclick="showProfile()">
       <div class="nav-avatar" id="navAvatar">?</div>
       <div class="nav-username" id="navUsername">Invité</div>
@@ -1096,19 +1051,33 @@ function applyBoardTheme(){
   const t = getBoardTheme();
   const el = document.getElementById('board');
   if(!el) return;
+  const lights = document.querySelectorAll('#board .cell.light');
+  const darks  = document.querySelectorAll('#board .cell.dark');
   if(t.type==='css'){
     el.style.backgroundImage = 'none';
-    document.querySelectorAll('#board .cell.light').forEach(c=>{c.style.background=t.light;c.style.backgroundImage='none';});
-    document.querySelectorAll('#board .cell.dark').forEach(c=>{c.style.background=t.dark;c.style.backgroundImage='none';});
+    lights.forEach(c=>{c.style.background=t.light;c.style.backgroundImage='none';});
+    darks.forEach(c=>{c.style.background=t.dark;c.style.backgroundImage='none';});
   } else {
-    // Texture image : appliquée sur tout le board, cases transparentes
+    // Couleurs bois de SECOURS d'abord → le board n'est JAMAIS vide
+    el.style.backgroundImage = 'none';
+    lights.forEach(c=>{c.style.background='#e8c89a';c.style.backgroundImage='none';});
+    darks.forEach(c=>{c.style.background='#9c6b3f';c.style.backgroundImage='none';});
+    // Puis on tente la texture ; on ne l'applique QUE si elle charge vraiment
     const url = BOARD_CDN + t.id + '.jpg';
-    el.style.backgroundImage = 'url('+url+')';
-    el.style.backgroundSize = '100% 100%';
-    document.querySelectorAll('#board .cell.light').forEach(c=>{c.style.background='transparent';});
-    document.querySelectorAll('#board .cell.dark').forEach(c=>{c.style.background='rgba(0,0,0,0.18)';});
+    const probe = new Image();
+    probe.onload = ()=>{
+      // Vérifie que le thème n'a pas changé entre-temps
+      if(getBoardTheme().id !== t.id) return;
+      el.style.backgroundImage = 'url('+url+')';
+      el.style.backgroundSize = '100% 100%';
+      document.querySelectorAll('#board .cell.light').forEach(c=>{c.style.background='transparent';});
+      document.querySelectorAll('#board .cell.dark').forEach(c=>{c.style.background='rgba(0,0,0,0.18)';});
+    };
+    probe.onerror = ()=>{ /* garde les couleurs bois de secours */ };
+    probe.src = url;
   }
 }
+
 
 function setBoardTheme(id){
   boardTheme = id;
@@ -3270,34 +3239,9 @@ function resetGame(){
 
 // ===== INIT =====
 
-// ===== THEME SYSTEM =====
-let currentTheme = 'dark';
 
-function setTheme(theme) {
-  currentTheme = theme;
-  document.documentElement.setAttribute('data-theme', theme);
-  // Update button borders to show active
-  ['dark','light','psycho'].forEach(t => {
-    const btn = document.getElementById('btn-'+t);
-    if (btn) btn.style.border = t === theme ? '2px solid #fff' : '2px solid rgba(255,255,255,.2)';
-  });
-  // Save preference
-  try { localStorage.setItem('dysc_theme', theme); } catch(e){}
-  // Notify
-  const labels = {dark:'🌙 Mode Sombre', light:'☀️ Mode Clair', psycho:'🌈 Mode Psychédélique !'};
-  showToast(labels[theme], 'success');
-}
-
-function loadTheme() {
-  try {
-    const saved = localStorage.getItem('dysc_theme') || 'dark';
-    setTheme(saved);
-  } catch(e) { setTheme('dark'); }
-}
-
-
-initBoard(); renderBoard(); updateSidebar(); initStockfish(); updateEloUI(); applyLang(); loadTheme();
-// Reconnaissance vocale démarrée manuellement via le bouton
+initBoard(); renderBoard();
+try{ onSplashEloSlide(document.getElementById('splashEloSlider')?.value || 800); }catch(e){} updateSidebar(); initStockfish(); updateEloUI(); applyLang(); // Reconnaissance vocale démarrée manuellement via le bouton
 const hasProfile = loadProfile();
 if (!hasProfile) { setTimeout(showProfile, 600); }
 initFirebase();
