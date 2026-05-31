@@ -147,15 +147,30 @@ body {
   font-family:'Nunito',sans-serif;font-weight:700;color:var(--text-muted);font-size:.85rem;
 }
 .splash-diff input[type=range]{
-  width:100%;
-  background:linear-gradient(to right,var(--gold) var(--pct,20%),rgba(255,255,255,.1) var(--pct,20%));
-  touch-action:none;            /* capte le glissement horizontal */
-  -webkit-appearance:none;height:6px;border-radius:3px;outline:none;cursor:pointer;
+  width:100%;height:30px;            /* cible tactile haute */
+  -webkit-appearance:none;background:transparent;outline:none;cursor:pointer;
+  touch-action:none;
+}
+/* Piste fine visible (WebKit) */
+.splash-diff input[type=range]::-webkit-slider-runnable-track{
+  height:6px;border-radius:3px;
+  background:linear-gradient(to right,var(--gold) var(--pct,20%),rgba(255,255,255,.15) var(--pct,20%));
 }
 .splash-diff input[type=range]::-webkit-slider-thumb{
-  -webkit-appearance:none;width:22px;height:22px;border-radius:50%;
+  -webkit-appearance:none;width:24px;height:24px;border-radius:50%;margin-top:-9px;
   background:radial-gradient(circle at 35% 35%,var(--gold-light),var(--gold-dark));
   border:3px solid var(--cream);box-shadow:0 2px 8px rgba(0,0,0,.4);cursor:pointer;
+}
+/* Piste fine visible (Firefox) */
+.splash-diff input[type=range]::-moz-range-track{
+  height:6px;border-radius:3px;background:rgba(255,255,255,.15);
+}
+.splash-diff input[type=range]::-moz-range-progress{
+  height:6px;border-radius:3px;background:var(--gold);
+}
+.splash-diff input[type=range]::-moz-range-thumb{
+  width:24px;height:24px;border-radius:50%;border:3px solid var(--cream);
+  background:radial-gradient(circle at 35% 35%,var(--gold-light),var(--gold-dark));cursor:pointer;
 }
 .splash-diff-presets {
   display:flex;gap:6px;
@@ -685,8 +700,8 @@ canvas#eloChart { width:100%!important;height:90px!important; }
       <span style="font-size:.7rem;color:#888;">ELO</span>
     </div>
     <input type="range" id="splashEloSlider" min="400" max="3000" step="50" value="800"
-      oninput="onSplashEloSlide(this.value)"
-      style="width:100%;max-width:280px;">
+      oninput="onSplashEloSlide(this.value)" onchange="onSplashEloSlide(this.value)"
+      style="width:100%;max-width:280px;touch-action:none;position:relative;z-index:10;height:30px;">
     <div class="splash-diff-presets">
       <button onclick="setSplashElo(400)">400</button>
       <button onclick="setSplashElo(800)">800</button>
@@ -704,14 +719,6 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieceset">
     <div class="splash-pieceset-title">▦ Style de l'échiquier</div>
     <div class="pieceset-grid" id="boardThemeGrid"></div>
-  </div>
-  <!-- Sélecteur de voix -->
-  <div class="splash-pieceset">
-    <div class="splash-pieceset-title">🔊 Voix de l'IA</div>
-    <div class="voice-row">
-      <select id="voiceSelect" class="voice-select" onchange="setVoice(this.value)"></select>
-      <button class="voice-test" onclick="testVoice()">▶ Tester</button>
-    </div>
   </div>
   <div class="splash-btns">
     <button class="splash-btn splash-white" onclick="splashChooseColor('w')">♙ Blancs</button>
@@ -1191,6 +1198,34 @@ function setSplashElo(elo) {
   onSplashEloSlide(elo);
 }
 
+// Gestionnaire tactile explicite : calcule l'ELO depuis la position du doigt
+function attachSliderTouch(){
+  const sl = document.getElementById('splashEloSlider');
+  if(!sl) return;
+  const MIN = 400, MAX = 3000, STEP = 50;
+  function valueFromTouch(clientX){
+    const rect = sl.getBoundingClientRect();
+    let ratio = (clientX - rect.left) / rect.width;
+    ratio = Math.max(0, Math.min(1, ratio));
+    let val = MIN + ratio * (MAX - MIN);
+    val = Math.round(val / STEP) * STEP;
+    return val;
+  }
+  function handle(e){
+    const t = (e.touches && e.touches[0]) ? e.touches[0] : e;
+    if(t.clientX === undefined) return;
+    const val = valueFromTouch(t.clientX);
+    sl.value = val;
+    onSplashEloSlide(val);
+    e.preventDefault();
+  }
+  sl.addEventListener('touchstart', handle, {passive:false});
+  sl.addEventListener('touchmove', handle, {passive:false});
+  // Souris (desktop) : laisser le natif + pointermove pendant clic enfoncé
+  sl.addEventListener('pointerdown', (e)=>{ if(e.pointerType!=='touch'){ handle(e); sl.setPointerCapture(e.pointerId); } });
+  sl.addEventListener('pointermove', (e)=>{ if(e.pointerType!=='touch' && e.buttons===1){ handle(e); } });
+}
+
 function goHome(){
   const enCours = (typeof history !== 'undefined' && history.length > 0);
   if(enCours){
@@ -1304,7 +1339,7 @@ buildSplash();
 buildCoords();
 buildPieceSetSelector();
 buildBoardThemeSelector();
-if(typeof loadVoices==='function') loadVoices();
+if(typeof attachSliderTouch==='function') attachSliderTouch();
 
 // ===== USER PROFILE & STATS =====
 const AVATARS = ['🦁','🐯','🦊','🐺','🦅','🐉','👑','⚡','🔥','🌙'];
