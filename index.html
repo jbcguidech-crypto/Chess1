@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Do You Speak Chess?</title>
+<meta name="description" content="Jouez aux échecs à la voix, en français. Annoncez vos coups, l'IA répond.">
+<meta name="theme-color" content="#16181D">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DYSC">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 /* ============================================================
@@ -1417,6 +1425,7 @@ function showSplash(){
   listening = false;
   aiSpeaking = false;
   aiThinking = false;
+  gameActive = false;            // plus aucune partie active → aucun coup/voix possible
   speechEpoch++;                 // invalide toute parole déjà programmée (délai de 200ms)
   aiGen++;                       // invalide tout coup d'IA en cours de calcul
   try{ if(recognition) recognition.abort(); }catch(e){}
@@ -1482,6 +1491,7 @@ function splashChooseColor(color) {
     document.getElementById('btnWhite')?.classList.toggle('active', color==='w');
     document.getElementById('btnBlack')?.classList.toggle('active', color==='b');
     document.getElementById('btnRandom')?.classList.remove('active');
+    resetGame();          // ← NOUVELLE partie à chaque fois (plus de reprise de l'ancienne)
     buildCoords();
     renderBoard();
     if(gameMode==='ai' && color==='b') setTimeout(()=>askStockfish(), 700);
@@ -2209,6 +2219,7 @@ function askStockfish(){
 }
 
 function applyStockfishMove(uciMove){
+  if(!gameActive){ aiThinking=false; return; } // partie abandonnée → on n'applique pas
   if(aiReqGen !== aiGen){ aiThinking=false; return; } // annulé entre-temps → on n'applique pas
   const files={a:0,b:1,c:2,d:3,e:4,f:5,g:6,h:7};
   const fc=files[uciMove[0]],fr=8-parseInt(uciMove[1]),tc=files[uciMove[2]],tr=8-parseInt(uciMove[3]);
@@ -2266,6 +2277,7 @@ let moveJustPlayed=false;
 let listening=false,recognition=null;
 let aiSpeaking=false; // vrai pendant que l'IA parle (pour autoriser "annuler" sans déclencher de coup)
 let speechEpoch=0; // incrémenté pour invalider toute parole programmée (ex: retour au menu)
+let gameActive=false; // vrai uniquement pendant une partie en cours (aucun coup/voix sur le splash)
 let gameStartElo=1200;
 
 function initBoard(){board=Array(8).fill(null).map(()=>Array(8).fill(null));const br=['R','N','B','Q','K','B','N','R'];for(let c=0;c<8;c++){board[0][c]='b'+br[c];board[1][c]='bP';board[6][c]='wP';board[7][c]='w'+br[c];}}
@@ -2366,6 +2378,7 @@ function undoMove(){
 }
 
 function makeMove(fr,fc,tr,tc,castleType){
+  if(!gameActive) return; // aucun coup hors d'une partie en cours
   // Instantané AVANT modification (pour annuler)
   undoStack.push({
     board: board.map(row=>row.slice()),
@@ -3215,6 +3228,7 @@ function testVoice(){
 
 function speak(text, onEnd){
   if(!window.speechSynthesis || !text) return;
+  if(!gameActive){ if(onEnd) setTimeout(onEnd,50); return; } // pas de voix hors partie (ex: splash)
   if(!userInteracted){
     pendingSpeech = text;
     if(onEnd) setTimeout(onEnd, 1500);
@@ -3370,7 +3384,11 @@ function resetGame(){
   document.getElementById('gameOver').classList.remove('show');
   document.getElementById('aiSpinner').classList.remove('show');
   gameStartElo=userProfile.elo;
-  initBoard();turn='w';selected=null;possibleMoves=[];history=[];moveHistoryUCI=[];undoStack=[];aiGen++;
+  initBoard();turn='w';selected=null;possibleMoves=[];history=[];moveHistoryUCI=[];undoStack=[];
+  aiGen++; speechEpoch++; aiThinking=false; aiSpeaking=false; pendingSpeech=null;
+  try{ if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e){}
+  try{ if(stockfish) stockfish.postMessage('stop'); }catch(e){}
+  gameActive=true;
   lastMove=null;enPassant=null;aiThinking=false;
   castling={wK:true,wR_k:true,wR_q:true,bK:true,bR_k:true,bR_q:true};
   renderBoard();updateSidebar();
@@ -3392,5 +3410,16 @@ try{ updateColorButtons(); }catch(e){} // Reconnaissance vocale démarrée manue
 const hasProfile = loadProfile();
 if (!hasProfile) { setTimeout(showProfile, 600); }
 initFirebase();
+</script>
+<script>
+/* Enregistrement du Service Worker (PWA hors-ligne) */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    // Chemin du SW relatif au dossier courant (robuste sur GitHub Pages /Chess1/)
+    var base = location.pathname.replace(/[^/]*$/, '');
+    navigator.serviceWorker.register(base + 'sw.js', { scope: base })
+      .catch(function(){ /* hors-ligne ou non supporté */ });
+  });
+}
 </script>
 </body></html>
