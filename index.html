@@ -1425,42 +1425,62 @@ let stockfish=null, sfDepth=10, gameMode='ai', aiThinking=false;
 let sfReady = false;
 
 function initStockfish(){
-  // Moteurs fiables sans en-têtes spéciaux (single-thread asm.js/wasm)
-  const URLS = [
-    'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js',
-    'https://unpkg.com/stockfish@10.0.2/stockfish.js',
-    'https://cdn.jsdelivr.net/npm/stockfish.js@10.0.2/stockfish.js',
-  ];
   sfReady = false;
+  const dbg = document.getElementById('debugVoice');
+  if(dbg){ dbg.style.display='block'; dbg.textContent='⏳ Chargement du moteur IA…'; }
 
-  function tryLoad(i){
-    if(i >= URLS.length){
-      console.warn('Stockfish indisponible — IA de secours activée');
+  // Détecte si les en-têtes COOP/COEP sont présents (cross-origin isolation)
+  // Si oui → Stockfish 16 NNUE multi-thread (très fort)
+  // Sinon → version single-thread / asm.js de secours
+  const isolated = (typeof crossOriginIsolated !== 'undefined') && crossOriginIsolated;
+  console.log('crossOriginIsolated:', isolated);
+
+  // Moteurs à essayer dans l'ordre
+  const ENGINES = isolated ? [
+    // Versions fortes NNUE (nécessitent COOP/COEP — OK sur Vercel)
+    {url:'https://cdn.jsdelivr.net/npm/stockfish.wasm@0.10.0/stockfish.js', wasm:true, name:'SF NNUE'},
+    {url:'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js', wasm:false, name:'SF10'},
+  ] : [
+    // Versions portables (sans en-têtes)
+    {url:'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js', wasm:false, name:'SF10 asm'},
+    {url:'https://cdn.jsdelivr.net/npm/stockfish@10.0.2/stockfish.js', wasm:false, name:'SF10 jsdelivr'},
+    {url:'https://unpkg.com/stockfish@10.0.2/stockfish.js', wasm:false, name:'SF10 unpkg'},
+  ];
+
+  async function tryLoad(i){
+    if(i >= ENGINES.length){
       stockfish = null;
-      const dbg = document.getElementById('debugVoice');
-      if(dbg){ dbg.style.display='block'; dbg.textContent='⚠️ Moteur IA non chargé (mode secours)'; }
+      if(dbg) dbg.textContent='⚠️ Moteur IA non chargé (coups de secours)';
       return;
     }
-    let loaded = false;
+    const eng = ENGINES[i];
     try{
-      const sf = new Worker(URLS[i]);
-      // Timeout : si pas de uciok en 5s → essaie le suivant
-      const checkTimer = setTimeout(()=>{
-        if(!loaded){ try{ sf.terminate(); }catch(e){} tryLoad(i+1); }
-      }, 5000);
+      let worker;
+      if(eng.wasm && isolated){
+        // WASM avec en-têtes → chargement direct (le worker trouve son .wasm)
+        try{ worker = new Worker(eng.url); }
+        catch(e){ tryLoad(i+1); return; }
+      } else {
+        // asm.js autonome → blob URL (contourne le blocage cross-origin)
+        const resp = await fetch(eng.url);
+        if(!resp.ok){ tryLoad(i+1); return; }
+        const code = await resp.text();
+        const blob = new Blob([code], { type:'application/javascript' });
+        worker = new Worker(URL.createObjectURL(blob));
+      }
 
-      sf.onerror = ()=>{ clearTimeout(checkTimer); try{ sf.terminate(); }catch(e){} tryLoad(i+1); };
+      let loaded = false;
+      const timer = setTimeout(()=>{ if(!loaded){ try{ worker.terminate(); }catch(e){} tryLoad(i+1); } }, 8000);
 
-      sf.onmessage = (e)=>{
-        const line = typeof e.data==='string' ? e.data : '';
-        if(line.includes('uciok') || line.includes('readyok')){
-          if(!loaded){
-            loaded = true;
-            sfReady = true;
-            clearTimeout(checkTimer);
-            stockfish = sf;
-            console.log('✅ Stockfish chargé:', URLS[i]);
-          }
+      worker.onerror = ()=>{ clearTimeout(timer); try{ worker.terminate(); }catch(e){} if(!loaded) tryLoad(i+1); };
+
+      worker.onmessage = (e)=>{
+        const line = typeof e.data==='string' ? e.data : (e.data && e.data.data) || '';
+        if(!loaded && (line.includes('uciok') || line.includes('Stockfish'))){
+          loaded = true; sfReady = true; clearTimeout(timer);
+          stockfish = worker;
+          console.log('✅ Moteur chargé:', eng.name);
+          if(dbg) dbg.textContent='✅ Moteur IA prêt ('+eng.name+(isolated?' fort':'')+')';
         }
         if(line.startsWith('bestmove')){
           const mv = line.split(' ')[1];
@@ -1470,10 +1490,9 @@ function initStockfish(){
           document.getElementById('voiceBtn').disabled = false;
         }
       };
-
-      sf.postMessage('uci');
-      sf.postMessage('isready');
-    }catch(e){ tryLoad(i+1); }
+      worker.postMessage('uci');
+      worker.postMessage('isready');
+    }catch(e){ console.warn('Erreur', eng.name, e); tryLoad(i+1); }
   }
   tryLoad(0);
 }
@@ -1534,7 +1553,7 @@ function askStockfish(){
     dbg.style.display='block';
     dbg.textContent='🤖 ELO '+currentElo+' · profondeur '+sfDepth+' · skill '+skill+' · '+moveTime+'ms';
   }
-  // Timeout de sécurité: si pas de réponse en 15s, reset
+  // Timeout de sécurité: si pas de réponse en 25s, reset
   setTimeout(()=>{
     if(aiThinking){
       aiThinking=false;
@@ -2191,18 +2210,18 @@ function updateEloUI(){
   sfDepth=eloToDepth(currentElo);
 }
 function eloToTime(elo){
-  // Temps de réflexion en ms selon ELO
-  if(elo <= 400)  return 50;
-  if(elo <= 600)  return 100;
-  if(elo <= 800)  return 200;
-  if(elo <= 1000) return 400;
-  if(elo <= 1200) return 700;
-  if(elo <= 1500) return 1200;
-  if(elo <= 1800) return 2000;
-  if(elo <= 2000) return 3000;
-  if(elo <= 2200) return 5000;
-  if(elo <= 2500) return 8000;
-  return 15000; // Max 😈
+  // asm.js plus lent → temps généreux pour un vrai niveau
+  if(elo <= 400)  return 100;
+  if(elo <= 600)  return 200;
+  if(elo <= 800)  return 400;
+  if(elo <= 1000) return 700;
+  if(elo <= 1200) return 1200;
+  if(elo <= 1500) return 2000;
+  if(elo <= 1800) return 3500;
+  if(elo <= 2000) return 5000;
+  if(elo <= 2200) return 7000;
+  if(elo <= 2500) return 10000;
+  return 18000; // Mode Magnus 😈 — 18 secondes de réflexion
 }
 
 function configureStockfishStrength(){
