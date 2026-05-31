@@ -901,6 +901,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     </div>
 
     <div style="display:flex;gap:8px;">
+    <button id="undoBtn" onclick="undoMove()" style="flex:1;">↩ Annuler</button>
     <button id="resetBtn" onclick="resetGame()" style="flex:1;">↺ Nouvelle partie</button>
     <button onclick="toggleModeCard()" style="padding:10px 14px;border-radius:50px;border:1px solid var(--border-gold);background:transparent;color:var(--gold-light);font-size:.8rem;cursor:pointer;" title="Paramètres">⚙️</button>
   </div>
@@ -2244,6 +2245,7 @@ function boardToFen(){
 const PIECES={wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'};
 let board=[],turn='w',selected=null,possibleMoves=[],history=[],lastMove=null,enPassant=null;
 let castling={wK:true,wR_k:true,wR_q:true,bK:true,bR_k:true,bR_q:true};
+let undoStack=[]; // instantanés pour annuler
 let moveJustPlayed=false;
 let listening=false,recognition=null;
 let gameStartElo=1200;
@@ -2278,7 +2280,41 @@ function legalMoves(r,c){
 
 function updateCastlingRights(fr,fc,piece){if(type(piece)==='K'){if(piece==='wK'){castling.wK=false;castling.wR_k=false;castling.wR_q=false;}else{castling.bK=false;castling.bR_k=false;castling.bR_q=false;}}if(piece==='wR'){if(fr===7&&fc===7)castling.wR_k=false;if(fr===7&&fc===0)castling.wR_q=false;}if(piece==='bR'){if(fr===0&&fc===7)castling.bR_k=false;if(fr===0&&fc===0)castling.bR_q=false;}}
 
+function undoMove(){
+  if(aiThinking){ setStatus(currentLang==='fr'?'Patientez, l\'IA réfléchit…':'Wait, AI is thinking…','error'); return; }
+  if(!undoStack.length){ setStatus(currentLang==='fr'?'Aucun coup à annuler':'No move to undo','error'); return; }
+  const restore = (snap)=>{
+    board = snap.board.map(r=>r.slice());
+    turn = snap.turn;
+    enPassant = snap.enPassant ? snap.enPassant.slice() : null;
+    lastMove = snap.lastMove ? snap.lastMove.slice() : null;
+    castling = Object.assign({}, snap.castling);
+    history.length = snap.histLen;
+    moveHistoryUCI.length = snap.uciLen;
+  };
+  // Défait au moins un coup ; en mode IA, on revient jusqu'au trait du joueur
+  restore(undoStack.pop());
+  while(gameMode==='ai' && turn!==playerColor && undoStack.length){
+    restore(undoStack.pop());
+  }
+  selected=null; possibleMoves=[]; aiThinking=false;
+  const go=document.getElementById('gameOver'); if(go) go.classList.remove('show');
+  const sp=document.getElementById('aiSpinner'); if(sp) sp.classList.remove('show');
+  renderBoard(); updateSidebar();
+  setStatus(currentLang==='fr'?'↩ Coup annulé':'↩ Move undone','success');
+}
+
 function makeMove(fr,fc,tr,tc,castleType){
+  // Instantané AVANT modification (pour annuler)
+  undoStack.push({
+    board: board.map(row=>row.slice()),
+    turn,
+    enPassant: enPassant ? enPassant.slice() : null,
+    lastMove: lastMove ? lastMove.slice() : null,
+    castling: Object.assign({}, castling),
+    histLen: history.length,
+    uciLen: moveHistoryUCI.length
+  });
   const piece=board[fr][fc],captured=board[tr][tc],moveStr=toAlg(fr,fc,tr,tc,piece,captured);
   updateCastlingRights(fr,fc,piece);enPassant=null;
   if(type(piece)==='P'&&Math.abs(tr-fr)===2)enPassant=[(fr+tr)/2,fc];
@@ -2858,10 +2894,10 @@ function parseVoiceToAction(text){
   // 1) Strict sur le texte CORRIGÉ phonétiquement (canonise les noms de pièce : caval→cavalier…)
   const phon = phoneticNormalize(text);
   let act = _parseStrict(phon);
-  if(act.kind==='move' || act.kind==='castle' || act.kind==='reset') return act;
+  if(act.kind==='move' || act.kind==='castle' || act.kind==='reset' || act.kind==='undo') return act;
   // 2) Strict sur le texte brut (au cas où la normalisation aurait trop simplifié)
   const actRaw = _parseStrict(text);
-  if(actRaw.kind==='move' || actRaw.kind==='castle' || actRaw.kind==='reset') return actRaw;
+  if(actRaw.kind==='move' || actRaw.kind==='castle' || actRaw.kind==='reset' || actRaw.kind==='undo') return actRaw;
   if(act.kind==='none' && actRaw.kind!=='none') act = actRaw;
   // 3) Appariement flou contre les coups légaux (adjacence + nom de pièce)
   const fz = fuzzyMatchMove(text);
@@ -2873,6 +2909,11 @@ function _parseStrict(text){
   // PARSEUR PUR — renvoie une action sans aucun effet de bord (pour tester en silence)
   if(!text) return {kind:'none'};
   if(text.includes(L().new_game)||text.includes(L().resign)) return {kind:'reset'};
+  // Annulation du dernier coup
+  {
+    const _u = ' '+text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')+' ';
+    if(/\b(annule|annuler|annulation|retour arriere|reviens|retour|undo|defaire|defait|reprendre|reprends)\b/.test(_u)) return {kind:'undo'};
+  }
   const _cs = detectCastle(text);
   if(_cs) return {kind:'castle', side:_cs};
 
@@ -2986,6 +3027,7 @@ function executeVoiceAction(act, verbose){
   if(!act) return false;
   switch(act.kind){
     case 'reset': resetGame(); return true;
+    case 'undo': undoMove(); return true;
     case 'castle': trycastling(act.side); return true;
     case 'move':
       if(verbose) setStatus((currentLang==='fr'?'✓ Joué en ':'✓ Played to ')+String.fromCharCode(97+act.tc)+(8-act.tr),'success');
@@ -3247,7 +3289,7 @@ function resetGame(){
   document.getElementById('gameOver').classList.remove('show');
   document.getElementById('aiSpinner').classList.remove('show');
   gameStartElo=userProfile.elo;
-  initBoard();turn='w';selected=null;possibleMoves=[];history=[];moveHistoryUCI=[];
+  initBoard();turn='w';selected=null;possibleMoves=[];history=[];moveHistoryUCI=[];undoStack=[];
   lastMove=null;enPassant=null;aiThinking=false;
   castling={wK:true,wR_k:true,wR_q:true,bK:true,bR_k:true,bR_q:true};
   renderBoard();updateSidebar();
