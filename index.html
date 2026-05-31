@@ -3357,6 +3357,7 @@ function setPlayerColor(color){
   document.getElementById('btnRandom').textContent='🎲 Aléa';
   resetGame();
   if(gameMode==='ai' && color==='b') setTimeout(()=>askStockfish(), 500);
+  enableMicAuto();   // ← active le micro (démarre tout de suite si blanc, après le coup IA si noir)
 }
 
 function toggleModeCard(){
