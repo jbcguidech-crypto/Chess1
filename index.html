@@ -407,7 +407,7 @@ body {
 }
 .board-mid { display:flex;align-items:stretch; }
 .coord-col { display:flex;flex-direction:column;width:20px;flex-shrink:0; }
-.coords-bottom { display:flex;padding-left:20px;margin-top:4px;width:100%; }
+.coords-bottom { display:flex;margin-top:4px;width:100%; }
 .coord-letter { flex:1;text-align:center;font-size:11px;font-weight:800;color:#f0c040;text-shadow:0 1px 3px rgba(0,0,0,.9);min-width:0; }
 .board-mid { display:flex; }
 .coord-col { display:flex;flex-direction:column;padding-right:4px; }
@@ -2288,19 +2288,21 @@ function applyStockfishMove(uciMove){
   aiThinking=false;
   document.getElementById('aiSpinner').classList.remove('show');
   document.getElementById('voiceBtn').disabled=false;
-  checkGameState();
+  const st=checkGameState();
   const spokenMove = toSpeech(fr,fc,tr,tc,piece,captured,null);
   if(history.length){ history[history.length-1].spoken = spokenMove; history[history.length-1].from=[fr,fc]; history[history.length-1].ptype=type(piece); }
   const aiColor = playerColor==='w' ? 'b' : 'w';
   const aiColorName = currentLang==='fr'
     ? (aiColor==='w' ? 'Les blancs jouent' : 'Les noirs jouent')
     : (aiColor==='w' ? 'White plays' : 'Black plays');
-  const aiMsg = aiColorName+' '+spokenMove;
+  let aiMsg = aiColorName+' '+spokenMove;
+  if(st.check && !st.over) aiMsg += (currentLang==='fr'?', échec':', check');  // coup PUIS échec
   setStatus('🔊 '+aiMsg,'ai');
-  // Parle le coup IA, reprend l'écoute QUAND la voix est finie
-  speak(aiMsg, ()=>{
-    if(voiceContinuous && !listening) startListening();
-  });
+  if(st.over){
+    speak(aiMsg, ()=>{ if(st.msg) speak(st.msg); });   // coup IA PUIS message de fin
+  } else {
+    speak(aiMsg, ()=>{ if(voiceContinuous && !listening) startListening(); });
+  }
 }
 
 function boardToFen(){
@@ -2458,12 +2460,17 @@ function makeMove(fr,fc,tr,tc,castleType,promo){
   if(type(piece)==='P' || captured) halfmoveClock=0; else halfmoveClock++;
   positionHistory.push(posKey());
   renderBoard();updateSidebar();
-  const over=checkGameState();
-  if(!over && gameMode==='ai' && turn!==playerColor){
-    // Annonce le coup humain, PUIS l'IA joue quand la voix est finie
-    speak(humanSpoken, ()=>askStockfish());
+  const st=checkGameState();
+  // Annonce : le coup D'ABORD, puis « échec » si échec simple
+  let say = humanSpoken;
+  if(st.check && !st.over) say = (humanSpoken||'') + (currentLang==='fr'?', échec':', check');
+  if(st.over){
+    if(say) speak(say, ()=>{ if(st.msg) speak(st.msg); });   // coup PUIS message de fin
+    else if(st.msg) speak(st.msg);
+  } else if(gameMode==='ai' && turn!==playerColor){
+    speak(say, ()=>askStockfish());                          // coup (+échec) PUIS l'IA joue
   } else {
-    if(humanSpoken) speak(humanSpoken);
+    if(say) speak(say);
   }
 }
 
@@ -2606,7 +2613,7 @@ function checkGameState(){
     document.getElementById('gameOverText').textContent=msg;
     document.getElementById('gameOver').classList.add('show');
     if(result===1||inCk)spawnStars();
-    speak(msg);return true;
+    return {over:true, check:inCk, msg:msg};
   }
   // Nulles : matériel insuffisant / règle des 50 coups / triple répétition
   let drawMsg=null;
@@ -2617,10 +2624,9 @@ function checkGameState(){
     if(gameMode==='ai'){ const delta=recordGameResult(0.5,currentElo); drawMsg+='\n'+(delta>0?'+'+delta:delta)+' Elo → '+userProfile.elo; }
     document.getElementById('gameOverText').textContent=drawMsg;
     document.getElementById('gameOver').classList.add('show');
-    speak(drawMsg); return true;
+    return {over:true, check:false, msg:drawMsg};
   }
-  if(isInCheck(board,opp))speak(L().check);
-  return false;
+  return {over:false, check:isInCheck(board,opp), msg:null};
 }
 
 
