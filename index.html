@@ -1510,7 +1510,6 @@ buildSplash();
 buildCoords();
 buildPieceSetSelector();
 buildBoardThemeSelector();
-if(typeof updateColorButtons==='function') updateColorButtons();
 if(typeof attachSliderTouch==='function') attachSliderTouch();
 
 // ===== USER PROFILE & STATS =====
@@ -3241,7 +3240,8 @@ function resetGame(){
 
 
 initBoard(); renderBoard();
-try{ onSplashEloSlide(document.getElementById('splashEloSlider')?.value || 800); }catch(e){} updateSidebar(); initStockfish(); updateEloUI(); applyLang(); // Reconnaissance vocale démarrée manuellement via le bouton
+try{ onSplashEloSlide(document.getElementById('splashEloSlider')?.value || 800); }catch(e){} updateSidebar(); initStockfish(); updateEloUI(); applyLang();
+try{ updateColorButtons(); }catch(e){} // Reconnaissance vocale démarrée manuellement via le bouton
 const hasProfile = loadProfile();
 if (!hasProfile) { setTimeout(showProfile, 600); }
 initFirebase();
