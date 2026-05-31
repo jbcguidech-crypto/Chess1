@@ -2223,7 +2223,7 @@ function applyStockfishMove(uciMove){
   document.getElementById('voiceBtn').disabled=false;
   checkGameState();
   const spokenMove = toSpeech(fr,fc,tr,tc,piece,captured,null);
-  if(history.length){ history[history.length-1].spoken = spokenMove; history[history.length-1].mover = (turn==='w'?'b':'w'); }
+  if(history.length){ history[history.length-1].spoken = spokenMove; history[history.length-1].from=[fr,fc]; history[history.length-1].ptype=type(piece); }
   const aiColor = playerColor==='w' ? 'b' : 'w';
   const aiColorName = currentLang==='fr'
     ? (aiColor==='w' ? 'Les blancs jouent' : 'Les noirs jouent')
@@ -2255,6 +2255,7 @@ let undoStack=[]; // instantanés pour annuler
 let aiGen=0, aiReqGen=-1; // génération : invalide un coup d'IA si on annule entre-temps
 let moveJustPlayed=false;
 let listening=false,recognition=null;
+let aiSpeaking=false; // vrai pendant que l'IA parle (pour autoriser "annuler" sans déclencher de coup)
 let gameStartElo=1200;
 
 function initBoard(){board=Array(8).fill(null).map(()=>Array(8).fill(null));const br=['R','N','B','Q','K','B','N','R'];for(let c=0;c<8;c++){board[0][c]='b'+br[c];board[1][c]='bP';board[6][c]='wP';board[7][c]='w'+br[c];}}
@@ -2304,6 +2305,7 @@ function undoMove(){
     history.length = snap.histLen;
     moveHistoryUCI.length = snap.uciLen;
   };
+  const histBefore = history.slice(); // copie avant troncature (pour décrire le coup annulé)
   // Défait au moins un coup ; en mode IA, on revient jusqu'au trait du joueur
   restore(undoStack.pop());
   while(gameMode==='ai' && turn!==playerColor && undoStack.length){
@@ -2313,21 +2315,44 @@ function undoMove(){
   const go=document.getElementById('gameOver'); if(go) go.classList.remove('show');
   const sp=document.getElementById('aiSpinner'); if(sp) sp.classList.remove('show');
   const vb=document.getElementById('voiceBtn'); if(vb) vb.disabled=false;
+  const endLen = history.length;
+  const undone = histBefore.slice(endLen); // coups annulés (du + ancien au + récent)
   renderBoard(); updateSidebar();
-  // Rappelle le dernier coup encore sur le plateau (souvent celui de l'IA)
+
+  // Clause 1 : la pièce annulée retourne à sa case d'origine
+  const PN = currentLang==='fr'
+    ? {K:'le roi',Q:'la dame',R:'la tour',B:'le fou',N:'le cavalier',P:'le pion'}
+    : {K:'the king',Q:'the queen',R:'the rook',B:'the bishop',N:'the knight',P:'the pawn'};
+  // On privilégie le coup du JOUEUR parmi les coups annulés ; sinon le plus récent
+  const mine = undone.filter(h=>h.color===playerColor);
+  const ref = mine.length ? mine[mine.length-1] : (undone.length ? undone[undone.length-1] : null);
+  let backClause = '';
+  if(ref && ref.from && ref.ptype){
+    const origin = String.fromCharCode(97+ref.from[1])+(8-ref.from[0]);
+    backClause = (PN[ref.ptype]||'') + (currentLang==='fr' ? ' retourne en ' : ' returns to ') + origin;
+  }
+
+  // Clause 2 : rappel du dernier coup encore sur le plateau (souvent celui de l'IA)
   const last = history.length ? history[history.length-1] : null;
+  let reminder = '';
   if(last && last.spoken){
     const cName = currentLang==='fr'
-      ? (last.color==='w' ? 'Les blancs' : 'Les noirs')
+      ? (last.color==='w' ? 'les blancs' : 'les noirs')
       : (last.color==='w' ? 'White' : 'Black');
     const verb = currentLang==='fr' ? 'avaient joué' : 'had played';
-    const msg = cName+' '+verb+' '+last.spoken;
-    setStatus('↩ '+msg, 'success');
-    speak(msg, ()=>{ if(typeof voiceContinuous!=='undefined' && voiceContinuous && !listening) startListening(); });
-  } else {
-    setStatus(currentLang==='fr'?'↩ Retour à la position de départ':'↩ Back to start','success');
-    speak(currentLang==='fr'?'Retour à la position de départ':'Back to the starting position');
+    reminder = cName+' '+verb+' '+last.spoken;
   }
+
+  let msg;
+  if(backClause && reminder) msg = backClause + ', ' + reminder;
+  else if(backClause)        msg = backClause + (currentLang==='fr' ? ' — retour à la position de départ' : ' — back to start');
+  else if(reminder)          msg = reminder;
+  else                       msg = currentLang==='fr' ? 'Retour à la position de départ' : 'Back to the starting position';
+
+  // Majuscule en tête
+  msg = msg.charAt(0).toUpperCase() + msg.slice(1);
+  setStatus('↩ '+msg, 'success');
+  speak(msg, ()=>{ if(typeof voiceContinuous!=='undefined' && voiceContinuous && !listening) startListening(); });
 }
 
 function makeMove(fr,fc,tr,tc,castleType){
@@ -2351,8 +2376,7 @@ function makeMove(fr,fc,tr,tc,castleType){
   lastMove=[fr,fc,tr,tc];history.push({move:moveStr,color:turn});
   { const _pr=(type(piece)==='P'&&(tr===0||tr===7))?'q':null; moveHistoryUCI.push(toUCI(fr,fc,tr,tc,_pr)); }
   const humanSpoken = toSpeech(fr,fc,tr,tc,piece,captured,castleType);
-  if(history.length) history[history.length-1].spoken = humanSpoken;
-  if(history.length) history[history.length-1].mover = (turn==='w'?'b':'w');
+  if(history.length){ history[history.length-1].spoken = humanSpoken; history[history.length-1].from=[fr,fc]; history[history.length-1].ptype=type(piece); }
   turn=turn==='w'?'b':'w';selected=null;possibleMoves=[];
   renderBoard();updateSidebar();
   const over=checkGameState();
@@ -2572,8 +2596,6 @@ function startListening(){
   };
 
   recognition.onresult = (e) => {
-    // Si l'IA doit jouer, on ignore
-    if(gameMode==='ai' && turn!==playerColor) return;
 
     // Rassemble TOUS les candidats : chaque alternative de chaque résultat (final + intermédiaire)
     const candidates = [];
@@ -2593,11 +2615,19 @@ function startListening(){
       if(dbg) dbg.textContent='Brut: "'+displayHeard+'" | '+candidates.length+' alt. | '+recognition.lang;
     }
 
-    // Déjà joué ce cycle ? on attend la fin pour réinitialiser
-    if(moveJustPlayed){ return; }
-
     // Nettoie les mots de réveil en tête + teste chaque candidat
     const WAKE = /^(ok|okay|ko|hey|chess|échecs|echec|échec|joue|jouer|play|allez|aller|go)\s+/;
+
+    // Pendant le tour de l'IA, sa parole, ou juste après un coup : on N'ÉCOUTE QUE l'annulation
+    // (évite que l'IA déclenche un coup en s'entendant elle-même)
+    const aiBusy = (gameMode==='ai' && turn!==playerColor) || aiSpeaking;
+    if(aiBusy || moveJustPlayed){
+      for(const raw of candidates){
+        const a = parseVoiceToAction(raw.replace(WAKE,'').trim() || raw);
+        if(a && a.kind==='undo'){ moveJustPlayed=false; executeVoiceAction(a, true); return; }
+      }
+      return;
+    }
     for(const raw of candidates){
       const cleaned = raw.replace(WAKE,'').trim() || raw;
       const act = parseVoiceToAction(cleaned);
@@ -3181,11 +3211,8 @@ function speak(text, onEnd){
     if(onEnd) setTimeout(onEnd, 1500);
     return;
   }
-  // Pause l'écoute pendant la parole
-  if(recognition && listening){
-    try{ recognition.abort(); }catch(e){}
-    listening = false;
-  }
+  // On GARDE le micro actif pour pouvoir dire "annuler" pendant que l'IA parle
+  aiSpeaking = true;
   window.speechSynthesis.cancel();
   setTimeout(()=>{
     const u = new SpeechSynthesisUtterance(text);
@@ -3195,6 +3222,7 @@ function speak(text, onEnd){
     u.rate = 1;
     u.volume = 1;
     u.onend = ()=>{
+      aiSpeaking = false;
       setTimeout(()=>{
         if(onEnd) onEnd();
         // Reprend l'écoute continue après la parole
@@ -3202,6 +3230,7 @@ function speak(text, onEnd){
       }, 300);
     };
     u.onerror = ()=>{
+      aiSpeaking = false;
       if(onEnd) setTimeout(onEnd, 300);
       if(voiceContinuous && !listening && !aiThinking) setTimeout(startListening, 300);
     };
