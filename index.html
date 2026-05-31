@@ -134,6 +134,15 @@ body {
 }
 .settings-close:hover { background:rgba(224,112,112,.3); }
 .settings-body { padding:16px 20px;overflow-y:auto;display:flex;flex-direction:column;gap:18px; }
+.settings-preview {
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  padding:14px;border-radius:14px;
+  background:rgba(0,0,0,.25);border:1px solid var(--border-gold);
+  min-height:120px;justify-content:center;
+}
+.preview-label {
+  font-family:'Fredoka One',cursive;font-size:.95rem;color:var(--gold-light);
+}
 .settings-section-title {
   font-family:'Nunito',sans-serif;font-weight:700;color:var(--text-muted);
   font-size:.82rem;margin-bottom:8px;
@@ -779,6 +788,8 @@ canvas#eloChart { width:100%!important;height:90px!important; }
       <button class="settings-close" onclick="closeSettings()">✕</button>
     </div>
     <div class="settings-body">
+      <!-- Aperçu en direct -->
+      <div class="settings-preview" id="settingsPreview"></div>
       <!-- Pièces -->
       <div class="settings-section">
         <div class="settings-section-title">♟ Style des pièces</div>
@@ -788,14 +799,6 @@ canvas#eloChart { width:100%!important;height:90px!important; }
       <div class="settings-section">
         <div class="settings-section-title">▦ Style de l'échiquier</div>
         <div class="pieceset-grid" id="boardThemeGrid"></div>
-      </div>
-      <!-- Voix -->
-      <div class="settings-section">
-        <div class="settings-section-title">🔊 Voix de l'IA</div>
-        <div class="voice-row">
-          <select id="voiceSelect" class="voice-select" onchange="setVoice(this.value)"></select>
-          <button class="voice-test" onclick="testVoice()">▶ Tester</button>
-        </div>
       </div>
     </div>
     <button class="settings-done" onclick="closeSettings()">C'est parfait !</button>
@@ -1101,6 +1104,7 @@ function setBoardTheme(id){
   document.querySelectorAll('.boardtheme-opt').forEach(el=>{
     el.classList.toggle('active', el.dataset.board===id);
   });
+  if(typeof renderSettingsPreview==='function') renderSettingsPreview('board');
 }
 
 function buildBoardThemeSelector(){
@@ -1146,6 +1150,7 @@ function setPieceSet(id){
   document.querySelectorAll('.pieceset-opt').forEach(el=>{
     el.classList.toggle('active', el.dataset.set===id);
   });
+  if(typeof renderSettingsPreview==='function') renderSettingsPreview('pieces');
 }
 
 function buildPieceSetSelector(){
@@ -1306,11 +1311,70 @@ function openSettings(){
   // (Re)remplit les sélecteurs
   if(typeof buildPieceSetSelector==='function') buildPieceSetSelector();
   if(typeof buildBoardThemeSelector==='function') buildBoardThemeSelector();
-  if(typeof loadVoices==='function') loadVoices();
+  if(typeof renderSettingsPreview==='function') renderSettingsPreview('pieces');
 }
 function closeSettings(){
   const m = document.getElementById('settingsModal');
   if(m) m.classList.remove('show');
+}
+
+// Aperçu en haut du menu : 'pieces' montre toutes les pièces du set, 'board' montre le fond
+function renderSettingsPreview(mode){
+  const box = document.getElementById('settingsPreview');
+  if(!box) return;
+  box.innerHTML = '';
+  if(mode === 'board'){
+    // Aperçu du fond d'échiquier : mini damier 4×4 avec le thème
+    const t = (typeof getBoardTheme==='function') ? getBoardTheme() : {type:'css',light:'#f0d9b5',dark:'#b58863'};
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);width:140px;height:140px;border-radius:10px;overflow:hidden;border:2px solid var(--gold);box-shadow:0 4px 16px rgba(0,0,0,.4);';
+    if(t.type==='img'){
+      grid.style.backgroundImage = 'url('+BOARD_CDN+t.id+'.jpg)';
+      grid.style.backgroundSize = '100% 100%';
+    }
+    for(let i=0;i<16;i++){
+      const r=Math.floor(i/4), c=i%4, light=(r+c)%2===0;
+      const cell=document.createElement('div');
+      let bg = t.type==='css' ? (light?t.light:t.dark) : (light?'transparent':'rgba(0,0,0,0.18)');
+      cell.style.cssText='background:'+bg+';';
+      grid.appendChild(cell);
+    }
+    const lbl=document.createElement('div');
+    lbl.className='preview-label';
+    lbl.textContent = t.name || 'Échiquier';
+    box.appendChild(grid);
+    box.appendChild(lbl);
+  } else {
+    // Aperçu des pièces : les 6 types, blanches + noires
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;justify-content:center;align-items:center;';
+    const order = ['K','Q','R','B','N','P'];
+    ['w','b'].forEach(col=>{
+      order.forEach(t=>{
+        const code = col+t;
+        const img = document.createElement('img');
+        img.src = pieceImgURL(code);
+        img.width = 36; img.height = 36;
+        img.style.cssText = 'width:36px;height:36px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));';
+        img.draggable = false;
+        const glyph = PIECE_GLYPHS[code];
+        const isW = col==='w';
+        img.onerror = function(){
+          const s=document.createElement('span');
+          s.textContent=glyph;
+          s.style.cssText='font-size:30px;line-height:1;color:'+(isW?'#fff':'#1a1a1a')+';';
+          if(img.parentNode) img.parentNode.replaceChild(s,img);
+        };
+        wrap.appendChild(img);
+      });
+    });
+    const setName = (PIECE_SETS.find(s=>s.id===pieceSet)||{}).name || pieceSet;
+    const lbl=document.createElement('div');
+    lbl.className='preview-label';
+    lbl.textContent = setName;
+    box.appendChild(wrap);
+    box.appendChild(lbl);
+  }
 }
 
 function goHome(){
