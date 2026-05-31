@@ -2156,6 +2156,7 @@ function boardToFen(){
 const PIECES={wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'};
 let board=[],turn='w',selected=null,possibleMoves=[],history=[],lastMove=null,enPassant=null;
 let castling={wK:true,wR_k:true,wR_q:true,bK:true,bR_k:true,bR_q:true};
+let moveJustPlayed=false;
 let listening=false,recognition=null;
 let gameStartElo=1200;
 
@@ -2392,12 +2393,13 @@ function startListening(){
 
   recognition = new SR();
   recognition.lang = currentLang==='fr' ? 'fr-FR' : 'en-US';
-  recognition.continuous = false;
-  recognition.interimResults = true;
-  recognition.maxAlternatives = 5;
+  recognition.continuous = true;          // micro continu → pas de coupure entre les coups
+  recognition.interimResults = true;      // résultats intermédiaires → réaction immédiate
+  recognition.maxAlternatives = 6;        // plusieurs interprétations → on tente toutes
 
   recognition.onstart = () => {
     listening = true;
+    moveJustPlayed = false;
     document.getElementById('voiceBtn').classList.add('listening');
     document.getElementById('voiceBtnText').textContent = voiceContinuous?'⏹ Stop':'🎙';
     setStatus(currentLang==='fr'?'🎙 Parlez maintenant…':'🎙 Speak now…', '');
@@ -2406,30 +2408,53 @@ function startListening(){
   };
 
   recognition.onresult = (e) => {
-    let interim = '', final = '';
+    // Si l'IA doit jouer, on ignore
+    if(gameMode==='ai' && turn!==playerColor) return;
+
+    // Rassemble TOUS les candidats : chaque alternative de chaque résultat (final + intermédiaire)
+    const candidates = [];
+    let displayHeard = '';
+    let anyFinal = false;
     for(let i = e.resultIndex; i < e.results.length; i++){
-      if(e.results[i].isFinal){
-        for(let a=0; a<e.results[i].length; a++){
-          final += e.results[i][a].transcript + ' ';
-        }
-      } else {
-        interim += e.results[i][0].transcript;
+      const res = e.results[i];
+      if(res.isFinal) anyFinal = true;
+      for(let a=0; a<res.length; a++){
+        const tr = res[a].transcript.toLowerCase().trim();
+        if(tr){ candidates.push(tr); if(a===0 && !displayHeard) displayHeard = tr; }
       }
     }
-    // Toujours afficher ce qui est entendu
-    const heard = (final || interim).trim();
-    if(heard){
-      setStatus('👂 Entendu: "' + heard + '"', 'heard');
+    if(displayHeard){
+      setStatus('👂 ' + displayHeard, 'heard');
       const dbg=document.getElementById('debugVoice');
-      if(dbg) dbg.textContent='Brut: "'+heard+'" | Lang: '+recognition.lang;
+      if(dbg) dbg.textContent='Brut: "'+displayHeard+'" | '+candidates.length+' alt. | '+recognition.lang;
     }
-    
-    if(final.trim()){
-      const t = final.toLowerCase().trim();
-      const cleaned = t.replace(/^(ok|okay|chess|échecs|joue|jouer|play)\s+/,'').trim();
-      // Afficher avant de traiter
-      setStatus('✓ "'+t+'" → traitement…', 'heard');
-      setTimeout(() => processVoice(cleaned || t), 100);
+
+    // Déjà joué ce cycle ? on attend la fin pour réinitialiser
+    if(moveJustPlayed){ return; }
+
+    // Nettoie les mots de réveil en tête + teste chaque candidat
+    const WAKE = /^(ok|okay|ko|hey|chess|échecs|echec|échec|joue|jouer|play|allez|aller|go)\s+/;
+    for(const raw of candidates){
+      const cleaned = raw.replace(WAKE,'').trim() || raw;
+      const act = parseVoiceToAction(cleaned);
+      // On joue dès qu'un coup/roque clair est trouvé (même sur résultat intermédiaire)
+      if(act && (act.kind==='move' || act.kind==='castle' || act.kind==='reset')){
+        moveJustPlayed = true;
+        executeVoiceAction(act, true);
+        // Réautorise après un court instant (le temps que l'IA réponde / nouvelle phrase)
+        setTimeout(()=>{ moveJustPlayed = false; }, 1200);
+        return;
+      }
+    }
+
+    // Aucun coup clair. Si c'est un résultat FINAL, donne un retour (ambiguïté / non compris)
+    if(anyFinal){
+      // Reprend le meilleur candidat pour le message d'aide
+      const best = (candidates[0]||'').replace(WAKE,'').trim();
+      if(best){
+        const act = parseVoiceToAction(best);
+        executeVoiceAction(act, true); // affichera ambiguïté / illégal / non compris
+      }
     }
   };
 
@@ -2448,14 +2473,18 @@ function startListening(){
   };
 
   recognition.onend = () => {
-    // Si toujours en mode écoute continue → redémarre automatiquement
+    listening = false;
+    moveJustPlayed = false;
+    // Si toujours en mode écoute continue → redémarre automatiquement (petit délai anti-collision)
     if(voiceContinuous && !aiThinking){
-      try{ recognition.start(); }
-      catch(e){ 
-        listening = false;
-        document.getElementById('voiceBtn').classList.remove('listening');
-        document.getElementById('voiceBtnText').textContent = currentLang==='fr'?'🎙 Parler':'🎙 Speak';
-      }
+      setTimeout(()=>{
+        if(!voiceContinuous || aiThinking || listening) return;
+        try{ recognition.start(); }
+        catch(e){
+          // déjà démarré ? on ignore. Sinon on réessaie une fois.
+          setTimeout(()=>{ try{ if(voiceContinuous && !listening) recognition.start(); }catch(_){} }, 300);
+        }
+      }, 150);
     } else {
       listening = false;
       document.getElementById('voiceBtn').classList.remove('listening');
@@ -2581,125 +2610,132 @@ function applyLang() {
 
 function L() { return LANG[currentLang]; }
 
-function processVoice(text){
-  if(gameMode==='ai'&&turn!==playerColor){setStatus(L().wait_ai,'error');return;}
-  if(text.includes(L().new_game)||text.includes(L().resign)){resetGame();return;}
-  if(L().queenside.some(q=>text.includes(q))){trycastling('q');return;}
-  if(text.includes(L().kingside)){trycastling('k');return;}
+function parseVoiceToAction(text){
+  // PARSEUR PUR — renvoie une action sans aucun effet de bord (pour tester en silence)
+  if(!text) return {kind:'none'};
+  if(text.includes(L().new_game)||text.includes(L().resign)) return {kind:'reset'};
+  if(L().queenside.some(q=>text.includes(q))) return {kind:'castle', side:'q'};
+  if(text.includes(L().kingside)) return {kind:'castle', side:'k'};
+
   const files={a:0,b:1,c:2,d:3,e:4,f:5,g:6,h:7};
-  // Normalisation étendue - gère plus de prononciations
   let norm = L().normalize(text);
-  // Remplacements phonétiques supplémentaires FR
   norm = norm
-    .replace(/ha/g,'a').replace(/hache/g,'h').replace(/ge/g,'g')
-    .replace(/i/g,'1').replace(/deux/g,'2').replace(/de/g,'d')
-    .replace(/ef/g,'f').replace(/ze/g,'g')
-    // Nombres écrits
-    .replace(/premier/g,'1').replace(/deuxième/g,'2')
-    // Lettres épelées avec accent
-    .replace(/é/g,'e').replace(/à/g,'a')
-    // Supprimer mots parasites courants
-    .replace(/(en|sur|de|la|le|du|au|vers|case|pièce|joue|jouer|déplace|déplacer|va|aller|met|mettre)/g,' ')
+    // Lettres épelées FR → lettre de colonne
+    .replace(/\bha\b/g,'a').replace(/\bash\b/g,'h').replace(/\bhache\b/g,'h')
+    .replace(/\bbé\b/g,'b').replace(/\bcé\b/g,'c').replace(/\bdé\b/g,'d')
+    .replace(/\beu\b/g,'e').replace(/\bheu\b/g,'e')
+    .replace(/\beffe\b/g,'f').replace(/\bef\b/g,'f').replace(/\bège\b/g,'g').replace(/\bgé\b/g,'g').replace(/\bje\b/g,'g').replace(/\bze\b/g,'g')
+    // Chiffres écrits FR
+    .replace(/\bun\b/g,'1').replace(/\bune\b/g,'1').replace(/\bdeux\b/g,'2').replace(/\btrois\b/g,'3')
+    .replace(/\bquatre\b/g,'4').replace(/\bcinq\b/g,'5').replace(/\bsix\b/g,'6').replace(/\bsept\b/g,'7').replace(/\bhuit\b/g,'8')
+    .replace(/\bpremier\b/g,'1').replace(/\bpremière\b/g,'1').replace(/\bdeuxième\b/g,'2')
+    // Homophones de lettres+chiffres collés courants
+    .replace(/\bété\b/g,'e3').replace(/\bcédé\b/g,'cd')
+    // Accents résiduels
+    .replace(/\bé\b/g,'e').replace(/\bà\b/g,'a')
+    // Mots parasites
+    .replace(/\b(en|sur|de|la|le|du|au|aux|vers|et|case|pièce|piece|joue|jouer|déplace|déplacer|déplace|va|aller|met|mettre|prend|prendre|mange|manger|capture|capturer|s'il|te|plaît|stp|svp|alors|donc|puis|ensuite|maintenant)\b/g,' ')
     .replace(/\s+/g,' ').trim();
-  
+
   const coords=[],re=/([a-h])\s*([1-8])/g;let m;
   while((m=re.exec(norm))!==null) coords.push([8-parseInt(m[2]),files[m[1]]]);
-  
-  // === LOGIQUE NOTATION ALGÉBRIQUE NATURELLE ===
-  // Détecte si un nom de pièce est mentionné dans le texte
+
   const pieceMap = currentLang==='fr'
-    ? {cavalier:'N',tour:'R',fou:'B',dame:'Q',roi:'K',pion:'P',
-       'knight':'N','rook':'R','bishop':'B','queen':'Q','king':'K','pawn':'P'}
+    ? {cavalier:'N',tour:'R',fou:'B',dame:'Q',reine:'Q',roi:'K',pion:'P',
+       knight:'N',rook:'R',bishop:'B',queen:'Q',king:'K',pawn:'P'}
     : {knight:'N',rook:'R',bishop:'B',queen:'Q',king:'K',pawn:'P'};
   let mentionedType = null;
   for(const [word, ptype] of Object.entries(pieceMap)){
     if(norm.includes(word)){ mentionedType = ptype; break; }
   }
 
+  // --- 1 case détectée : notation algébrique naturelle ("e4", "cavalier f3") ---
   if(coords.length===1){
     const [tr,tc] = coords[0];
-    // Trouve les pièces pouvant aller sur cette case
-    // Si un nom de pièce est mentionné → filtre par ce type
     const candidates = [];
     for(let r=0;r<8;r++) for(let c=0;c<8;c++){
       const p = board[r][c];
       if(!p || color(p)!==turn) continue;
-      // Filtre par type si mentionné
       if(mentionedType && type(p)!==mentionedType) continue;
-      const moves = legalMoves(r,c);
-      const mv = moves.find(([mr,mc])=>mr===tr&&mc===tc);
+      const mv = legalMoves(r,c).find(([mr,mc])=>mr===tr&&mc===tc);
       if(mv) candidates.push({fr:r,fc:c,tr,tc,mv,piece:p});
     }
-    if(candidates.length===0){
-      setStatus((currentLang==='fr'?'Aucune pièce ne peut aller en ':'No piece can go to ')+String.fromCharCode(97+tc)+(8-tr),'error');
-      return;
-    }
+    if(candidates.length===0) return {kind:'nopiece', tr, tc};
     if(candidates.length===1){
-      // Pas d'ambiguïté → joue directement
-      const {fr,fc,tr:r2,tc:c2,mv} = candidates[0];
-      const sq = String.fromCharCode(97+c2)+(8-r2);
-      setStatus((currentLang==='fr'?'✓ Joué en ':'✓ Played to ')+sq,'success');
-      makeMove(fr,fc,r2,c2,mv[2]);
-      return;
+      const x = candidates[0];
+      return {kind:'move', fr:x.fr,fc:x.fc,tr:x.tr,tc:x.tc,promo:x.mv[2]};
     }
-    // Ambiguïté → demande juste la lettre de colonne de départ
-    const names = {K:currentLang==='fr'?'Roi':'King',Q:currentLang==='fr'?'Dame':'Queen',R:currentLang==='fr'?'Tour':'Rook',B:currentLang==='fr'?'Fou':'Bishop',N:currentLang==='fr'?'Cavalier':'Knight',P:currentLang==='fr'?'Pion':'Pawn'};
-    const pieceName = names[type(candidates[0].piece)];
-    const cols = candidates.map(c=>String.fromCharCode(97+c.fc)).join(', ');
-    setStatus((currentLang==='fr'
-      ?'Ambiguïté — dites "'+pieceName+' '+cols.split(', ')[0]+' '+String.fromCharCode(97+tc)+(8-tr)+'"'
-      :'Ambiguous — say "'+pieceName+' '+cols.split(', ')[0]+' '+String.fromCharCode(97+tc)+(8-tr)+'"')
-      +' (colonnes: '+cols+')','error');
-    return;
+    return {kind:'ambiguous', pieceType:type(candidates[0].piece), candidates, tr, tc};
   }
 
-  // 2 cases détectées → peut être :
-  // - "cavalier g f3" = lettre colonne départ + case arrivée
-  // - "e2 e4" = case départ + case arrivée classique
-  if(coords.length<2){
-    setStatus((currentLang==='fr'?'Pas compris — essayez "e4" ou "cavalier g f3"':'Not understood — try "e4" or "knight g f3"'),'error');
-    return;
-  }
+  if(coords.length<2) return {kind:'none'};
 
-  // Détection : si une seule lettre (colonne) + une case complète
-  // On cherche dans le texte normalisé si on a "lettre lettre chiffre" (col + case arrivée)
-  const colOnly = norm.match(/([a-h])\s+([a-h][1-8])/);
+  // --- "cavalier g f3" : colonne départ + case arrivée ---
+  const colOnly = norm.match(/\b([a-h])\s+([a-h][1-8])\b/);
   if(colOnly){
-    // Format "cavalier g f3" → colonne g, case f3
     const depCol = files[colOnly[1]];
     const arrC = files[colOnly[2][0]];
     const arrR = 8 - parseInt(colOnly[2][1]);
-    // Cherche pièce dans la colonne depCol pouvant aller en (arrR,arrC)
-    let found = null;
     for(let r=0;r<8;r++){
       const p=board[r][depCol];
       if(!p||color(p)!==turn) continue;
       const mv=legalMoves(r,depCol).find(([mr,mc])=>mr===arrR&&mc===arrC);
-      if(mv){found={fr:r,fc:depCol,tr:arrR,tc:arrC,mv};break;}
-    }
-    if(found){
-      setStatus(L().played,'success');
-      makeMove(found.fr,found.fc,found.tr,found.tc,found.mv[2]);
-      return;
+      if(mv) return {kind:'move', fr:r,fc:depCol,tr:arrR,tc:arrC,promo:mv[2]};
     }
   }
 
-  // Format classique : case départ + case arrivée
+  // --- case départ + case arrivée ("e2 e4") ---
   const[fr,fc]=coords[0],[tr,tc]=coords[1];
   const piece=board[fr][fc];
-  if(!piece){setStatus(L().no_piece+String.fromCharCode(97+fc)+(8-fr),'error');return;}
-  if(color(piece)!==turn){setStatus(L().not_your_piece,'error');return;}
-  const mv=legalMoves(fr,fc).find(([mr,mc])=>mr===tr&&mc===tc);
-  if(!mv){
-    // Coords inversées ?
-    const piece2=board[tr][tc];
-    if(piece2&&color(piece2)===turn){
-      const mv2=legalMoves(tr,tc).find(([mr,mc])=>mr===fr&&mc===fc);
-      if(mv2){setStatus(L().played,'success');makeMove(tr,tc,fr,fc,mv2[2]);return;}
-    }
-    setStatus(L().illegal,'error');return;
+  if(piece && color(piece)===turn){
+    const mv=legalMoves(fr,fc).find(([mr,mc])=>mr===tr&&mc===tc);
+    if(mv) return {kind:'move', fr,fc,tr,tc,promo:mv[2]};
   }
-  setStatus(L().played,'success');makeMove(fr,fc,tr,tc,mv[2]);
+  // coords inversées ?
+  const piece2=board[tr][tc];
+  if(piece2&&color(piece2)===turn){
+    const mv2=legalMoves(tr,tc).find(([mr,mc])=>mr===fr&&mc===fc);
+    if(mv2) return {kind:'move', fr:tr,fc:tc,tr:fr,tc:fc,promo:mv2[2]};
+  }
+  return {kind:'illegal'};
+}
+
+function processVoice(text){
+  if(gameMode==='ai'&&turn!==playerColor){setStatus(L().wait_ai,'error');return false;}
+  const act = parseVoiceToAction(text);
+  return executeVoiceAction(act, true);
+}
+
+// Exécute une action de parseVoiceToAction. verbose=true → messages d'état.
+// Renvoie true si un coup/roque/reset a été joué.
+function executeVoiceAction(act, verbose){
+  if(!act) return false;
+  switch(act.kind){
+    case 'reset': resetGame(); return true;
+    case 'castle': trycastling(act.side); return true;
+    case 'move':
+      if(verbose) setStatus((currentLang==='fr'?'✓ Joué en ':'✓ Played to ')+String.fromCharCode(97+act.tc)+(8-act.tr),'success');
+      makeMove(act.fr,act.fc,act.tr,act.tc,act.promo);
+      return true;
+    case 'ambiguous': {
+      if(verbose){
+        const names = {K:currentLang==='fr'?'Roi':'King',Q:currentLang==='fr'?'Dame':'Queen',R:currentLang==='fr'?'Tour':'Rook',B:currentLang==='fr'?'Fou':'Bishop',N:currentLang==='fr'?'Cavalier':'Knight',P:currentLang==='fr'?'Pion':'Pawn'};
+        const pieceName = names[act.pieceType];
+        const cols = act.candidates.map(c=>String.fromCharCode(97+c.fc)).join(', ');
+        setStatus((currentLang==='fr'?'Ambiguïté — précisez la colonne (':'Ambiguous — specify column (')+cols+')','error');
+      }
+      return false;
+    }
+    case 'nopiece':
+      if(verbose) setStatus((currentLang==='fr'?'Aucune pièce ne peut aller en ':'No piece can go to ')+String.fromCharCode(97+act.tc)+(8-act.tr),'error');
+      return false;
+    case 'illegal':
+      if(verbose) setStatus(L().illegal,'error');
+      return false;
+    default:
+      if(verbose) setStatus((currentLang==='fr'?'Pas compris — essayez "e4" ou "cavalier f3"':'Not understood — try "e4" or "knight f3"'),'error');
+      return false;
+  }
 }
 function trycastling(side){const row=turn==='w'?7:0,tc=side==='k'?6:2;const piece=board[row][4];if(!piece||type(piece)!=='K'||color(piece)!==turn){setStatus(L().castling_fail,'error');return;}const mv=legalMoves(row,4).find(([mr,mc])=>mr===row&&mc===tc);if(!mv){setStatus(L().castling_fail,'error');return;}setStatus(L().castling_ok,'success');makeMove(row,4,row,tc,mv[2]);}
 function setStatus(msg,cls){const el=document.getElementById('status');el.textContent=msg;el.className=cls||'';}
