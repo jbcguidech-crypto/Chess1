@@ -781,25 +781,15 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   </button>
   <div class="splash-btns">
     <button class="splash-btn splash-white" onclick="splashChooseColor('w')">
-      <span class="btn-king"><svg viewBox="0 0 45 45" class="king-ico"><g fill="#fafafa" stroke="#5a4a2a" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M22.5 6v6M20 9h5" stroke="#5a4a2a"/><path d="M22.5 13c-3 0-5 2-5 5 0 2 1 3 1.5 3.5-1.5.5-3 1.5-3 3.5h13c0-2-1.5-3-3-3.5.5-.5 1.5-1.5 1.5-3.5 0-3-2-5-5-5z"/><path d="M11.5 37c6-3 16-3 22 0v-5c-6-3-16-3-22 0z"/><path d="M11.5 32c6-3 16-3 22 0M14 25c5-2 14-2 17 0"/></g></svg></span>
+      <span class="btn-king" id="kingWhite"></span>
       <span class="btn-lbl">Blancs</span>
     </button>
     <button class="splash-btn splash-random" onclick="splashChooseColor('r')">
-      <span class="btn-king"><svg viewBox="0 0 45 45" class="king-ico">
-        <defs><linearGradient id="biking" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stop-color="#fafafa"/><stop offset="0.5" stop-color="#fafafa"/>
-          <stop offset="0.5" stop-color="#2a2a2a"/><stop offset="1" stop-color="#2a2a2a"/>
-        </linearGradient></defs>
-        <g fill="url(#biking)" stroke="#7a5a1a" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
-          <path d="M22.5 6v6M20 9h5"/>
-          <path d="M22.5 13c-3 0-5 2-5 5 0 2 1 3 1.5 3.5-1.5.5-3 1.5-3 3.5h13c0-2-1.5-3-3-3.5.5-.5 1.5-1.5 1.5-3.5 0-3-2-5-5-5z"/>
-          <path d="M11.5 37c6-3 16-3 22 0v-5c-6-3-16-3-22 0z"/>
-          <path d="M11.5 32c6-3 16-3 22 0M14 25c5-2 14-2 17 0"/>
-        </g></svg></span>
+      <span class="btn-king" id="kingRandom"></span>
       <span class="btn-lbl">Aléatoire</span>
     </button>
     <button class="splash-btn splash-black" onclick="splashChooseColor('b')">
-      <span class="btn-king"><svg viewBox="0 0 45 45" class="king-ico"><g fill="#2a2a2a" stroke="#000" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M22.5 6v6M20 9h5" stroke="#000"/><path d="M22.5 13c-3 0-5 2-5 5 0 2 1 3 1.5 3.5-1.5.5-3 1.5-3 3.5h13c0-2-1.5-3-3-3.5.5-.5 1.5-1.5 1.5-3.5 0-3-2-5-5-5z"/><path d="M11.5 37c6-3 16-3 22 0v-5c-6-3-16-3-22 0z"/><path d="M11.5 32c6-3 16-3 22 0M14 25c5-2 14-2 17 0"/></g></svg></span>
+      <span class="btn-king" id="kingBlack"></span>
       <span class="btn-lbl">Noirs</span>
     </button>
   </div>
@@ -1177,6 +1167,34 @@ function setPieceSet(id){
     el.classList.toggle('active', el.dataset.set===id);
   });
   if(typeof renderSettingsPreview==='function') renderSettingsPreview('pieces');
+  if(typeof updateColorButtons==='function') updateColorButtons();
+}
+
+function updateColorButtons(){
+  const mkKing = (code) => {
+    // Image du roi (wK/bK) dans le set choisi, avec repli Unicode
+    const glyph = code==='wK' ? '\u2654' : '\u265A';
+    const isW = code==='wK';
+    return '<img src="'+pieceImgURL(code)+'" width="40" height="40" draggable="false" '+
+      'style="width:40px;height:40px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))" '+
+      'onerror="this.outerHTML=\'<span style=&quot;font-size:36px;line-height:1;color:'+(isW?'#fafafa':'#1a1a1a')+';text-shadow:0 1px 3px rgba(0,0,0,.4)&quot;>'+glyph+'</span>\'">';
+  };
+  const w = document.getElementById('kingWhite');
+  const b = document.getElementById('kingBlack');
+  const r = document.getElementById('kingRandom');
+  if(w) w.innerHTML = mkKing('wK');
+  if(b) b.innerHTML = mkKing('bK');
+  if(r){
+    // Roi bicolore : moitié gauche = roi blanc, moitié droite = roi noir (même design)
+    r.innerHTML =
+      '<span style="position:relative;width:40px;height:40px;display:inline-block">'+
+        '<img src="'+pieceImgURL('wK')+'" width="40" height="40" draggable="false" style="position:absolute;inset:0;width:40px;height:40px;object-fit:contain;clip-path:inset(0 50% 0 0);filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))">'+
+        '<img src="'+pieceImgURL('bK')+'" width="40" height="40" draggable="false" style="position:absolute;inset:0;width:40px;height:40px;object-fit:contain;clip-path:inset(0 0 0 50%);filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))">'+
+      '</span>';
+  }
+  // Réinitialise le label aléatoire (au cas où il afficherait "Blancs !"/"Noirs !")
+  const rl = document.querySelector('.splash-random .btn-lbl');
+  if(rl) rl.textContent = currentLang==='fr' ? 'Aléatoire' : 'Random';
 }
 
 function buildPieceSetSelector(){
@@ -1427,6 +1445,7 @@ function showSplash(){
   if(typeof buildSplash==='function') buildSplash();
   if(typeof buildPieceSetSelector==='function') buildPieceSetSelector();
   if(typeof buildBoardThemeSelector==='function') buildBoardThemeSelector();
+  if(typeof updateColorButtons==='function') updateColorButtons();
 }
 
 function confirmQuit(yes){
@@ -1450,8 +1469,12 @@ function splashChooseColor(color) {
     const btn = document.querySelector('.splash-random');
     const ico = btn ? btn.querySelector('.btn-king') : null;
     const lbl = btn ? btn.querySelector('.btn-lbl') : null;
-    const WK = '<span style="font-size:38px;line-height:1;color:#fafafa;text-shadow:0 1px 3px rgba(0,0,0,.6)">\u2654</span>';
-    const BK = '<span style="font-size:38px;line-height:1;color:#1a1a1a;text-shadow:0 1px 3px rgba(255,255,255,.3)">\u265A</span>';
+    // Rois du set choisi (avec repli Unicode)
+    const kImg = (code)=>{
+      const glyph = code==='wK' ? '\u2654' : '\u265A'; const isW = code==='wK';
+      return '<img src="'+pieceImgURL(code)+'" width="40" height="40" draggable="false" style="width:40px;height:40px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))" onerror="this.outerHTML=\'<span style=&quot;font-size:36px;color:'+(isW?'#fafafa':'#1a1a1a')+'&quot;>'+glyph+'</span>\'">';
+    };
+    const WK = kImg('wK'), BK = kImg('bK');
     let count = 0;
     const interval = setInterval(()=>{
       if(ico) ico.innerHTML = count%2===0 ? WK : BK;
@@ -1518,6 +1541,7 @@ buildSplash();
 buildCoords();
 buildPieceSetSelector();
 buildBoardThemeSelector();
+if(typeof updateColorButtons==='function') updateColorButtons();
 if(typeof attachSliderTouch==='function') attachSliderTouch();
 
 // ===== USER PROFILE & STATS =====
