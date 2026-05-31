@@ -1412,10 +1412,19 @@ function showSplash(){
     s.style.opacity = '1';
     s.style.transform = 'scale(1)';
   }
+  // ── ARRÊT COMPLET : aucune parole/coup ne doit survenir sur le splash ──
   voiceContinuous = false;
-  try{ if(recognition) recognition.abort(); }catch(e){}
   listening = false;
+  aiSpeaking = false;
+  aiThinking = false;
+  speechEpoch++;                 // invalide toute parole déjà programmée (délai de 200ms)
+  aiGen++;                       // invalide tout coup d'IA en cours de calcul
+  try{ if(recognition) recognition.abort(); }catch(e){}
+  try{ if(stockfish) stockfish.postMessage('stop'); }catch(e){}
   try{ if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e){}
+  pendingSpeech = null;
+  // Deuxième coupure légèrement différée (au cas où un énoncé démarre juste après)
+  setTimeout(()=>{ try{ if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e){} }, 260);
   if(typeof buildSplash==='function') buildSplash();
   if(typeof buildPieceSetSelector==='function') buildPieceSetSelector();
   if(typeof buildBoardThemeSelector==='function') buildBoardThemeSelector();
@@ -2256,6 +2265,7 @@ let aiGen=0, aiReqGen=-1; // génération : invalide un coup d'IA si on annule e
 let moveJustPlayed=false;
 let listening=false,recognition=null;
 let aiSpeaking=false; // vrai pendant que l'IA parle (pour autoriser "annuler" sans déclencher de coup)
+let speechEpoch=0; // incrémenté pour invalider toute parole programmée (ex: retour au menu)
 let gameStartElo=1200;
 
 function initBoard(){board=Array(8).fill(null).map(()=>Array(8).fill(null));const br=['R','N','B','Q','K','B','N','R'];for(let c=0;c<8;c++){board[0][c]='b'+br[c];board[1][c]='bP';board[6][c]='wP';board[7][c]='w'+br[c];}}
@@ -3212,8 +3222,10 @@ function speak(text, onEnd){
   }
   // On GARDE le micro actif pour pouvoir dire "annuler" pendant que l'IA parle
   aiSpeaking = true;
+  const myEpoch = speechEpoch;
   window.speechSynthesis.cancel();
   setTimeout(()=>{
+    if(myEpoch !== speechEpoch){ aiSpeaking=false; return; } // parole annulée (ex: retour au menu)
     const u = new SpeechSynthesisUtterance(text);
     u.lang = currentLang==='fr' ? 'fr-FR' : 'en-US';
     const chosen = getSelectedVoice();
