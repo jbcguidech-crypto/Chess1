@@ -1005,8 +1005,10 @@ function applyBoardTheme(){
 function setBoardTheme(id){
   boardTheme = id;
   try { localStorage.setItem('dysc_board', id); } catch(e){}
-  if(typeof renderBoard==='function') renderBoard();
-  if(typeof buildSplash==='function') buildSplash(); // aperçu instantané sur le mini-board
+  // Aperçu instantané sur le splash EN PREMIER
+  if(typeof buildSplash==='function') buildSplash();
+  // Board de jeu (protégé)
+  try { if(typeof renderBoard==='function') renderBoard(); } catch(e){}
   document.querySelectorAll('.boardtheme-opt').forEach(el=>{
     el.classList.toggle('active', el.dataset.board===id);
   });
@@ -1047,9 +1049,11 @@ function pieceImgURL(piece){
 function setPieceSet(id){
   pieceSet = id;
   try { localStorage.setItem('dysc_pieceset', id); } catch(e){}
-  if(typeof renderBoard === 'function') renderBoard();
+  // Aperçu instantané sur le splash EN PREMIER
   if(typeof buildSplash === 'function') buildSplash();
-  // Met à jour la sélection visuelle
+  // Board de jeu (protégé)
+  try { if(typeof renderBoard === 'function') renderBoard(); } catch(e){}
+  // Sélection visuelle
   document.querySelectorAll('.pieceset-opt').forEach(el=>{
     el.classList.toggle('active', el.dataset.set===id);
   });
