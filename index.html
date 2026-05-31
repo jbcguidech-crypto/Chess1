@@ -526,29 +526,52 @@ input[type=range]::-webkit-slider-thumb {
 .sdot:nth-child(2){animation-delay:.15s;}.sdot:nth-child(3){animation-delay:.3s;}
 @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 
-/* VOICE BTN */
+/* ── BOUTON MICRO (rond) ─────────────────────── */
 #voiceBtn {
-  width:100%;padding:13px;border-radius:50px;border:none;cursor:pointer;
-  font-family:'Manrope',system-ui,sans-serif;font-size:1rem;letter-spacing:1px;
-  background:linear-gradient(180deg,var(--gold-light),var(--gold),var(--gold-dark));
-  color:var(--text-dark);
-  box-shadow:0 5px 0 var(--gold-dark),0 8px 20px rgba(91,141,239,.3),inset 0 2px 0 rgba(255,255,255,.3);
-  transition:all .1s;display:flex;align-items:center;justify-content:center;gap:8px;
+  position:relative;width:72px;height:72px;border-radius:50%;
+  border:1px solid var(--border-hi);cursor:pointer;
+  background:var(--surface);color:var(--text-muted);
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto;transition:all .15s;flex-shrink:0;
 }
-#voiceBtn:hover { transform:translateY(-2px);box-shadow:0 7px 0 var(--gold-dark),0 12px 30px rgba(91,141,239,.4); }
-#voiceBtn:active { transform:translateY(3px);box-shadow:0 2px 0 var(--gold-dark); }
+#voiceBtn:hover { border-color:var(--gold);color:var(--gold-light);transform:translateY(-1px); }
+#voiceBtn:active { transform:scale(.95); }
+#voiceBtn .mic-svg { width:32px;height:32px; }
+/* barre diagonale = micro inactif */
+#voiceBtn .mic-slash {
+  position:absolute;width:46px;height:3px;border-radius:3px;
+  background:var(--red);transform:rotate(-45deg);
+  box-shadow:0 0 0 3px var(--surface);
+}
+/* écoute active = micro rouge qui pulse, sans barre */
 #voiceBtn.listening {
-  background:linear-gradient(180deg,#ff8080,var(--red),#a00000);
-  box-shadow:0 5px 0 #700000,0 8px 20px rgba(224,82,82,.3);
-  animation:pulse-mic 1s ease infinite;
+  background:linear-gradient(180deg,#ff8080,var(--red));
+  color:#fff;border-color:var(--red);
+  animation:pulse-mic 1.3s ease infinite;
 }
+#voiceBtn.listening:hover { color:#fff; }
+#voiceBtn.listening .mic-slash { display:none; }
 #voiceBtn:disabled { opacity:.4;cursor:not-allowed;transform:none; }
-@keyframes pulse-mic{0%,100%{box-shadow:0 5px 0 #700000,0 0 0 0 rgba(224,82,82,.4)}50%{box-shadow:0 5px 0 #700000,0 0 0 10px rgba(224,82,82,0)}}
+@keyframes pulse-mic{0%,100%{box-shadow:0 0 0 0 rgba(224,82,82,.45)}50%{box-shadow:0 0 0 12px rgba(224,82,82,0)}}
+
+/* ── DISPOSITION ÉCHIQUIER + COLONNE LATÉRALE ── */
+.board-row { display:flex;gap:10px;align-items:flex-start;width:100%; }
+.board-row .board-container { flex:1 1 auto;min-width:0; }
+.board-side {
+  flex:0 0 108px;display:flex;flex-direction:column;align-items:stretch;gap:9px;
+}
+.mic-status {
+  font-size:.6rem;color:var(--text-muted);text-align:center;line-height:1.35;
+  min-height:26px;
+}
+.side-history { padding:10px;flex:1; }
+.side-history #history { max-height:300px; }
+@media(min-width:760px){ .board-side{ flex-basis:240px; } #voiceBtn{ width:80px;height:80px; } }
+@media(max-width:360px){ .board-side{ flex-basis:96px; } #voiceBtn{ width:64px;height:64px; } }
 
 #status {
-  font-size:.72rem;color:var(--text-muted);min-height:36px;line-height:1.6;
-  padding:8px 12px;margin-top:9px;border-radius:10px;
-  background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.06);
+  font-size:.6rem;color:var(--text-muted);min-height:26px;line-height:1.35;
+  text-align:center;
 }
 #status.heard   { color:var(--gold-light); }
 #status.success { color:#55dda0; }
@@ -837,6 +860,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 <div class="page active" id="page-game">
 <div class="game-layout">
 
+  <div class="board-row">
   <!-- BOARD -->
   <div class="board-container">
     <div class="board-mid">
@@ -845,6 +869,33 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     </div>
     <div class="coords-bottom" id="coordsTop"></div>
   </div>
+
+  <!-- COLONNE LATÉRALE : micro + historique -->
+  <div class="board-side">
+    <button id="voiceBtn" class="mic-btn" onclick="toggleVoice()" aria-label="Commande vocale" title="Commande vocale">
+      <svg class="mic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="2" width="6" height="12" rx="3"></rect>
+        <path d="M5 10a7 7 0 0 0 14 0"></path>
+        <line x1="12" y1="19" x2="12" y2="22"></line>
+        <line x1="8" y1="22" x2="16" y2="22"></line>
+      </svg>
+      <span class="mic-slash"></span>
+      <span id="voiceBtnText" style="display:none"></span>
+    </button>
+    <div id="status" class="mic-status">Micro coupé</div>
+    <div class="ai-spinner" id="aiSpinner">
+      <div class="sdot"></div><div class="sdot"></div><div class="sdot"></div>
+      <span>IA…</span>
+    </div>
+    <span id="turnGem" class="turn-gem" style="display:none"></span>
+    <span id="turnText" style="display:none"></span>
+
+    <div class="card side-history">
+      <div class="card-title">📜 Historique</div>
+      <div id="history"><span style="color:rgba(255,255,255,.2);font-size:.65rem">Aucun coup</span></div>
+    </div>
+  </div>
+  </div><!-- /board-row -->
 
   <!-- SIDEBAR -->
   <div class="sidebar">
@@ -881,32 +932,6 @@ canvas#eloChart { width:100%!important;height:90px!important; }
           </div>
         </div>
       </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">🎯 Tour</div>
-      <div class="turn-row">
-        <div class="turn-gem white" id="turnGem"></div>
-        <span class="turn-label" id="turnText">Blancs jouent</span>
-      </div>
-      <div class="ai-spinner" id="aiSpinner">
-        <div class="sdot"></div><div class="sdot"></div><div class="sdot"></div>
-        <span>IA réfléchit…</span>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">🎙 Commande vocale</div>
-      <button id="voiceBtn" onclick="toggleVoice()">
-        <span>🎙</span><span id="voiceBtnText">Parler !</span>
-      </button>
-      <div id="status">Appuyez 🎙 puis parlez</div>
-      <div id="debugVoice" style="font-size:.65rem;color:#888;margin-top:6px;min-height:20px;padding:4px 8px;background:rgba(0,0,0,.15);border-radius:6px;display:none;"></div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">📜 Historique</div>
-      <div id="history"><span style="color:rgba(255,255,255,.2);font-size:.65rem">Aucun coup joué</span></div>
     </div>
 
     <div class="card">
