@@ -1073,13 +1073,10 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="nav-logo" id="navLeft" onclick="goHome()" style="cursor:pointer;">♟ Do You Speak Chess?</div>
   <div class="nav-center">
     <button class="nav-tab active" onclick="showPage('game')">🎮 Jouer</button>
-    <button class="nav-tab" onclick="showPage('stats')">📊 Stats</button>
-    <button class="nav-tab" onclick="showPage('leaderboard')">🏆 Classement</button>
   </div>
   <div class="nav-right">
         <button id="langBtn" onclick="toggleLang()">🇫🇷 FR</button>
     <div class="nav-user" onclick="showProfile()">
-      <div class="nav-avatar" id="navAvatar">?</div>
       <div class="nav-username" id="navUsername">Invité</div>
     </div>
   </div>
@@ -1222,42 +1219,6 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 </div>
 </div>
 
-<!-- ══ PAGE STATS ════════════════════════════════════ -->
-<div class="page" id="page-stats">
-  <div class="auth-card">
-    <div style="flex:1;">
-      <div class="auth-card-title">Compte</div>
-      <div id="authStatus">Non connecté — scores sauvegardés localement</div>
-    </div>
-    <button id="googleAuthBtn" onclick="loginGoogle()">🔑 Google</button>
-  </div>
-  <div class="my-elo-card">
-    <div class="my-elo-top">
-      <div class="my-elo-num" id="myEloDisplay">1200</div>
-      <div class="my-elo-info">
-        <div class="my-elo-tier" id="myEloTier">Intermédiaire</div>
-        <div class="my-elo-sub" id="myEloSub">Votre Elo personnel</div>
-        <canvas id="eloChart" style="margin-top:8px;"></canvas>
-      </div>
-    </div>
-  </div>
-  <div class="stats-grid" id="statsGrid"></div>
-  <div class="recent-card">
-    <div class="recent-title">🎮 Parties récentes</div>
-    <div id="recentGames"></div>
-  </div>
-</div>
-
-<!-- ══ PAGE LEADERBOARD ══════════════════════════════ -->
-<div class="page" id="page-leaderboard">
-  <div class="lb-header-row">
-    <div class="lb-title">🏆 Classement</div>
-    <div id="fbBadge">🟡 Mode démo</div>
-  </div>
-  <div class="lb-sub">Les meilleurs joueurs · Mis à jour en temps réel</div>
-  <div class="lb-list" id="lbList"></div>
-</div>
-
 <!-- ══ GAME OVER ══════════════════════════════════════ -->
 <div id="gameOver">
   <div class="go-banner">
@@ -1265,7 +1226,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     <div id="eloDeltaDisplay"></div>
     <div class="go-btns">
       <button class="go-btn primary" onclick="resetGame()">↺ Rejouer !</button>
-      <button class="go-btn secondary" onclick="showPage('stats')">📊 Stats</button>
+      <button class="go-btn secondary" onclick="goHome()">🏠 Menu</button>
     </div>
   </div>
 </div>
@@ -1274,15 +1235,10 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 <div id="profileModal">
   <div class="modal-box">
     <div class="modal-logo">♟ Do You Speak Chess?</div>
-    <div class="modal-sub">Créez votre profil joueur !</div>
-    <div class="avatar-pick" id="avatarPick"></div>
+    <div class="modal-sub">Choisissez votre pseudo !</div>
     <input class="modal-input" id="nameInput" type="text" placeholder="Votre pseudo..." maxlength="20">
     <button class="modal-btn" onclick="saveProfile()">🎮 C'est parti !</button>
-    <button class="google-btn" onclick="loginGoogle();skipProfile();">
-      <svg width="15" height="15" viewBox="0 0 48 48"><path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.7 33.9 29.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"/></svg>
-      Continuer avec Google
-    </button>
-    <div class="modal-skip" onclick="skipProfile()">Jouer sans compte</div>
+    <div class="modal-skip" onclick="skipProfile()">Jouer sans pseudo</div>
   </div>
 </div>
 
@@ -1908,46 +1864,28 @@ function saveProfileData() {
 }
 
 function updateNavUser() {
-  document.getElementById('navAvatar').textContent = userProfile.avatar;
-  document.getElementById('navUsername').textContent = userProfile.name;
+  const av=document.getElementById('navAvatar'); if(av) av.textContent = userProfile.avatar;
+  const un=document.getElementById('navUsername'); if(un) un.textContent = userProfile.name;
 }
 
 function showProfile() {
-  buildAvatarPicker();
   document.getElementById('nameInput').value = userProfile.name !== 'Invité' ? userProfile.name : '';
   document.getElementById('profileModal').classList.add('show');
 }
 
 function buildAvatarPicker() {
   const el = document.getElementById('avatarPick');
-  el.innerHTML = '';
-  const colors = ['#4488ff','#e06820','#52c07c','#e05252','#7c6fff','#c9a84c','#ff4488','#44ddcc','#ff8844','#88aaff'];
-  AVATARS.forEach((av, i) => {
-    const d = document.createElement('div');
-    d.className = 'av-opt' + (i === selectedAv ? ' selected' : '');
-    d.style.background = colors[i] + '33';
-    d.style.border = '2px solid ' + (i === selectedAv ? 'var(--gold)' : 'var(--border)');
-    d.textContent = av;
-    d.onclick = () => {
-      selectedAv = i;
-      document.querySelectorAll('.av-opt').forEach((el,j) => {
-        el.classList.toggle('selected', j===i);
-        el.style.border = '2px solid ' + (j===i ? 'var(--gold)' : 'var(--border)');
-      });
-    };
-    el.appendChild(d);
-  });
+  if(!el) return; // sélecteur d'avatars supprimé
 }
 
 function saveProfile() {
   const name = document.getElementById('nameInput').value.trim();
   if (!name) { document.getElementById('nameInput').style.borderColor='var(--red)'; return; }
   userProfile.name = name;
-  userProfile.avatar = AVATARS[selectedAv];
   saveProfileData();
   updateNavUser();
   document.getElementById('profileModal').classList.remove('show');
-  addToLeaderboard();
+  try{ addToLeaderboard(); }catch(e){}
 }
 
 function skipProfile() {
@@ -2087,21 +2025,20 @@ function getLocalLeaderboard() {
 
 async function addToLeaderboard() {
   await fbSavePlayer();
-  if (document.getElementById('page-leaderboard').classList.contains('active')) renderLeaderboard();
+  { const _lb=document.getElementById('page-leaderboard'); if(_lb && _lb.classList.contains('active')) renderLeaderboard(); }
 }
 
 // ===== PAGES =====
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
-  const tabs = {'game':0,'stats':1,'leaderboard':2};
-  document.querySelectorAll('.nav-tab')[tabs[id]]?.classList.add('active');
-  if (id==='stats') renderStats();
-  if (id==='leaderboard') renderLeaderboard();
+  const pg = document.getElementById('page-'+id) || document.getElementById('page-game');
+  if(pg) pg.classList.add('active');
+  const firstTab = document.querySelector('.nav-tab'); if(firstTab) firstTab.classList.add('active');
 }
 
 function renderStats() {
+  if(!document.getElementById('myEloDisplay')) return; // page Stats supprimée
   const p = userProfile;
   const wins = p.games.filter(g=>g.result==='win').length;
   const losses = p.games.filter(g=>g.result==='loss').length;
@@ -2213,6 +2150,7 @@ function renderLbRows(lb) {
 
 async function renderLeaderboard() {
   const el = document.getElementById('lbList');
+  if(!el) return; // page Classement supprimée
   el.innerHTML = '<div style="text-align:center;padding:30px;color:#444;font-size:.8rem;">⏳ Chargement…</div>';
   const badge = document.getElementById('fbBadge');
   if (badge) badge.textContent = fbReady ? '🟢 Firebase connecté' : '🟡 Mode démo local';
