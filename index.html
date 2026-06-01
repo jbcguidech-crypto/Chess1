@@ -477,6 +477,29 @@ body {
 }
 .coord-col, .coords-bottom { display:none !important; }
 
+/* ── BARRE DE CONTRÔLES (moderne, type Lichess) ── */
+.game-controls {
+  display:flex;gap:8px;width:100%;max-width:420px;
+  margin:10px auto 4px;box-sizing:border-box;
+}
+.gc-btn {
+  flex:1;display:flex;align-items:center;justify-content:center;gap:7px;
+  padding:11px 10px;border-radius:10px;cursor:pointer;
+  font-family:'Manrope',system-ui,sans-serif;font-weight:700;font-size:.84rem;
+  background:var(--surface-hi);color:var(--text-light);
+  border:1px solid var(--border);
+  transition:background .15s, border-color .15s, transform .08s;
+  -webkit-tap-highlight-color:transparent;
+}
+.gc-btn svg { width:18px;height:18px;flex-shrink:0; }
+.gc-btn:hover { background:rgba(91,141,239,.14);border-color:var(--border-hi); }
+.gc-btn:active { transform:scale(.97); }
+.gc-btn:disabled { opacity:.4;cursor:not-allowed; }
+.gc-btn.gc-primary {
+  background:var(--gold);color:var(--text-dark);border-color:var(--gold);
+}
+.gc-btn.gc-primary:hover { background:var(--gold-light);border-color:var(--gold-light); }
+
 /* ── BANDEAUX JOUEUR (compacts, style mobile, design original) ── */
 .player-bar {
   display:flex;align-items:center;justify-content:space-between;gap:8px;
@@ -1005,6 +1028,18 @@ canvas#eloChart { width:100%!important;height:90px!important; }
       <div class="pb-meta"><div class="pb-name" id="botName">Vous</div><div class="pb-elo" id="botElo">800</div></div>
     </div>
     <div class="pb-captured" id="botCaptured"></div>
+  </div>
+
+  <!-- BARRE DE CONTRÔLES (style moderne) -->
+  <div class="game-controls">
+    <button class="gc-btn" id="gcUndo" onclick="undoMove()" title="Annuler le dernier coup">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"></path><path d="M4 9h11a5 5 0 0 1 5 5v0a5 5 0 0 1-5 5H9"></path></svg>
+      <span>Annuler</span>
+    </button>
+    <button class="gc-btn gc-primary" id="gcNew" onclick="resetGame()" title="Nouvelle partie">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-6.36 2.64L3 8"></path><path d="M3 3v5h5"></path></svg>
+      <span>Nouvelle partie</span>
+    </button>
   </div>
 
   <!-- COLONNE LATÉRALE : micro + historique -->
@@ -3047,6 +3082,8 @@ function handleClick(r,c){
 }
 
 function updateSidebar(){
+  const _undo=document.getElementById('gcUndo');
+  if(_undo) _undo.disabled = (typeof undoStack==='undefined' || !undoStack || !undoStack.length || aiThinking);
   const dot=document.getElementById('turnGem'),txt=document.getElementById('turnText');
   dot.className='turn-gem '+(turn==='w'?'white':'black');
   // L'indicateur dépend de QUI doit jouer (joueur vs IA), pas de la couleur
