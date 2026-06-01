@@ -1793,11 +1793,14 @@ function confirmQuit(yes){
 
 function hideSplash() {
   const s = document.getElementById('splash');
-  if(s){ s.style.opacity='0'; s.style.transform='scale(1.05)'; s.style.transition='opacity .6s,transform .6s'; setTimeout(()=>s.style.display='none', 650); }
+  if(s){ s.style.pointerEvents='none'; s.style.opacity='0'; s.style.transform='scale(1.05)'; s.style.transition='opacity .6s,transform .6s'; setTimeout(()=>s.style.display='none', 650); }
 }
 
 function splashChooseColor(color) {
   userInteracted = true; // L'utilisateur a cliqué → synthèse vocale autorisée
+  // Choisir une couleur sur le splash = jouer contre l'IA → quitte tout mode en ligne
+  if(gameMode==='online'){ try{ leaveOnlineGame(); }catch(e){} }
+  gameMode='ai';
   // Choisit la couleur puis cache le splash
   if(color==='r'){
     const chosen = (Date.now() % 2 === 0) ? 'w' : 'b';
@@ -4210,6 +4213,9 @@ function configureStockfishStrength(){
 }
 
 function setPlayerColor(color){
+  // Choisir une couleur ici = jouer contre l'IA → on quitte tout mode en ligne
+  if(gameMode==='online'){ try{ leaveOnlineGame(); }catch(e){} }
+  gameMode='ai';
   if(color==='r'){
     // Aléatoire — tirage au sort
     const chosen = (Date.now() % 2 === 0) ? 'w' : 'b';
@@ -4282,6 +4288,13 @@ function _serializeGame(){
 // Reconstruit l'état local à partir d'un doc Firestore
 function _applyRemoteState(data){
   if(!data || !data.board) return;
+  // Si le plateau distant est identique au nôtre, ne rien refaire (évite d'effacer
+  // une sélection en cours côté mobile lors d'un snapshot sans nouveau coup).
+  try{
+    let cur='';
+    for(let r=0;r<8;r++) for(let c=0;c<8;c++){ cur += board[r][c] ? board[r][c] : '..'; }
+    if(cur===data.board && turn===data.turn){ onlineRev=data.rev||onlineRev; return; }
+  }catch(e){}
   onlineApplying = true;
   try{
     const nb=Array(8).fill(null).map(()=>Array(8).fill(null));
