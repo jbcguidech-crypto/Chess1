@@ -500,6 +500,71 @@ body {
 }
 .gc-btn.gc-primary:hover { background:var(--gold-light);border-color:var(--gold-light); }
 
+/* ── JOUER EN LIGNE ── */
+.splash-online-btn {
+  margin-top:14px;width:100%;max-width:340px;padding:13px;border-radius:12px;cursor:pointer;
+  font-family:'Manrope',system-ui,sans-serif;font-weight:700;font-size:.92rem;
+  background:linear-gradient(180deg,rgba(91,141,239,.18),rgba(91,141,239,.06));
+  color:var(--gold-light);border:1px solid var(--border-gold);transition:all .15s;
+}
+.splash-online-btn:hover { background:rgba(91,141,239,.26);transform:translateY(-2px); }
+.splash-online-btn:active { transform:translateY(1px); }
+.online-modal {
+  display:none;position:fixed;inset:0;z-index:300;
+  background:rgba(0,0,0,.55);backdrop-filter:blur(3px);
+  align-items:center;justify-content:center;padding:20px;
+}
+.online-modal.show { display:flex;animation:fadeUp .3s ease; }
+.online-box {
+  width:100%;max-width:380px;background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;overflow:hidden;box-shadow:0 16px 50px rgba(0,0,0,.4);
+}
+.online-header {
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px;border-bottom:1px solid var(--border);
+}
+.online-title { font-family:'Manrope',system-ui,sans-serif;font-size:1.15rem;font-weight:800;color:var(--gold-light); }
+.online-close {
+  background:rgba(255,255,255,.08);border:none;border-radius:8px;width:32px;height:32px;
+  color:var(--cream);font-size:1rem;cursor:pointer;
+}
+.online-body { padding:20px;display:flex;flex-direction:column;gap:14px; }
+.online-hint { font-size:.85rem;color:var(--text-muted);line-height:1.5;margin:0;text-align:center; }
+.online-create {
+  padding:14px;border-radius:11px;cursor:pointer;border:none;
+  background:var(--gold);color:var(--text-dark);font-weight:800;font-size:.95rem;
+  font-family:'Manrope',system-ui,sans-serif;transition:all .15s;
+}
+.online-create:hover { background:var(--gold-light);transform:translateY(-1px); }
+.online-sep { text-align:center;color:var(--text-muted);font-size:.8rem; }
+.online-join-row { display:flex;gap:8px; }
+.online-input {
+  flex:1;padding:13px;border-radius:11px;border:1px solid var(--border);
+  background:var(--surface-hi);color:var(--text-light);
+  font-family:'JetBrains Mono',monospace;font-size:1.3rem;font-weight:800;
+  text-align:center;letter-spacing:4px;text-transform:uppercase;
+}
+.online-input:focus { outline:none;border-color:var(--gold); }
+.online-join {
+  padding:0 18px;border-radius:11px;cursor:pointer;border:1px solid var(--border-gold);
+  background:rgba(91,141,239,.18);color:var(--gold-light);font-weight:700;
+  font-family:'Manrope',system-ui,sans-serif;
+}
+.online-join:hover { background:rgba(91,141,239,.28); }
+.online-banner {
+  display:flex;align-items:center;gap:10px;width:100%;max-width:420px;
+  margin:0 auto 10px;padding:9px 12px;box-sizing:border-box;
+  background:rgba(91,141,239,.12);border:1px solid var(--border-gold);border-radius:10px;
+  font-family:'Manrope',system-ui,sans-serif;
+}
+.online-banner .ob-code { font-family:'JetBrains Mono',monospace;font-weight:800;font-size:1.05rem;color:var(--gold-light);letter-spacing:2px; }
+.online-banner .ob-col { font-size:.8rem;color:var(--text-muted);flex:1; }
+.online-banner .ob-copy, .online-banner .ob-quit {
+  background:rgba(255,255,255,.08);border:none;border-radius:7px;width:30px;height:30px;
+  cursor:pointer;font-size:.85rem;color:var(--cream);
+}
+.online-banner .ob-quit { color:#e07070; }
+
 /* ── BANDEAUX JOUEUR (compacts, style mobile, design original) ── */
 .player-bar {
   display:flex;align-items:center;justify-content:space-between;gap:8px;
@@ -939,6 +1004,26 @@ canvas#eloChart { width:100%!important;height:90px!important; }
       <span class="btn-king" id="kingBlack"></span>
       <span class="btn-lbl">Noirs</span>
     </button>
+  </div>
+  <button class="splash-online-btn" onclick="openOnlineModal()">🌐 Jouer en ligne avec un ami</button>
+</div>
+
+<!-- ══ MODALE JOUER EN LIGNE ════════════════════════ -->
+<div id="onlineModal" class="online-modal">
+  <div class="online-box">
+    <div class="online-header">
+      <span class="online-title">🌐 Jouer en ligne</span>
+      <button class="online-close" onclick="closeOnlineModal()">✕</button>
+    </div>
+    <div class="online-body">
+      <p class="online-hint">Créez une partie et partagez le code à votre ami, ou entrez le code qu'il vous a donné.</p>
+      <button class="online-create" onclick="createOnlineGame()">➕ Créer une partie</button>
+      <div class="online-sep">— ou —</div>
+      <div class="online-join-row">
+        <input id="onlineCodeInput" class="online-input" maxlength="4" placeholder="CODE" autocapitalize="characters" oninput="this.value=this.value.toUpperCase()">
+        <button class="online-join" onclick="joinOnlineGame(document.getElementById('onlineCodeInput').value)">Rejoindre</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1918,14 +2003,14 @@ async function initFirebase() {
       return;
     }
     const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
-    const { getFirestore, doc, setDoc, getDoc, collection, getDocs, query, orderBy, limit }
+    const { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc, serverTimestamp, collection, getDocs, query, orderBy, limit }
       = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
     const { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, GoogleAuthProvider, onAuthStateChanged }
       = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
     const app = initializeApp(FIREBASE_CONFIG);
     db = getFirestore(app);
     const auth = getAuth(app);
-    window._fb = { getFirestore, doc, setDoc, getDoc, collection, getDocs, query, orderBy, limit };
+    window._fb = { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc, serverTimestamp, collection, getDocs, query, orderBy, limit };
     window._auth = { auth, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, GoogleAuthProvider, onAuthStateChanged };
     fbReady = true;
     console.info('✅ Firebase connecté');
@@ -2728,6 +2813,10 @@ function undoMove(){
 
 function makeMove(fr,fc,tr,tc,castleType,promo){
   if(!gameActive) return; // aucun coup hors d'une partie en cours
+  // En ligne : on ne peut jouer QUE sa propre couleur, et seulement à son tour
+  if(gameMode==='online' && !onlineApplying){
+    if(turn!==onlineColor){ setStatus(currentLang==='fr'?'Pas votre tour':'Not your turn','error'); return; }
+  }
   // Instantané AVANT modification (pour annuler)
   undoStack.push({
     board: board.map(row=>row.slice()),
@@ -2770,6 +2859,11 @@ function makeMove(fr,fc,tr,tc,castleType,promo){
     speak(say, ()=>askStockfish());                          // coup (+échec) PUIS l'IA joue
   } else {
     if(say) speak(say);
+  }
+  // En ligne : si c'est MON coup (pas l'application d'un coup distant), je l'envoie
+  if(gameMode==='online' && !onlineApplying){
+    _pushOnlineState();
+    _updateOnlineStatus();
   }
 }
 
@@ -4088,6 +4182,186 @@ function toggleModeCard(){
   const card = document.getElementById('modeCard');
   if(card) card.style.display = card.style.display==='none' ? 'block' : 'none';
 }
+
+// ============================================================
+//  MULTIJOUEUR EN LIGNE (Firestore) — jouer avec un ami via code
+// ============================================================
+let onlineCode = null;       // code de la partie en cours
+let onlineColor = null;      // 'w' ou 'b' : couleur que JE joue en ligne
+let onlineUnsub = null;      // fonction pour stopper l'écoute temps réel
+let onlineApplying = false;  // garde anti-boucle pendant l'application d'un coup distant
+let onlineRev = 0;           // numéro de révision local
+
+function _genCode(){
+  const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sans I,O,0,1 ambigus
+  let s=''; for(let i=0;i<4;i++) s+=A[Math.floor(Math.random()*A.length)]; return s;
+}
+
+// Sérialise l'état courant pour Firestore (board en chaîne compacte)
+function _serializeGame(){
+  let b='';
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){ b += board[r][c] ? board[r][c] : '..'; }
+  return {
+    board: b,
+    turn: turn,
+    histUCI: moveHistoryUCI.slice(),
+    histMoves: history.map(h=>({move:h.move,color:h.color})),
+    lastMove: lastMove ? lastMove.slice() : null,
+    castling: Object.assign({}, castling),
+    enPassant: enPassant ? enPassant.slice() : null,
+    halfmove: halfmoveClock,
+    rev: onlineRev,
+    updatedAt: Date.now()
+  };
+}
+
+// Reconstruit l'état local à partir d'un doc Firestore
+function _applyRemoteState(data){
+  if(!data || !data.board) return;
+  onlineApplying = true;
+  try{
+    const nb=Array(8).fill(null).map(()=>Array(8).fill(null));
+    let i=0;
+    for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+      const tok=data.board.substr(i,2); i+=2;
+      nb[r][c] = (tok==='..') ? null : tok;
+    }
+    board=nb;
+    turn=data.turn;
+    moveHistoryUCI = Array.isArray(data.histUCI)?data.histUCI.slice():[];
+    history = Array.isArray(data.histMoves)?data.histMoves.map(h=>({move:h.move,color:h.color})):[];
+    lastMove = data.lastMove||null;
+    castling = data.castling||castling;
+    enPassant = data.enPassant||null;
+    halfmoveClock = data.halfmove||0;
+    onlineRev = data.rev||0;
+    selected=null; possibleMoves=[];
+    positionHistory=[posKey()];
+    renderBoard(); updateSidebar();
+    const st=checkGameState();
+    // Annonce vocale du coup adverse + son
+    try{
+      if(lastMove){
+        const [fr,fc,tr,tc]=lastMove;
+        if(st.over){ playSound('end'); }
+        else if(st.check){ playSound('check'); }
+        else { playSound('move'); }
+      }
+    }catch(e){}
+    _updateOnlineStatus();
+  }catch(e){ console.warn('apply remote failed',e); }
+  onlineApplying=false;
+}
+
+// Écrit l'état courant dans Firestore (appelé après chaque coup local en ligne)
+async function _pushOnlineState(){
+  if(!onlineCode || !fbReady || !db) return;
+  try{
+    const { doc, updateDoc } = window._fb;
+    onlineRev++;
+    await updateDoc(doc(db,'online_games',onlineCode), _serializeGame());
+  }catch(e){ console.warn('push failed',e); setStatus(currentLang==='fr'?'⚠️ Synchro échouée':'⚠️ Sync failed','error'); }
+}
+
+// Démarre l'écoute temps réel d'une partie
+function _listenOnline(code){
+  if(!fbReady || !db) return;
+  const { doc, onSnapshot } = window._fb;
+  if(onlineUnsub){ try{onlineUnsub();}catch(e){} onlineUnsub=null; }
+  onlineUnsub = onSnapshot(doc(db,'online_games',code), (snap)=>{
+    if(!snap.exists()) return;
+    const data=snap.data();
+    const remoteRev = data.rev||0;
+    // N'applique QUE si la révision distante est strictement plus récente (= coup de l'adversaire)
+    if(remoteRev > onlineRev){
+      _applyRemoteState(data);
+    }
+    // Notifie quand l'adversaire rejoint
+    if(data.guestJoined && onlineColor==='w' && !window._guestNotified){
+      window._guestNotified=true;
+      setStatus(currentLang==='fr'?'✅ Adversaire connecté !':'✅ Opponent joined!','');
+    }
+  }, (err)=>{ console.warn('listen error',err); });
+}
+
+function _updateOnlineStatus(){
+  if(gameMode!=='online') return;
+  const myTurn = (turn===onlineColor);
+  const el=document.getElementById('status');
+  if(!el) return;
+  if(myTurn){ setStatus(currentLang==='fr'?'À vous de jouer':'Your turn',''); }
+  else { setStatus(currentLang==='fr'?'En attente de l\'adversaire…':'Waiting for opponent…',''); }
+  // Verrouille le micro si ce n'est pas mon tour
+  const vb=document.getElementById('voiceBtn'); if(vb) vb.disabled = !myTurn;
+}
+
+// Crée une nouvelle partie en ligne → renvoie le code
+async function createOnlineGame(){
+  if(!fbReady || !db){ alert(currentLang==='fr'?'Firebase non connecté. Vérifiez votre connexion.':'Firebase not connected.'); return; }
+  const { doc, setDoc } = window._fb;
+  let code=_genCode();
+  gameMode='online'; onlineColor='w'; onlineCode=code; onlineRev=0;
+  // Position initiale
+  initBoard(); turn='w'; selected=null; possibleMoves=[]; history=[]; moveHistoryUCI=[]; undoStack=[];
+  lastMove=null; enPassant=null; castling={wK:true,wR_k:true,wR_q:true,bK:true,bR_k:true,bR_q:true};
+  halfmoveClock=0; positionHistory=[posKey()]; gameActive=true; playerColor='w';
+  try{
+    await setDoc(doc(db,'online_games',code), Object.assign(_serializeGame(), {
+      createdAt: Date.now(), hostName: userProfile.name||'Hôte', guestJoined:false
+    }));
+  }catch(e){ console.warn(e); alert(currentLang==='fr'?'Création impossible.':'Could not create game.'); return; }
+  _listenOnline(code);
+  closeOnlineModal();
+  userInteracted = true;
+  try{ hideSplash(); }catch(e){ showPage('game'); }
+  renderBoard(); updateSidebar(); buildCoords();
+  _showOnlineBanner(code, 'w');
+  _updateOnlineStatus();
+}
+
+// Rejoint une partie existante via son code
+async function joinOnlineGame(code){
+  code=(code||'').toUpperCase().trim();
+  if(code.length!==4){ alert(currentLang==='fr'?'Code à 4 caractères attendu.':'Enter a 4-character code.'); return; }
+  if(!fbReady || !db){ alert(currentLang==='fr'?'Firebase non connecté.':'Firebase not connected.'); return; }
+  const { doc, getDoc, updateDoc } = window._fb;
+  let snap;
+  try{ snap = await getDoc(doc(db,'online_games',code)); }
+  catch(e){ alert(currentLang==='fr'?'Erreur de connexion.':'Connection error.'); return; }
+  if(!snap.exists()){ alert(currentLang==='fr'?'Partie introuvable. Vérifiez le code.':'Game not found.'); return; }
+  gameMode='online'; onlineColor='b'; onlineCode=code; playerColor='b';
+  try{ await updateDoc(doc(db,'online_games',code), {guestJoined:true, guestName:userProfile.name||'Invité'}); }catch(e){}
+  _applyRemoteState(snap.data());
+  _listenOnline(code);
+  closeOnlineModal();
+  userInteracted = true;
+  try{ hideSplash(); }catch(e){ showPage('game'); }
+  renderBoard(); updateSidebar(); buildCoords();
+  _showOnlineBanner(code, 'b');
+  _updateOnlineStatus();
+}
+
+function leaveOnlineGame(){
+  if(onlineUnsub){ try{onlineUnsub();}catch(e){} onlineUnsub=null; }
+  onlineCode=null; onlineColor=null; onlineRev=0;
+  const b=document.getElementById('onlineBanner'); if(b) b.remove();
+  gameMode='ai';
+}
+
+// Bannière affichant le code + ma couleur
+function _showOnlineBanner(code, col){
+  let b=document.getElementById('onlineBanner');
+  if(!b){ b=document.createElement('div'); b.id='onlineBanner'; b.className='online-banner';
+    const bc=document.querySelector('.board-container'); if(bc&&bc.parentNode) bc.parentNode.insertBefore(b, bc); }
+  const colTxt = col==='w' ? (currentLang==='fr'?'Blancs':'White') : (currentLang==='fr'?'Noirs':'Black');
+  b.innerHTML = '<span class="ob-code">🔗 '+code+'</span>'
+    + '<span class="ob-col">'+(currentLang==='fr'?'Vous jouez : ':'You play: ')+colTxt+'</span>'
+    + '<button class="ob-copy" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+code+'\');this.textContent=\'✓\'">📋</button>'
+    + '<button class="ob-quit" onclick="leaveOnlineGame()">✕</button>';
+}
+
+function openOnlineModal(){ const m=document.getElementById('onlineModal'); if(m) m.classList.add('show'); }
+function closeOnlineModal(){ const m=document.getElementById('onlineModal'); if(m) m.classList.remove('show'); }
 
 function setMode(m){
   gameMode=m;
