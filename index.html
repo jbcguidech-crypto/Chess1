@@ -1467,8 +1467,20 @@ function buildSplash() {
     const grid = document.createElement('div');
     grid.style.cssText = 'display:grid;grid-template-columns:repeat(8,'+SZ+'px);grid-template-rows:repeat(8,'+SZ+'px);width:'+(SZ*8)+'px;height:'+(SZ*8)+'px;';
     if(_bt0.type==='img'){
-      grid.style.backgroundImage = 'url('+BOARD_CDN+_bt0.id+'.jpg)';
-      grid.style.backgroundSize = '100% 100%';
+      // Fond de secours IMMÉDIAT proche du thème (évite le flash marron avant chargement CDN)
+      const _fb = (_bt0.id && _bt0.id.indexOf('blue')===0) ? {l:'#dee3e6',d:'#8ca2ad'}
+                : (_bt0.id && _bt0.id.indexOf('wood')===0) ? {l:'#e8c89a',d:'#9c6b3f'}
+                : {l:'#e8c89a',d:'#9c6b3f'};
+      grid.dataset.fbL=_fb.l; grid.dataset.fbD=_fb.d;
+      grid.style.backgroundColor = _fb.d;
+      const _probe = new Image();
+      _probe.onload = ()=>{
+        grid.style.backgroundImage = 'url('+BOARD_CDN+_bt0.id+'.jpg)';
+        grid.style.backgroundSize = '100% 100%';
+        // Rend les cases claires transparentes pour laisser voir la texture
+        grid.querySelectorAll('[data-sq="light"]').forEach(c=>{ c.style.background='transparent'; });
+      };
+      _probe.src = BOARD_CDN+_bt0.id+'.jpg';
     }
     const BOARD_INIT = [
       ['bR','bN','bB','bQ','bK','bB','bN','bR'],
@@ -1487,8 +1499,9 @@ function buildSplash() {
         const isLight = (r+c)%2===0;
         let bg;
         if(_bt0.type==='css'){ bg = isLight ? _bt0.light : _bt0.dark; }
-        else { bg = isLight ? 'transparent' : 'rgba(0,0,0,0.18)'; }
+        else { bg = isLight ? (grid.dataset.fbL||'transparent') : 'rgba(0,0,0,0.18)'; }
         cell.style.cssText = 'width:'+SZ+'px;height:'+SZ+'px;display:flex;align-items:center;justify-content:center;background:'+bg+';';
+        if(_bt0.type==='img' && isLight) cell.dataset.sq='light';
         const code = BOARD_INIT[r][c];
         if(code){
           const img = document.createElement('img');
