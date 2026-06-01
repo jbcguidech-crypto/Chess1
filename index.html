@@ -1093,7 +1093,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="player-bar" id="barTop">
     <div class="pb-left">
       <span class="pb-dot b" id="topDot"></span>
-      <div class="pb-ava" id="topAva">🤖</div>
+      <div class="pb-ava" id="topAva">♚</div>
       <div class="pb-meta"><div class="pb-name" id="topName">Ordinateur</div><div class="pb-elo" id="topElo">800</div></div>
     </div>
     <div class="pb-captured" id="topCaptured"></div>
@@ -1112,7 +1112,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="player-bar active" id="barBottom">
     <div class="pb-left">
       <span class="pb-dot w" id="botDot"></span>
-      <div class="pb-ava" id="botAva">🦁</div>
+      <div class="pb-ava" id="botAva">♔</div>
       <div class="pb-meta"><div class="pb-name" id="botName">Vous</div><div class="pb-elo" id="botElo">800</div></div>
     </div>
     <div class="pb-captured" id="botCaptured"></div>
@@ -1891,7 +1891,7 @@ buildBoardThemeSelector();
 if(typeof attachSliderTouch==='function') attachSliderTouch();
 
 // ===== USER PROFILE & STATS =====
-const AVATARS = ['🦁','🐯','🦊','🐺','🦅','🐉','👑','⚡','🔥','🌙'];
+const AVATARS = ['♔','♕','♖','♗','♘','♙','♚','♛','♜','♝'];
 let userProfile = { name:'Invité', avatar:'♟', elo:1200, eloHistory:[1200], games:[], selectedAvatar:0 };
 let selectedAv = 0;
 
@@ -2001,11 +2001,11 @@ let lbCache = []; // cache local si Firebase indispo
 
 const FALLBACK_PLAYERS = [
   {name:'Magnus_Fan',avatar:'♔',elo:2340,wins:87,losses:12,draws:9},
-  {name:'ChessProFR',avatar:'🦁',elo:1980,wins:64,losses:28,draws:15},
-  {name:'Kasparov2',avatar:'🐉',elo:1820,wins:55,losses:33,draws:18},
-  {name:'EchecMaster',avatar:'👑',elo:1650,wins:44,losses:38,draws:20},
-  {name:'PionPousseur',avatar:'🦅',elo:1430,wins:38,losses:42,draws:12},
-  {name:'LaReine_Noire',avatar:'🌙',elo:1290,wins:30,losses:48,draws:10},
+  {name:'ChessProFR',avatar:'♕',elo:1980,wins:64,losses:28,draws:15},
+  {name:'Kasparov2',avatar:'♖',elo:1820,wins:55,losses:33,draws:18},
+  {name:'EchecMaster',avatar:'♗',elo:1650,wins:44,losses:38,draws:20},
+  {name:'PionPousseur',avatar:'♘',elo:1430,wins:38,losses:42,draws:12},
+  {name:'LaReine_Noire',avatar:'♚',elo:1290,wins:30,losses:48,draws:10},
 ];
 
 async function initFirebase() {
@@ -2233,7 +2233,7 @@ function setupAuthListener() {
       // Pré-remplir profil avec infos Google
       if (userProfile.name === 'Invité' || !localStorage.getItem('chess_profile')) {
         userProfile.name  = user.displayName?.split(' ')[0] || 'Joueur';
-        userProfile.avatar = user.photoURL ? '📷' : '🦁';
+        userProfile.avatar = '♟';
         userProfile._photoURL = user.photoURL;
         userProfile._uid = user.uid;
         saveProfileData();
@@ -3110,21 +3110,22 @@ function updatePlayerBars(){
     const youColor = playerColor;
     const oppColor = youColor==='w' ? 'b' : 'w';
     _setDot('botDot', youColor); _setDot('topDot', oppColor);
+    const KING = (col)=> col==='w' ? '♔' : '♚';
     // Bas = toi
     const botName=document.getElementById('botName'), botElo=document.getElementById('botElo'), botAva=document.getElementById('botAva');
     if(botName) botName.textContent = userProfile.name || 'Vous';
     if(botElo) botElo.textContent = (userProfile.elo!=null ? userProfile.elo : '') + '';
-    if(botAva) botAva.innerHTML = userProfile._photoURL ? '<img src="'+userProfile._photoURL+'" alt="">' : (userProfile.avatar || '🦁');
+    if(botAva) botAva.innerHTML = KING(youColor);
     // Haut = adversaire
     const topName=document.getElementById('topName'), topElo=document.getElementById('topElo'), topAva=document.getElementById('topAva');
     if(gameMode==='ai'){
       if(topName) topName.textContent = 'Ordinateur';
       if(topElo) topElo.textContent = currentElo + '';
-      if(topAva) topAva.innerHTML = '🤖';
+      if(topAva) topAva.innerHTML = KING(oppColor);
     } else {
       if(topName) topName.textContent = 'Joueur 2';
       if(topElo) topElo.textContent = '';
-      if(topAva) topAva.innerHTML = '👤';
+      if(topAva) topAva.innerHTML = KING(oppColor);
     }
     // Surligne le joueur au trait
     const bb=document.getElementById('barBottom'), bt=document.getElementById('barTop');
