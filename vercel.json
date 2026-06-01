@@ -6,18 +6,9 @@
         { "key": "Cross-Origin-Embedder-Policy", "value": "credentialless" },
         { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
       ]
-    },
-    {
-      "source": "/stockfish-18-lite-single.js",
-      "headers": [ { "key": "Content-Type", "value": "text/javascript; charset=utf-8" } ]
-    },
-    {
-      "source": "/stockfish-18-lite-single.wasm",
-      "headers": [ { "key": "Content-Type", "value": "application/wasm" } ]
     }
   ],
   "rewrites": [
-    { "source": "/stockfish-18-lite-single.js", "destination": "https://cdn.jsdelivr.net/npm/stockfish/src/stockfish-18-lite-single.js" },
     { "source": "/stockfish-18-lite-single.wasm", "destination": "https://cdn.jsdelivr.net/npm/stockfish/src/stockfish-18-lite-single.wasm" }
   ]
 }
