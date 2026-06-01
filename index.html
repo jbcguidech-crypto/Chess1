@@ -1768,6 +1768,10 @@ function showSplash(){
   aiSpeaking = false;
   aiThinking = false;
   gameActive = false;            // plus aucune partie active → aucun coup/voix possible
+  // Coupe une éventuelle partie en ligne encore active
+  if(typeof onlineUnsub!=='undefined' && onlineUnsub){ try{onlineUnsub();}catch(e){} onlineUnsub=null; }
+  if(typeof onlineCode!=='undefined'){ onlineCode=null; onlineColor=null; onlineRev=0; onlineIsHost=false; onlineApplying=false; }
+  { const _ob=document.getElementById('onlineBanner'); if(_ob) _ob.remove(); }
   if(typeof updateNavLeft==='function') updateNavLeft();
   speechEpoch++;                 // invalide toute parole déjà programmée (délai de 200ms)
   aiGen++;                       // invalide tout coup d'IA en cours de calcul
@@ -1786,6 +1790,8 @@ function showSplash(){
 function confirmQuit(yes){
   document.getElementById('quitModal').classList.remove('show');
   if(yes){
+    // Si on abandonne une partie en ligne, quitter proprement (coupe l'écoute, retire la bannière)
+    if(gameMode==='online'){ try{ leaveOnlineGame(); }catch(e){} }
     resetGame();
     showSplash();
   }
