@@ -4373,9 +4373,26 @@ function _updateOnlineStatus(){
   const vb=document.getElementById('voiceBtn'); if(vb) vb.disabled = !myTurn;
 }
 
+// Coupe TOUT (IA, micro, écoute online) avant de changer de mode — évite les blocages
+function _stopEverything(){
+  // Stoppe l'IA
+  try{ aiGen++; }catch(e){}
+  aiThinking=false; aiSpeaking=false; pendingSpeech=null;
+  try{ if(stockfish) stockfish.postMessage('stop'); }catch(e){}
+  // Coupe la voix
+  try{ if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e){}
+  try{ if(recognition){ recognition.abort(); } }catch(e){}
+  voiceContinuous=false; listening=false; moveJustPlayed=false; undoLock=false;
+  const sp=document.getElementById('aiSpinner'); if(sp) sp.classList.remove('show');
+  const vb=document.getElementById('voiceBtn'); if(vb){ vb.disabled=false; vb.classList.remove('listening'); }
+  // Coupe l'écoute Firestore en cours
+  if(onlineUnsub){ try{onlineUnsub();}catch(e){} onlineUnsub=null; }
+}
+
 // Crée une nouvelle partie en ligne → renvoie le code
 async function createOnlineGame(){
   if(!fbReady || !db){ alert(currentLang==='fr'?'Firebase non connecté. Vérifiez votre connexion.':'Firebase not connected.'); return; }
+  _stopEverything();
   const { doc, setDoc } = window._fb;
   let code=_genCode();
   // Couleur du créateur tirée au hasard ; celui qui rejoint aura l'opposée
@@ -4409,6 +4426,7 @@ async function joinOnlineGame(code){
   try{ snap = await getDoc(doc(db,'online_games',code)); }
   catch(e){ alert(currentLang==='fr'?'Erreur de connexion.':'Connection error.'); return; }
   if(!snap.exists()){ alert(currentLang==='fr'?'Partie introuvable. Vérifiez le code.':'Game not found.'); return; }
+  _stopEverything();
   const data0 = snap.data();
   const hostColor = data0.hostColor || 'w';
   const myColor = (hostColor==='w') ? 'b' : 'w';
@@ -4425,8 +4443,9 @@ async function joinOnlineGame(code){
 }
 
 function leaveOnlineGame(){
-  if(onlineUnsub){ try{onlineUnsub();}catch(e){} onlineUnsub=null; }
-  onlineCode=null; onlineColor=null; onlineRev=0;
+  _stopEverything();
+  onlineCode=null; onlineColor=null; onlineRev=0; onlineIsHost=false; onlineApplying=false;
+  window._guestNotified=false;
   const b=document.getElementById('onlineBanner'); if(b) b.remove();
   gameMode='ai';
 }
