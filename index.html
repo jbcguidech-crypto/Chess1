@@ -1798,16 +1798,25 @@ async function initFirebase() {
     const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
     const { getFirestore, doc, setDoc, getDoc, collection, getDocs, query, orderBy, limit }
       = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-    const { getAuth, signInWithPopup, signOut, GoogleAuthProvider, onAuthStateChanged }
+    const { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, GoogleAuthProvider, onAuthStateChanged }
       = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
     const app = initializeApp(FIREBASE_CONFIG);
     db = getFirestore(app);
     const auth = getAuth(app);
     window._fb = { getFirestore, doc, setDoc, getDoc, collection, getDocs, query, orderBy, limit };
-    window._auth = { auth, signInWithPopup, signOut, GoogleAuthProvider, onAuthStateChanged };
+    window._auth = { auth, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, GoogleAuthProvider, onAuthStateChanged };
     fbReady = true;
     console.info('✅ Firebase connecté');
     setupAuthListener();
+    // Termine une connexion par redirection (mobile) et remonte une erreur claire si besoin
+    try {
+      const rr = await getRedirectResult(auth);
+      if (rr && rr.user) await _postLogin(rr.user);
+    } catch(e) {
+      if (e && e.code === 'auth/unauthorized-domain') {
+        showToast("⚠️ Domaine non autorisé dans Firebase (Authentication → Settings)", 'error');
+      }
+    }
   } catch(e) {
     console.warn('Firebase unavailable:', e.message);
     lbCache = [...FALLBACK_PLAYERS];
@@ -2047,17 +2056,10 @@ function updateAuthUI(user) {
   }
 }
 
-async function loginGoogle() {
-  if (!window._auth) {
-    showToast('⚠️ Firebase non configuré — ajoutez vos clés Firebase', 'error'); return;
-  }
-  try {
-    const { auth, signInWithPopup, GoogleAuthProvider } = window._auth;
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
-    // Charger le profil Firebase existant si dispo
-    if (fbReady) {
+async function _postLogin(user) {
+  if (!user) return;
+  if (fbReady) {
+    try {
       const { doc, getDoc } = window._fb;
       const snap = await getDoc(doc(db, 'players', user.uid));
       if (snap.exists()) {
@@ -2066,15 +2068,37 @@ async function loginGoogle() {
         userProfile.games = data.games || userProfile.games;
         userProfile.eloHistory = data.eloHistory || userProfile.eloHistory;
       }
-    }
-    userProfile.name = user.displayName?.split(' ')[0] || 'Joueur';
-    userProfile._uid = user.uid;
-    userProfile._photoURL = user.photoURL;
-    saveProfileData(); updateNavUser();
-    showToast('✅ Connecté avec Google !', 'success');
-    await fbSavePlayer();
+    } catch(e) { console.warn('_postLogin load:', e.message); }
+  }
+  userProfile.name = user.displayName?.split(' ')[0] || 'Joueur';
+  userProfile._uid = user.uid;
+  userProfile._photoURL = user.photoURL;
+  saveProfileData(); updateNavUser();
+  showToast('✅ Connecté avec Google !', 'success');
+  await fbSavePlayer();
+}
+
+async function loginGoogle() {
+  if (!window._auth) {
+    showToast('⚠️ Firebase non configuré — ajoutez vos clés Firebase', 'error'); return;
+  }
+  const { auth, signInWithPopup, GoogleAuthProvider } = window._auth;
+  try {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    await _postLogin(result.user);
   } catch(e) {
-    showToast('Erreur de connexion : ' + e.message, 'error');
+    // Sur mobile / popup bloqué → bascule sur la connexion par redirection
+    const popupCodes = ['auth/popup-blocked','auth/popup-closed-by-user','auth/cancelled-popup-request','auth/operation-not-supported-in-this-environment'];
+    if (e && popupCodes.includes(e.code) && window._auth.signInWithRedirect) {
+      try { await window._auth.signInWithRedirect(auth, new GoogleAuthProvider()); return; }
+      catch(e2) { e = e2; }
+    }
+    if (e && e.code === 'auth/unauthorized-domain') {
+      showToast("⚠️ Domaine non autorisé. Ajoute ton adresse dans Firebase → Authentication → Settings → Authorized domains.", 'error');
+    } else {
+      showToast('Erreur de connexion : ' + (e && e.message ? e.message : e), 'error');
+    }
   }
 }
 
