@@ -2131,8 +2131,7 @@ function initStockfish(){
   // importScripts autorise le cross-origin (le CDN sert le bon type MIME), et
   // locateFile indique où récupérer le .wasm. => aucun fichier à héberger.
   const CDN_ENGINES = [
-    {cdnBlob:true, base:'https://cdn.jsdelivr.net/npm/stockfish/src/', file:'stockfish-18-lite-single.js', name:'NNUE CDN (18-lite-single)'},
-    {cdnBlob:true, base:'https://cdn.jsdelivr.net/npm/stockfish@16.0.0/src/', file:'stockfish-nnue-16-single.js', name:'NNUE CDN (16-single)'},
+    {cdnBlob:true, base:'https://cdn.jsdelivr.net/npm/stockfish@18.0.7/bin/', file:'stockfish-18-lite-single.js', name:'NNUE CDN (18-lite-single)'},
   ];
   const ENGINES = [
     ...CDN_ENGINES,
@@ -2152,12 +2151,21 @@ function initStockfish(){
     try{
       let worker;
       if(eng.cdnBlob){
-        // Worker same-origin (blob) qui importe le moteur depuis le CDN + locateFile pour le .wasm
+        // On récupère le chargeur (21 Ko) depuis le CDN (CORS OK), on le fait tourner
+        // dans un Worker same-origin (blob), et on lui indique l'URL du .wasm via le
+        // fragment #<url> de l'URL du Worker (mécanisme officiel du moteur).
         const jsUrl = eng.base + eng.file;
-        const shim = 'var Module={locateFile:function(p){return '+JSON.stringify(eng.base)+'+p;},mainScriptUrlOrBlob:'+JSON.stringify(jsUrl)+'};importScripts('+JSON.stringify(jsUrl)+');';
-        const blob = new Blob([shim], { type:'text/javascript' });
-        try{ worker = new Worker(URL.createObjectURL(blob)); }
-        catch(e){ tryLoad(i+1); return; }
+        const wasmUrl = eng.base + eng.file.replace(/\.js$/i, '.wasm');
+        let glue;
+        try{
+          const r = await fetch(jsUrl);
+          if(!r.ok){ tryLoad(i+1); return; }
+          glue = await r.text();
+        }catch(e){ tryLoad(i+1); return; }
+        try{
+          const blobUrl = URL.createObjectURL(new Blob([glue], { type:'text/javascript' }));
+          worker = new Worker(blobUrl + '#' + encodeURIComponent(wasmUrl));
+        }catch(e){ tryLoad(i+1); return; }
       } else if(eng.local){
         let exists=false;
         try{ const h=await fetch(eng.url,{method:'HEAD'}); exists=h.ok; }catch(e){ exists=false; }
@@ -2174,7 +2182,7 @@ function initStockfish(){
       }
 
       let loaded = false;
-      const timer = setTimeout(()=>{ if(!loaded){ try{ worker.terminate(); }catch(e){} tryLoad(i+1); } }, 8000);
+      const timer = setTimeout(()=>{ if(!loaded){ try{ worker.terminate(); }catch(e){} tryLoad(i+1); } }, eng.cdnBlob ? 25000 : 8000);
 
       worker.onerror = ()=>{ clearTimeout(timer); try{ worker.terminate(); }catch(e){} if(!loaded) tryLoad(i+1); };
 
