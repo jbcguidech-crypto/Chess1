@@ -1150,6 +1150,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     </button>
     </div>
     <div id="status" class="mic-status">Micro coupé</div>
+    <div id="debugVoice" style="display:none;font-size:.62rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-top:3px;text-align:center;word-break:break-word;max-width:280px;"></div>
     <div class="ai-spinner" id="aiSpinner">
       <div class="sdot"></div><div class="sdot"></div><div class="sdot"></div>
       <span>IA…</span>
@@ -3293,7 +3294,7 @@ function startListening(){
     if(displayHeard){
       setStatus('👂 ' + displayHeard, 'heard');
       const dbg=document.getElementById('debugVoice');
-      if(dbg) dbg.textContent='Brut: "'+displayHeard+'" | '+candidates.length+' alt. | '+recognition.lang;
+      if(dbg){ dbg.style.display='block'; dbg.textContent='Entendu : "'+candidates.join('" / "')+'"'; }
     }
 
     // Nettoie les mots de réveil en tête + teste chaque candidat
@@ -3559,7 +3560,7 @@ const _PHON_RANKS = {
   '8':['8','huit','wit','uit','hui','houit','wee','we']
 };
 const _PHON_PIECES = {
-  cavalier:['cavalier','cavalie','cavaliers','caval','chevalier','cheval','knight','nait','night','cavalié','cavalié','cav'],
+  cavalier:['cavalier','cavalie','cavaliers','caval','chevalier','cheval','knight','nait','night','cavalié','cavaliere','cavalière','cavaler','cavaler','cav','calva','gavalier','kavalier','cavalyé','cavaliez'],
   tour:['tour','tours','tor','tower','rook','rouk','tourre','toure'],
   fou:['fou','fous','foux','foo','bishop','bichop','fouh','faux','phou'],
   dame:['dame','dames','reine','reines','queen','quine','dam','dames','rene'],
