@@ -470,10 +470,36 @@ body {
 /* ── BOARD ───────────────────────────────────── */
 .board-container {
   background:var(--surface);
-  border-radius:14px;padding:10px;
+  border-radius:14px;padding:8px;
   border:1px solid var(--border);
   box-sizing:border-box;width:100%;
 }
+
+/* ── BANDEAUX JOUEUR (style mobile type chess.com, design original) ── */
+.player-bar {
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:7px 12px;width:100%;box-sizing:border-box;
+  transition:border-color .2s, box-shadow .2s;
+}
+.player-bar.active { border-color:var(--gold);box-shadow:0 0 0 1px var(--border-gold); }
+.pb-left { display:flex;align-items:center;gap:9px;min-width:0; }
+.pb-dot { width:13px;height:13px;border-radius:50%;flex-shrink:0;border:1px solid var(--border-hi); }
+.pb-dot.w { background:#f4f4ee; }
+.pb-dot.b { background:#33373e; }
+.pb-ava {
+  width:34px;height:34px;border-radius:9px;flex-shrink:0;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;font-size:1.15rem;
+  background:var(--surface-hi);border:1px solid var(--border);
+}
+.pb-ava img { width:100%;height:100%;object-fit:cover; }
+.pb-meta { min-width:0;line-height:1.15; }
+.pb-name { font-weight:800;font-size:.9rem;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px; }
+.pb-elo { font-size:.72rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace; }
+.pb-captured { display:flex;align-items:center;flex-wrap:nowrap;justify-content:flex-end;min-height:20px; }
+.cap-pc { width:18px;height:18px;object-fit:contain;margin-left:-4px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.25)); }
+.cap-pc:first-child { margin-left:0; }
+.cap-adv { margin-left:7px;font-weight:800;font-size:.8rem;color:var(--gold-light);font-family:'JetBrains Mono',monospace; }
 .board-mid { display:flex;align-items:stretch; }
 .coord-col { display:flex;flex-direction:column;width:20px;flex-shrink:0; }
 .coords-bottom { display:flex;margin-top:4px;width:100%; }
@@ -836,10 +862,14 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 
 /* ── RESPONSIVE ──────────────────────────────── */
 @media(max-width:640px){
-  .coord-letter{height:18px;}.coord-num{width:18px;}
+  .coord-letter{height:18px;}.coord-num{width:16px;}
   .sidebar{width:100%;max-width:480px;}
   .nav-center{display:none;}
   .splash-pieces .splash-piece{width:48px;height:48px;}
+  /* Échiquier plus grand : on récupère de la largeur en réduisant les marges */
+  .page{ padding:8px; }
+  .board-container{ padding:5px; }
+  .coord-col{ padding-right:2px; }
 }
 </style>
 </head>
@@ -950,6 +980,16 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 <div class="page active" id="page-game">
 <div class="game-layout">
 
+  <!-- BANDEAU ADVERSAIRE (haut) -->
+  <div class="player-bar" id="barTop">
+    <div class="pb-left">
+      <span class="pb-dot b" id="topDot"></span>
+      <div class="pb-ava" id="topAva">🤖</div>
+      <div class="pb-meta"><div class="pb-name" id="topName">Ordinateur</div><div class="pb-elo" id="topElo">800</div></div>
+    </div>
+    <div class="pb-captured" id="topCaptured"></div>
+  </div>
+
   <!-- BOARD -->
   <div class="board-container">
     <div class="board-mid">
@@ -957,6 +997,16 @@ canvas#eloChart { width:100%!important;height:90px!important; }
       <div id="board"></div>
     </div>
     <div class="coords-bottom" id="coordsTop"></div>
+  </div>
+
+  <!-- BANDEAU JOUEUR (bas) -->
+  <div class="player-bar active" id="barBottom">
+    <div class="pb-left">
+      <span class="pb-dot w" id="botDot"></span>
+      <div class="pb-ava" id="botAva">🦁</div>
+      <div class="pb-meta"><div class="pb-name" id="botName">Vous</div><div class="pb-elo" id="botElo">800</div></div>
+    </div>
+    <div class="pb-captured" id="botCaptured"></div>
   </div>
 
   <!-- COLONNE LATÉRALE : micro + historique -->
@@ -2838,6 +2888,75 @@ function getPieceSVG(piece) {
   return wrap(`${circle}${shine}`);
 }
 
+const CAP_VAL = { P:1, N:3, B:3, R:5, Q:9, K:0 };
+
+function _setDot(id, col){ const d=document.getElementById(id); if(d) d.className = 'pb-dot ' + col; }
+
+function updatePlayerBars(){
+  try{
+    const youColor = playerColor;
+    const oppColor = youColor==='w' ? 'b' : 'w';
+    _setDot('botDot', youColor); _setDot('topDot', oppColor);
+    // Bas = toi
+    const botName=document.getElementById('botName'), botElo=document.getElementById('botElo'), botAva=document.getElementById('botAva');
+    if(botName) botName.textContent = userProfile.name || 'Vous';
+    if(botElo) botElo.textContent = (userProfile.elo!=null ? userProfile.elo : '') + '';
+    if(botAva) botAva.innerHTML = userProfile._photoURL ? '<img src="'+userProfile._photoURL+'" alt="">' : (userProfile.avatar || '🦁');
+    // Haut = adversaire
+    const topName=document.getElementById('topName'), topElo=document.getElementById('topElo'), topAva=document.getElementById('topAva');
+    if(gameMode==='ai'){
+      if(topName) topName.textContent = 'Ordinateur';
+      if(topElo) topElo.textContent = currentElo + '';
+      if(topAva) topAva.innerHTML = '🤖';
+    } else {
+      if(topName) topName.textContent = 'Joueur 2';
+      if(topElo) topElo.textContent = '';
+      if(topAva) topAva.innerHTML = '👤';
+    }
+    // Surligne le joueur au trait
+    const bb=document.getElementById('barBottom'), bt=document.getElementById('barTop');
+    if(bb) bb.classList.toggle('active', turn===youColor);
+    if(bt) bt.classList.toggle('active', turn===oppColor);
+  }catch(e){}
+}
+
+function _renderCaptured(elId, capObj, pieceColor, advToShow){
+  const el=document.getElementById(elId); if(!el) return;
+  let html='';
+  ['Q','R','B','N','P'].forEach(t=>{
+    const n=capObj[t]||0;
+    for(let i=0;i<n;i++) html += '<img class="cap-pc" src="'+pieceImgURL(pieceColor+t)+'" alt="">';
+  });
+  if(advToShow>0) html += '<span class="cap-adv">+'+advToShow+'</span>';
+  el.innerHTML = html;
+}
+
+function updateCapturedDisplay(){
+  try{
+    if(typeof board==='undefined' || !board) return;
+    const cnt={ w:{P:0,N:0,B:0,R:0,Q:0,K:0}, b:{P:0,N:0,B:0,R:0,Q:0,K:0} };
+    for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+      const p=board[r][c];
+      if(p){ const col=p[0]==='w'?'w':'b'; const t=p[1]; if(cnt[col][t]!==undefined) cnt[col][t]++; }
+    }
+    const init={P:8,N:2,B:2,R:2,Q:1,K:1};
+    const capByWhite={}, capByBlack={};
+    let valWhite=0, valBlack=0;
+    ['Q','R','B','N','P'].forEach(t=>{
+      const wb=init[t]-cnt.b[t]; if(wb>0){ capByWhite[t]=wb; valWhite+=wb*CAP_VAL[t]; }
+      const bw=init[t]-cnt.w[t]; if(bw>0){ capByBlack[t]=bw; valBlack+=bw*CAP_VAL[t]; }
+    });
+    const adv = valWhite - valBlack; // >0 → les blancs mènent
+    const youColor = playerColor;
+    const youCap = youColor==='w' ? capByWhite : capByBlack;   // pièces que TU as prises (couleur adverse)
+    const oppCap = youColor==='w' ? capByBlack : capByWhite;   // pièces que l'IA a prises (ta couleur)
+    const youCapColor = youColor==='w' ? 'b' : 'w';
+    const youAdv = youColor==='w' ? adv : -adv;
+    _renderCaptured('botCaptured', youCap, youCapColor, youAdv>0 ? youAdv : 0);
+    _renderCaptured('topCaptured', oppCap, youColor,    youAdv<0 ? -youAdv : 0);
+  }catch(e){}
+}
+
 function renderBoard(){
   const el=document.getElementById('board');el.innerHTML='';
   // Taille gérée par CSS (aspect-ratio + grid 1fr)
@@ -2879,6 +2998,8 @@ function renderBoard(){
   }
   // Applique le thème d'échiquier choisi
   if(typeof applyBoardTheme==='function') applyBoardTheme();
+  // Bandeaux joueur + pièces capturées (style mobile)
+  try{ updatePlayerBars(); updateCapturedDisplay(); }catch(e){}
   // Les numéros sont gérés par buildCoords - ne pas reconstruire ici
 }
 
