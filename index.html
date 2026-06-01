@@ -2284,7 +2284,7 @@ function initStockfish(){
           loaded = true; sfReady = true; clearTimeout(timer);
           stockfish = worker;
           // Optimisations vitesse
-          worker.postMessage('setoption name Hash value 64');
+          worker.postMessage('setoption name Hash value 128');
           if(isolated){
             const nThreads = Math.max(1, Math.min(4, (navigator.hardwareConcurrency||2)-1));
             worker.postMessage('setoption name Threads value '+nThreads);
@@ -2386,7 +2386,7 @@ function askStockfish(){
       document.getElementById('voiceBtn').disabled=false;
       setStatus(currentLang==='fr'?'IA timeout — réessayez':'AI timeout — retry','error');
     }
-  }, 6000);
+  }, 15000);
 }
 
 function applyStockfishMove(uciMove){
@@ -3664,7 +3664,7 @@ function eloToDepth(elo){
   if(elo <= 1800) return 12;
   if(elo <= 2200) return 16;
   if(elo <= 2500) return 20;
-  return 25; // max / Magnus mode
+  return 30; // max / Magnus mode
 }
 function onEloSlide(val){currentElo=parseInt(val);updateEloUI();}
 function setElo(elo){currentElo=elo;document.getElementById('eloSlider').value=elo;updateEloUI();}
@@ -3676,17 +3676,18 @@ function updateEloUI(){
   sfDepth=eloToDepth(currentElo);
 }
 function eloToTime(elo){
-  // Jeu rapide style Chess.com : réponses quasi-instantanées
-  // Le NNUE atteint un très bon niveau même en peu de temps
+  // Bas/moyen ELO : réponses rapides. Haut ELO : on laisse le moteur RÉFLÉCHIR
+  // davantage → bien plus fort (le temps est le principal levier en mono-thread).
   if(elo <= 400)  return 50;
-  if(elo <= 800)  return 100;
-  if(elo <= 1200) return 200;
-  if(elo <= 1500) return 350;
-  if(elo <= 1800) return 500;
-  if(elo <= 2000) return 700;
-  if(elo <= 2200) return 1000;
-  if(elo <= 2500) return 1500;
-  return 2500; // Mode Magnus 😈 — 2,5s max, reste très fort en NNUE
+  if(elo <= 800)  return 120;
+  if(elo <= 1200) return 250;
+  if(elo <= 1500) return 400;
+  if(elo <= 1800) return 600;
+  if(elo <= 2000) return 900;
+  if(elo <= 2200) return 1400;
+  if(elo <= 2500) return 2200;
+  if(elo <= 2800) return 3500;
+  return 5000; // Mode Magnus 😈 — 5s de réflexion, pleine puissance NNUE
 }
 
 function configureStockfishStrength(){
