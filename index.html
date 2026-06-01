@@ -2706,6 +2706,7 @@ let halfmoveClock=0;      // demi-coups depuis le dernier pion bougé/capture (r
 let positionHistory=[];   // clés de position pour la triple répétition
 let aiGen=0, aiReqGen=-1; // génération : invalide un coup d'IA si on annule entre-temps
 let moveJustPlayed=false;
+let undoLock=false; // empêche l'annulation vocale de se répéter sur plusieurs résultats
 let listening=false,recognition=null;
 let aiSpeaking=false; // vrai pendant que l'IA parle (pour autoriser "annuler" sans déclencher de coup)
 let speechEpoch=0; // incrémenté pour invalider toute parole programmée (ex: retour au menu)
@@ -2743,6 +2744,11 @@ function legalMoves(r,c){
 function updateCastlingRights(fr,fc,piece){if(type(piece)==='K'){if(piece==='wK'){castling.wK=false;castling.wR_k=false;castling.wR_q=false;}else{castling.bK=false;castling.bR_k=false;castling.bR_q=false;}}if(piece==='wR'){if(fr===7&&fc===7)castling.wR_k=false;if(fr===7&&fc===0)castling.wR_q=false;}if(piece==='bR'){if(fr===0&&fc===7)castling.bR_k=false;if(fr===0&&fc===0)castling.bR_q=false;}}
 
 function undoMove(){
+  // Verrou anti-rebond : empêche deux annulations quasi simultanées
+  // (commande vocale en écoute continue, double-tap, etc.)
+  const _now = Date.now();
+  if(window._lastUndoAt && (_now - window._lastUndoAt) < 800){ return; }
+  window._lastUndoAt = _now;
   if(!undoStack.length){ setStatus(currentLang==='fr'?'Aucun coup à annuler':'No move to undo','error'); return; }
   // Coupe immédiatement la parole de l'IA
   if(window.speechSynthesis){ try{ window.speechSynthesis.cancel(); }catch(e){} }
@@ -2763,8 +2769,9 @@ function undoMove(){
   };
   const histBefore = history.slice(); // copie avant troncature (pour décrire le coup annulé)
   // Défait au moins un coup ; en mode IA, on revient jusqu'au trait du joueur
+  // (au maximum UN coup supplémentaire = celui de l'IA, jamais plus).
   restore(undoStack.pop());
-  while(gameMode==='ai' && turn!==playerColor && undoStack.length){
+  if(gameMode==='ai' && turn!==playerColor && undoStack.length){
     restore(undoStack.pop());
   }
   selected=null; possibleMoves=[]; aiThinking=false;
@@ -3346,7 +3353,14 @@ function startListening(){
     if(aiBusy || moveJustPlayed){
       for(const raw of candidates){
         const a = parseVoiceToAction(raw.replace(WAKE,'').trim() || raw);
-        if(a && a.kind==='undo'){ moveJustPlayed=false; executeVoiceAction(a, true); return; }
+        if(a && a.kind==='undo'){
+          if(undoLock) return;               // déjà annulé pour cette phrase → ignore
+          undoLock = true;
+          setTimeout(()=>{ undoLock=false; }, 1500);
+          moveJustPlayed=false;
+          executeVoiceAction(a, true);
+          return;
+        }
       }
       return;
     }
@@ -3370,6 +3384,11 @@ function startListening(){
       const best = (candidates[0]||'').replace(WAKE,'').trim();
       if(best){
         const act = parseVoiceToAction(best);
+        if(act && act.kind==='undo'){
+          if(undoLock) return;
+          undoLock = true;
+          setTimeout(()=>{ undoLock=false; }, 1500);
+        }
         executeVoiceAction(act, true); // affichera ambiguïté / illégal / non compris
       }
     }
@@ -3757,6 +3776,44 @@ function _parsePromotion(text){
   return {kind:'move', fr:chosen.r, fc:chosen.c, tr:dest.r, tc:dest.c, promo: detectPromoPiece(norm)||'Q'};
 }
 
+// « dame prend dame », « cavalier prend fou » : capture désignée par les types de pièces
+function _parsePieceVsPiece(text){
+  const norm = (phoneticNormalize(text)||'').toLowerCase();
+  // Doit contenir un verbe de capture
+  if(!/\b(prend|prends|prendre|mange|manges|manger|capture|captures|capturer|prise)\b/.test(norm)) return null;
+  const PNAME = {cavalier:'N',tour:'R',fou:'B',dame:'Q',reine:'Q',roi:'K',pion:'P'};
+  // Sépare autour du verbe de capture
+  const parts = norm.split(/\b(?:prend|prends|prendre|mange|manges|manger|capture|captures|capturer|prise)\b/);
+  if(parts.length < 2) return null;
+  const before = parts[0], after = parts.slice(1).join(' ');
+  // Type de la pièce qui attaque (avant le verbe)
+  let attType = null;
+  for(const [w,t] of Object.entries(PNAME)){ if(before.includes(w)){ attType=t; break; } }
+  // Type de la pièce capturée (après le verbe)
+  let capType = null;
+  for(const [w,t] of Object.entries(PNAME)){ if(after.includes(w)){ capType=t; break; } }
+  // Si une case précise est donnée après (ex. "fou prend cavalier d5"), on laisse _parseStrict gérer
+  if(!attType || !capType) return null;
+  if(/\b[a-h]\s*[1-8]\b/.test(after)) return null; // une case est précisée → pas ce parseur
+  // Cherche toutes les captures légales : pièce attType prenant une pièce capType adverse
+  const opp = (turn==='w') ? 'b' : 'w';
+  const cands = [];
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+    const p=board[r][c];
+    if(!p || color(p)!==turn || type(p)!==attType) continue;
+    for(const mv of legalMoves(r,c)){
+      const [tr,tc] = mv;
+      const target = board[tr][tc];
+      if(target && color(target)===opp && type(target)===capType){
+        cands.push({fr:r,fc:c,tr,tc,promo:mv[2]});
+      }
+    }
+  }
+  if(cands.length===1) return {kind:'move', fr:cands[0].fr,fc:cands[0].fc,tr:cands[0].tr,tc:cands[0].tc,promo:cands[0].promo};
+  if(cands.length>1) return {kind:'ambiguous', pieceType:attType, candidates:cands.map(x=>({fr:x.fr,fc:x.fc,tr:x.tr,tc:x.tc,mv:[x.tr,x.tc,x.promo],piece:turn+attType})), tr:cands[0].tr, tc:cands[0].tc};
+  return null; // aucune capture de ce type → laisse les autres parseurs/erreurs gérer
+}
+
 function parseVoiceToAction(text){
   // 0) Roque détecté sur le texte BRUT en priorité (avant normalisation)
   const cs = detectCastle(text);
@@ -3764,6 +3821,9 @@ function parseVoiceToAction(text){
   // 0bis) Promotion d'un pion (priorité, pour choisir la pièce)
   const promoAct = _parsePromotion(text);
   if(promoAct) return promoAct;
+  // 0ter) Capture désignée par type de pièce : « dame prend dame »
+  const pvp = _parsePieceVsPiece(text);
+  if(pvp && (pvp.kind==='move' || pvp.kind==='ambiguous')) return pvp;
   // 1) Strict sur le texte CORRIGÉ phonétiquement (canonise les noms de pièce : caval→cavalier…)
   const phon = phoneticNormalize(text);
   let act = _parseStrict(phon);
