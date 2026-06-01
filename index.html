@@ -2113,12 +2113,16 @@ function initStockfish(){
   console.log('crossOriginIsolated:', isolated);
 
   // Moteurs à essayer dans l'ordre
+  // Moteur LOCAL (same-origin) prioritaire : si stockfish.js + stockfish.wasm
+  // sont déposés à la racine du site, on charge un Stockfish fort (NNUE).
+  // Un Worker same-origin est autorisé (contrairement aux CDN cross-origin).
+  const localBase = location.pathname.replace(/[^/]*$/, '');
+  const LOCAL = {url: localBase+'stockfish.js', local:true, name:'SF local (NNUE)'};
   const ENGINES = isolated ? [
-    // Versions fortes NNUE (nécessitent COOP/COEP — OK sur Vercel)
-    {url:'https://cdn.jsdelivr.net/npm/stockfish.wasm@0.10.0/stockfish.js', wasm:true, name:'SF NNUE'},
+    LOCAL,
     {url:'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js', wasm:false, name:'SF10'},
   ] : [
-    // Versions portables (sans en-têtes)
+    LOCAL,
     {url:'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js', wasm:false, name:'SF10 asm'},
     {url:'https://cdn.jsdelivr.net/npm/stockfish@10.0.2/stockfish.js', wasm:false, name:'SF10 jsdelivr'},
     {url:'https://unpkg.com/stockfish@10.0.2/stockfish.js', wasm:false, name:'SF10 unpkg'},
@@ -2133,8 +2137,8 @@ function initStockfish(){
     const eng = ENGINES[i];
     try{
       let worker;
-      if(eng.wasm && isolated){
-        // WASM avec en-têtes → chargement direct (le worker trouve son .wasm)
+      if(eng.local){
+        // Moteur same-origin → Worker direct (autorisé) ; le worker trouve son .wasm voisin
         try{ worker = new Worker(eng.url); }
         catch(e){ tryLoad(i+1); return; }
       } else {
@@ -3525,10 +3529,27 @@ function eloToTime(elo){
 function configureStockfishStrength(){
   if(!stockfish) return;
   sfDepth = eloToDepth(currentElo);
-  // Skill Level (0-20) : seul réglage fiable sur Stockfish 10
-  // 400 ELO → 0 (très faible), 3000 ELO → 20 (max)
-  const skill = Math.max(0, Math.min(20, Math.round((currentElo - 400) / 2600 * 20)));
-  stockfish.postMessage('setoption name Skill Level value ' + skill);
+  const elo = currentElo;
+  // Plage où UCI_Elo est fiable (SF10 ≈ 1350+, NNUE ≈ 1320+). On prend 1350 pour les deux.
+  const UCI_MIN = 1350;
+  // Au-delà de ce seuil → pleine puissance (mode "Magnus")
+  const FULL_AT = 2850;
+  if(elo >= FULL_AT){
+    // Pleine force : aucun bridage
+    stockfish.postMessage('setoption name UCI_LimitStrength value false');
+    stockfish.postMessage('setoption name Skill Level value 20');
+  } else if(elo >= UCI_MIN){
+    // Bridage CALIBRÉ par Elo réel → jeu humain et progressif (comme les bots chess.com)
+    stockfish.postMessage('setoption name UCI_LimitStrength value true');
+    stockfish.postMessage('setoption name UCI_Elo value ' + Math.round(elo));
+    stockfish.postMessage('setoption name Skill Level value 20');
+  } else {
+    // Sous la plage UCI_Elo → on bride par Skill Level (LimitStrength désactivé)
+    stockfish.postMessage('setoption name UCI_LimitStrength value false');
+    // 400 ELO → 0 (débutant), 1350 ELO → 12
+    const skill = Math.max(0, Math.min(12, Math.round((elo - 400) / (UCI_MIN - 400) * 12)));
+    stockfish.postMessage('setoption name Skill Level value ' + skill);
+  }
 }
 
 function setPlayerColor(color){
