@@ -2117,12 +2117,17 @@ function initStockfish(){
   // sont déposés à la racine du site, on charge un Stockfish fort (NNUE).
   // Un Worker same-origin est autorisé (contrairement aux CDN cross-origin).
   const localBase = location.pathname.replace(/[^/]*$/, '');
-  const LOCAL = {url: localBase+'stockfish.js', local:true, name:'SF local (NNUE)'};
-  const ENGINES = isolated ? [
-    LOCAL,
-    {url:'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js', wasm:false, name:'SF10'},
-  ] : [
-    LOCAL,
+  // Moteurs LOCAUX possibles (NNUE, deposes a la racine). On teste plusieurs noms
+  // de version : le premier present est charge. Repli auto sur SF10 si aucun.
+  const LOCAL_NAMES = [
+    'stockfish-18-lite-single.js',
+    'stockfish-nnue-17-lite-single.js',
+    'stockfish-nnue-16-single.js',
+    'stockfish.js'
+  ];
+  const LOCALS = LOCAL_NAMES.map(n => ({url: localBase+n, local:true, name:'NNUE local ('+n+')'}));
+  const ENGINES = [
+    ...LOCALS,
     {url:'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js', wasm:false, name:'SF10 asm'},
     {url:'https://cdn.jsdelivr.net/npm/stockfish@10.0.2/stockfish.js', wasm:false, name:'SF10 jsdelivr'},
     {url:'https://unpkg.com/stockfish@10.0.2/stockfish.js', wasm:false, name:'SF10 unpkg'},
@@ -2138,7 +2143,9 @@ function initStockfish(){
     try{
       let worker;
       if(eng.local){
-        // Moteur same-origin → Worker direct (autorisé) ; le worker trouve son .wasm voisin
+        let exists=false;
+        try{ const h=await fetch(eng.url,{method:'HEAD'}); exists=h.ok; }catch(e){ exists=false; }
+        if(!exists){ tryLoad(i+1); return; }
         try{ worker = new Worker(eng.url); }
         catch(e){ tryLoad(i+1); return; }
       } else {
