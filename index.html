@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Do You Speak Chess?</title>
-<script>try{var _t=localStorage.getItem('dysc-theme');if(_t==='light'||_t==='dark')document.documentElement.setAttribute('data-theme',_t);else document.documentElement.setAttribute('data-theme','dark');}catch(e){document.documentElement.setAttribute('data-theme','dark');}</script>
+<script>try{var _t=localStorage.getItem('dysc-theme');if(_t==='light'||_t==='dark')document.documentElement.setAttribute('data-theme',_t);else document.documentElement.setAttribute('data-theme','light');}catch(e){document.documentElement.setAttribute('data-theme','light');}</script>
 <meta name="description" content="Jouez aux échecs à la voix, en français. Annoncez vos coups, l'IA répond.">
 <meta name="theme-color" content="#16181D">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1107,7 +1107,7 @@ const PIECE_SETS = [
 const PIECE_CDN = 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/';
 
 // Set actif (mémorisé)
-let pieceSet = 'cburnett';
+let pieceSet = 'mpchess';
 try { const saved = localStorage.getItem('dysc_pieceset'); if(saved) pieceSet = saved; } catch(e){}
 
 // ── THÈMES D'ÉCHIQUIER ──────────────────────────────
@@ -1141,7 +1141,7 @@ const BOARD_THEMES = [
 
 const BOARD_CDN = 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/images/board/';
 
-let boardTheme = 'walnut';
+let boardTheme = 'green';
 try { const sv = localStorage.getItem('dysc_board'); if(sv) boardTheme = sv; } catch(e){}
 
 function getBoardTheme(){ return BOARD_THEMES.find(t=>t.id===boardTheme) || BOARD_THEMES[0]; }
@@ -3081,7 +3081,7 @@ function toggleTheme() {
   applyTheme(cur === 'light' ? 'dark' : 'light');
 }
 function initTheme() {
-  let saved = 'dark';
+  let saved = 'light';
   try { const s = localStorage.getItem('dysc-theme'); if (s === 'light' || s === 'dark') saved = s; } catch(e) {}
   applyTheme(saved);
 }
