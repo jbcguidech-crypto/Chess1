@@ -3237,8 +3237,9 @@ function startListening(){
     for(const raw of candidates){
       const cleaned = raw.replace(WAKE,'').trim() || raw;
       const act = parseVoiceToAction(cleaned);
-      // On joue dès qu'un coup/roque clair est trouvé (même sur résultat intermédiaire)
-      if(act && (act.kind==='move' || act.kind==='castle' || act.kind==='reset')){
+      // On ne JOUE un coup que sur un résultat FINAL (quand l'utilisateur a fini de parler).
+      // Les résultats intermédiaires ne servent qu'à l'affichage → évite les coups parasites.
+      if(anyFinal && act && (act.kind==='move' || act.kind==='castle' || act.kind==='reset')){
         moveJustPlayed = true;
         executeVoiceAction(act, true);
         // Réautorise après un court instant (le temps que l'IA réponde / nouvelle phrase)
@@ -3542,9 +3543,14 @@ function fuzzyMatchMove(rawText){
     }
   }
   // À défaut (file APRÈS le chiffre, ou isolés) : produit file×rank
+  // MAIS seulement si on a au moins une lettre ET un chiffre proches : on refuse les
+  // chiffres/lettres totalement isolés qui produisent des coups parasites.
   if(!squares.length){
     const fs=toks.filter(t=>/^[a-h]$/.test(t)), rs=toks.filter(t=>/^[1-8]$/.test(t));
-    for(const f of fs)for(const rk of rs) squares.push([8-parseInt(rk), files[f]]);
+    // Exige exactement une colonne et une rangée pour une cible non ambiguë
+    if(fs.length===1 && rs.length===1){
+      squares.push([8-parseInt(rs[0]), files[fs[0]]]);
+    }
   }
   if(!squares.length) return null;
 
