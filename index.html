@@ -2633,7 +2633,7 @@ function applyStockfishMove(uciMove){
   if(st.over){
     speak(aiMsg, ()=>{ if(st.msg) speak(st.msg); });   // coup IA PUIS message de fin
   } else {
-    speak(aiMsg, ()=>{ if(voiceContinuous && !listening) startListening(); });
+    speak(aiMsg);   // la reprise du micro est gérée par speak() après un délai de sécurité
   }
 }
 
@@ -3299,9 +3299,10 @@ function startListening(){
     // Nettoie les mots de réveil en tête + teste chaque candidat
     const WAKE = /^(ok|okay|ko|hey|chess|échecs|echec|échec|joue|jouer|play|allez|aller|go)\s+/;
 
-    // Pendant le tour de l'IA, sa parole, ou juste après un coup : on N'ÉCOUTE QUE l'annulation
-    // (évite que l'IA déclenche un coup en s'entendant elle-même)
-    const aiBusy = (gameMode==='ai' && turn!==playerColor) || aiSpeaking;
+    // Si l'IA parle, on IGNORE TOUT (le micro pourrait capter sa voix → faux coup)
+    if(aiSpeaking){ return; }
+    // Pendant le tour de l'IA ou juste après un coup : on N'ÉCOUTE QUE l'annulation
+    const aiBusy = (gameMode==='ai' && turn!==playerColor);
     if(aiBusy || moveJustPlayed){
       for(const raw of candidates){
         const a = parseVoiceToAction(raw.replace(WAKE,'').trim() || raw);
@@ -4046,8 +4047,10 @@ function speak(text, onEnd){
     if(onEnd) setTimeout(onEnd, 1500);
     return;
   }
-  // On GARDE le micro actif pour pouvoir dire "annuler" pendant que l'IA parle
+  // On COUPE le micro pendant que l'IA parle (évite le larsen : haut-parleur → micro → faux coup)
   aiSpeaking = true;
+  try{ if(recognition && listening){ recognition.abort(); } }catch(e){}
+  listening = false;
   const myEpoch = speechEpoch;
   window.speechSynthesis.cancel();
   setTimeout(()=>{
@@ -4062,14 +4065,14 @@ function speak(text, onEnd){
       aiSpeaking = false;
       setTimeout(()=>{
         if(onEnd) onEnd();
-        // Reprend l'écoute continue après la parole
-        if(voiceContinuous && !listening && !aiThinking) startListening();
-      }, 300);
+        // Reprend l'écoute continue APRÈS un délai de sécurité (le son du HP doit s'être éteint)
+        if(voiceContinuous && !listening && !aiThinking && !aiSpeaking) startListening();
+      }, 800);
     };
     u.onerror = ()=>{
       aiSpeaking = false;
       if(onEnd) setTimeout(onEnd, 300);
-      if(voiceContinuous && !listening && !aiThinking) setTimeout(startListening, 300);
+      if(voiceContinuous && !listening && !aiThinking) setTimeout(()=>{ if(!aiSpeaking) startListening(); }, 800);
     };
     window.speechSynthesis.speak(u);
   }, 200);
