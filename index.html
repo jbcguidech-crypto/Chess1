@@ -100,6 +100,21 @@ html[data-theme="light"] .nav-username { color:var(--text-muted); }
 .theme-toggle:hover { background:rgba(91,141,239,.2);transform:scale(1.08); }
 .theme-toggle:active { transform:scale(.94); }
 
+/* Bouton connexion / inscription (sur le splash) */
+.splash-auth {
+  position:absolute;top:20px;left:18px;z-index:20;
+  display:inline-flex;align-items:center;gap:8px;
+  padding:9px 15px;border-radius:50px;cursor:pointer;white-space:nowrap;
+  background:rgba(91,141,239,.10);border:1px solid var(--border-gold);
+  color:var(--gold-light);font-family:'Manrope',system-ui,sans-serif;
+  font-weight:700;font-size:.78rem;transition:all .2s;line-height:1;
+}
+.splash-auth:hover { background:rgba(91,141,239,.2);transform:translateY(-1px); }
+.splash-auth:active { transform:scale(.96); }
+.splash-auth .sa-ava { display:inline-flex;align-items:center;justify-content:center;font-size:1rem; }
+.splash-auth img { display:block;width:22px;height:22px;border-radius:50%;object-fit:cover; }
+@media (max-width:430px){ .splash-auth { font-size:.72rem;padding:8px 12px; } }
+
 * { margin:0;padding:0;box-sizing:border-box; }
 body {
   min-height:100vh;
@@ -832,6 +847,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 
 <!-- ══ SPLASH ══════════════════════════════════════ -->
 <div id="splash">
+  <button class="splash-auth" id="splashAuthBtn" onclick="loginGoogle()" title="Se connecter ou créer un compte">🔑 Connexion / Inscription</button>
   <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Mode clair" title="Mode clair / sombre">☀️</button>
   <div class="splash-pieces" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
@@ -2026,7 +2042,26 @@ function setupAuthListener() {
   });
 }
 
+function updateSplashAuth(user) {
+  const el = document.getElementById('splashAuthBtn');
+  if (!el) return;
+  if (user) {
+    const name = (user.displayName ? user.displayName.split(' ')[0] : null) || userProfile.name || 'Joueur';
+    const ava = user.photoURL
+      ? `<span class="sa-ava"><img src="${user.photoURL}" alt=""></span>`
+      : `<span class="sa-ava">👤</span>`;
+    el.innerHTML = ava + `<span class="sa-txt">${name}</span>`;
+    el.title = 'Voir mon profil';
+    el.onclick = function(){ try { showProfile(); } catch(e){} };
+  } else {
+    el.innerHTML = '🔑 Connexion / Inscription';
+    el.title = 'Se connecter ou créer un compte';
+    el.onclick = function(){ loginGoogle(); };
+  }
+}
+
 function updateAuthUI(user) {
+  updateSplashAuth(user);
   const btn = document.getElementById('googleAuthBtn');
   const avatar = document.getElementById('navAvatar');
   const username = document.getElementById('navUsername');
@@ -3820,7 +3855,7 @@ function resetGame(){
 
 
 initBoard(); renderBoard();
-try{ onSplashEloSlide(document.getElementById('splashEloSlider')?.value || 800); }catch(e){} updateSidebar(); initStockfish(); updateEloUI(); applyLang(); try{ initTheme(); }catch(e){} try{ updateSpeakerBtn(); }catch(e){}
+try{ onSplashEloSlide(document.getElementById('splashEloSlider')?.value || 800); }catch(e){} updateSidebar(); initStockfish(); updateEloUI(); applyLang(); try{ initTheme(); }catch(e){} try{ updateSpeakerBtn(); }catch(e){} try{ updateSplashAuth((window._auth&&window._auth.auth&&window._auth.auth.currentUser)||null); }catch(e){}
 try{ updateColorButtons(); }catch(e){} // Reconnaissance vocale démarrée manuellement via le bouton
 const hasProfile = loadProfile();
 if (!hasProfile) { setTimeout(showProfile, 600); }
