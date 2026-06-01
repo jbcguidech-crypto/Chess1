@@ -510,7 +510,7 @@ body {
 .splash-online-btn:hover { background:rgba(91,141,239,.26);transform:translateY(-2px); }
 .splash-online-btn:active { transform:translateY(1px); }
 .online-modal {
-  display:none;position:fixed;inset:0;z-index:300;
+  display:none;position:fixed;inset:0;z-index:1300;
   background:rgba(0,0,0,.55);backdrop-filter:blur(3px);
   align-items:center;justify-content:center;padding:20px;
 }
@@ -4191,6 +4191,7 @@ let onlineColor = null;      // 'w' ou 'b' : couleur que JE joue en ligne
 let onlineUnsub = null;      // fonction pour stopper l'écoute temps réel
 let onlineApplying = false;  // garde anti-boucle pendant l'application d'un coup distant
 let onlineRev = 0;           // numéro de révision local
+let onlineIsHost = false;    // suis-je le créateur de la partie ?
 
 function _genCode(){
   const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sans I,O,0,1 ambigus
@@ -4276,10 +4277,11 @@ function _listenOnline(code){
     if(remoteRev > onlineRev){
       _applyRemoteState(data);
     }
-    // Notifie quand l'adversaire rejoint
-    if(data.guestJoined && onlineColor==='w' && !window._guestNotified){
+    // Notifie l'hôte quand l'adversaire rejoint
+    if(data.guestJoined && onlineIsHost && !window._guestNotified){
       window._guestNotified=true;
       setStatus(currentLang==='fr'?'✅ Adversaire connecté !':'✅ Opponent joined!','');
+      _updateOnlineStatus();
     }
   }, (err)=>{ console.warn('listen error',err); });
 }
@@ -4300,14 +4302,16 @@ async function createOnlineGame(){
   if(!fbReady || !db){ alert(currentLang==='fr'?'Firebase non connecté. Vérifiez votre connexion.':'Firebase not connected.'); return; }
   const { doc, setDoc } = window._fb;
   let code=_genCode();
-  gameMode='online'; onlineColor='w'; onlineCode=code; onlineRev=0;
-  // Position initiale
+  // Couleur du créateur tirée au hasard ; celui qui rejoint aura l'opposée
+  const hostColor = (Math.random() < 0.5) ? 'w' : 'b';
+  gameMode='online'; onlineColor=hostColor; onlineCode=code; onlineRev=0; onlineIsHost=true; window._guestNotified=false;
+  // Position initiale (les Blancs commencent toujours)
   initBoard(); turn='w'; selected=null; possibleMoves=[]; history=[]; moveHistoryUCI=[]; undoStack=[];
   lastMove=null; enPassant=null; castling={wK:true,wR_k:true,wR_q:true,bK:true,bR_k:true,bR_q:true};
-  halfmoveClock=0; positionHistory=[posKey()]; gameActive=true; playerColor='w';
+  halfmoveClock=0; positionHistory=[posKey()]; gameActive=true; playerColor=hostColor;
   try{
     await setDoc(doc(db,'online_games',code), Object.assign(_serializeGame(), {
-      createdAt: Date.now(), hostName: userProfile.name||'Hôte', guestJoined:false
+      createdAt: Date.now(), hostName: userProfile.name||'Hôte', guestJoined:false, hostColor: hostColor
     }));
   }catch(e){ console.warn(e); alert(currentLang==='fr'?'Création impossible.':'Could not create game.'); return; }
   _listenOnline(code);
@@ -4315,7 +4319,7 @@ async function createOnlineGame(){
   userInteracted = true;
   try{ hideSplash(); }catch(e){ showPage('game'); }
   renderBoard(); updateSidebar(); buildCoords();
-  _showOnlineBanner(code, 'w');
+  _showOnlineBanner(code, hostColor);
   _updateOnlineStatus();
 }
 
@@ -4329,15 +4333,18 @@ async function joinOnlineGame(code){
   try{ snap = await getDoc(doc(db,'online_games',code)); }
   catch(e){ alert(currentLang==='fr'?'Erreur de connexion.':'Connection error.'); return; }
   if(!snap.exists()){ alert(currentLang==='fr'?'Partie introuvable. Vérifiez le code.':'Game not found.'); return; }
-  gameMode='online'; onlineColor='b'; onlineCode=code; playerColor='b';
+  const data0 = snap.data();
+  const hostColor = data0.hostColor || 'w';
+  const myColor = (hostColor==='w') ? 'b' : 'w';
+  gameMode='online'; onlineColor=myColor; onlineCode=code; playerColor=myColor; onlineIsHost=false;
   try{ await updateDoc(doc(db,'online_games',code), {guestJoined:true, guestName:userProfile.name||'Invité'}); }catch(e){}
-  _applyRemoteState(snap.data());
+  _applyRemoteState(data0);
   _listenOnline(code);
   closeOnlineModal();
   userInteracted = true;
   try{ hideSplash(); }catch(e){ showPage('game'); }
   renderBoard(); updateSidebar(); buildCoords();
-  _showOnlineBanner(code, 'b');
+  _showOnlineBanner(code, myColor);
   _updateOnlineStatus();
 }
 
@@ -4360,7 +4367,7 @@ function _showOnlineBanner(code, col){
     + '<button class="ob-quit" onclick="leaveOnlineGame()">✕</button>';
 }
 
-function openOnlineModal(){ const m=document.getElementById('onlineModal'); if(m) m.classList.add('show'); }
+function openOnlineModal(){ try{ userInteracted=true; }catch(e){} const m=document.getElementById('onlineModal'); if(m) m.classList.add('show'); }
 function closeOnlineModal(){ const m=document.getElementById('onlineModal'); if(m) m.classList.remove('show'); }
 
 function setMode(m){
