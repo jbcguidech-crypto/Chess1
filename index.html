@@ -2167,22 +2167,14 @@ function initStockfish(){
           worker = new Worker(blobUrl + '#' + encodeURIComponent(wasmUrl));
         }catch(e){ tryLoad(i+1); return; }
       } else if(eng.local){
-        // On lit le fichier (le fetch ne vérifie pas le type MIME), puis on le relance
-        // dans un Worker "blob" au bon type → insensible au text/plain de l'hébergeur.
-        // L'URL du .wasm (même dossier) est passée via le fragment #<url> (mécanisme officiel).
-        let glue;
-        try{
-          const r = await fetch(eng.url);
-          if(!r.ok){ tryLoad(i+1); return; }
-          glue = await r.text();
-        }catch(e){ tryLoad(i+1); return; }
-        // Garde-fou : si le contenu n'est pas du JS (ancien fichier corrompu type page HTML/MHTML), on saute
-        if(/^\s*(<|From:|MIME-Version|Snapshot-Content)/.test(glue) || glue.length < 1000){ tryLoad(i+1); return; }
-        const wasmUrl = eng.url.replace(/\.js$/i, '.wasm');
-        try{
-          const blobUrl = URL.createObjectURL(new Blob([glue], { type:'text/javascript' }));
-          worker = new Worker(blobUrl + '#' + encodeURIComponent(wasmUrl));
-        }catch(e){ tryLoad(i+1); return; }
+        // Moteur same-origin : on vérifie qu'il existe, puis Worker direct.
+        // L'hébergeur (GitHub Pages) sert le .js avec le bon type MIME, donc le Worker
+        // s'exécute, et le moteur trouve son .wasm voisin tout seul. Simple et fiable.
+        let exists=false;
+        try{ const h=await fetch(eng.url,{method:'HEAD'}); exists=h.ok; }catch(e){ exists=false; }
+        if(!exists){ tryLoad(i+1); return; }
+        try{ worker = new Worker(eng.url); }
+        catch(e){ tryLoad(i+1); return; }
       } else {
         // asm.js autonome → blob URL (contourne le blocage cross-origin)
         const resp = await fetch(eng.url);
