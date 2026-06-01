@@ -473,7 +473,9 @@ body {
   border-radius:14px;padding:8px;
   border:1px solid var(--border);
   box-sizing:border-box;width:100%;
+  box-shadow:0 10px 28px rgba(0,0,0,.18), 0 2px 6px rgba(0,0,0,.10);
 }
+.coord-col, .coords-bottom { display:none; }
 
 /* ── BANDEAUX JOUEUR (compacts, style mobile, design original) ── */
 .player-bar {
@@ -525,33 +527,29 @@ body {
 }
 .cell.light { background:#f0d9b5; }
 .cell.dark  { background:#b58863; }
-.cell:hover { filter:brightness(1.12);z-index:2; }
-.cell.selected { background:rgba(91,141,239,.55)!important;box-shadow:inset 0 0 0 3px var(--gold); }
-.cell.possible-move::after {
-  content:'';position:absolute;width:22px;height:22px;border-radius:50%;
-  background:rgba(91,141,239,.55);border:2px solid var(--gold);
-  pointer-events:none;animation:dot-pop .2s cubic-bezier(.34,1.56,.64,1);
-}
+.cell:hover { filter:brightness(1.07);z-index:2; }
+.cell.last-move::before { content:'';position:absolute;inset:0;background:rgba(255,206,84,.38);pointer-events:none;z-index:0; }
+.cell.selected::before { content:'';position:absolute;inset:0;background:rgba(255,206,84,.5);box-shadow:inset 0 0 0 3px rgba(250,190,40,.95);pointer-events:none;z-index:0; }
+.cell.in-check::before { content:'';position:absolute;inset:0;pointer-events:none;z-index:0;background:radial-gradient(circle,rgba(229,72,77,.92),rgba(229,72,77,.32) 58%,transparent 74%);animation:shake-chk .4s ease; }
+.cell.possible-move::after { content:'';position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(20,30,25,.22);pointer-events:none;z-index:1;animation:dot-pop .18s cubic-bezier(.34,1.56,.64,1); }
+.cell.possible-capture::after { content:'';position:absolute;inset:0;box-shadow:inset 0 0 0 4px rgba(20,30,25,.26);pointer-events:none;z-index:1; }
 @keyframes dot-pop{from{transform:scale(0)}to{transform:scale(1)}}
-.cell.possible-capture { box-shadow:inset 0 0 0 4px rgba(224,82,82,.85); }
-.cell.possible-capture::after {
-  content:'';position:absolute;
-  width:90%;height:90%;border-radius:50%;
-  border:4px solid rgba(224,82,82,.7);
-  pointer-events:none;
-}
-.cell.last-move { background:rgba(91,141,239,.3)!important; }
-.cell.in-check  { background:rgba(224,82,82,.5)!important;animation:shake-chk .4s ease; }
-@keyframes shake-chk{0%,100%{transform:none}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+@keyframes shake-chk{0%,100%{transform:none}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
 
 .board-piece {
+  position:relative;z-index:2;
   pointer-events:none;
   transition:transform .12s;
   width:92%;height:92%;
   object-fit:contain;
   filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));
 }
-.board-piece.cell:hover .board-piece { transform:scale(1.06); }
+/* Coordonnées discrètes À L'INTÉRIEUR des cases (style pro) */
+.sq-coord { position:absolute;font-size:9px;font-weight:800;line-height:1;pointer-events:none;z-index:3;font-family:'Manrope',system-ui,sans-serif; }
+.sq-rank { top:3px;left:3px; }
+.sq-file { bottom:2px;right:4px; }
+.cell.light .sq-coord { color:rgba(40,55,40,.5); }
+.cell.dark .sq-coord  { color:rgba(255,255,255,.72); }
 
 /* ── SIDEBAR ─────────────────────────────────── */
 .sidebar { display:flex;flex-direction:column;gap:12px;width:248px; }
@@ -1169,6 +1167,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 <script>
 // ── VARIABLES GLOBALES ──────────────────────────
 let playerColor = 'w'; // couleur que joue l'humain
+let _animMove = null;
 let voiceContinuous = false; // écoute continue activée
 let userInteracted = false; // synthèse vocale autorisée après interaction
 let voiceMuted = false; // voix de l'IA coupée par l'utilisateur
@@ -2519,12 +2518,16 @@ function applyStockfishMove(uciMove){
   turn=turn==='w'?'b':'w';selected=null;possibleMoves=[];
   if(type(piece)==='P' || captured) halfmoveClock=0; else halfmoveClock++;
   positionHistory.push(posKey());
+  const _isCastle = piece&&type(piece)==='K'&&fc===4&&(tc===6||tc===2);
+  const _isCap = !!captured || (piece&&type(piece)==='P'&&fc!==tc);
+  _animMove={fr,fc,tr,tc};
   renderBoard();updateSidebar();
   // Réinitialise l'état IA (fonctionne pour Stockfish ET coups du livre)
   aiThinking=false;
   document.getElementById('aiSpinner').classList.remove('show');
   document.getElementById('voiceBtn').disabled=false;
   const st=checkGameState();
+  try{ if(st.over) playSound('end'); else if(st.check) playSound('check'); else if(_isCastle) playSound('castle'); else if(_isCap) playSound('capture'); else playSound('move'); }catch(e){}
   const spokenMove = toSpeech(fr,fc,tr,tc,piece,captured,null);
   if(history.length){ history[history.length-1].spoken = spokenMove; history[history.length-1].from=[fr,fc]; history[history.length-1].ptype=type(piece); }
   const aiColor = playerColor==='w' ? 'b' : 'w';
@@ -2695,8 +2698,11 @@ function makeMove(fr,fc,tr,tc,castleType,promo){
   turn=turn==='w'?'b':'w';selected=null;possibleMoves=[];
   if(type(piece)==='P' || captured) halfmoveClock=0; else halfmoveClock++;
   positionHistory.push(posKey());
+  const _isCap = !!captured || (type(piece)==='P' && fc!==tc);
+  _animMove={fr,fc,tr,tc};
   renderBoard();updateSidebar();
   const st=checkGameState();
+  try{ if(st.over) playSound('end'); else if(st.check) playSound('check'); else if(castleType) playSound('castle'); else if(_isCap) playSound('capture'); else playSound('move'); }catch(e){}
   // Annonce : le coup D'ABORD, puis « échec » si échec simple
   let say = humanSpoken;
   if(st.check && !st.over) say = (humanSpoken||'') + (currentLang==='fr'?', échec':', check');
@@ -2888,6 +2894,26 @@ function getPieceSVG(piece) {
   return wrap(`${circle}${shine}`);
 }
 
+// Sons generes (Web Audio) : toc bois + tonalites, aucun fichier externe
+let _audioCtx = null;
+function _getAudio(){ if(_audioCtx===null){ try{ _audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ _audioCtx=false; } } return _audioCtx||null; }
+function playSound(kind){
+  if(voiceMuted) return;
+  const ctx=_getAudio(); if(!ctx) return;
+  try{ if(ctx.state==='suspended') ctx.resume(); }catch(e){}
+  const now=ctx.currentTime;
+  function tone(freq,start,dur,gain,type){ const o=ctx.createOscillator(),g=ctx.createGain(); o.type=type||'sine'; o.frequency.value=freq; g.gain.setValueAtTime(0.0001,now+start); g.gain.linearRampToValueAtTime(gain,now+start+0.006); g.gain.exponentialRampToValueAtTime(0.0001,now+start+dur); o.connect(g); g.connect(ctx.destination); o.start(now+start); o.stop(now+start+dur+0.02); }
+  function click(start,gain,freq){ const dur=0.055; const n=Math.floor(ctx.sampleRate*dur); const buf=ctx.createBuffer(1,n,ctx.sampleRate); const d=buf.getChannelData(0); for(let i=0;i<n;i++){ d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.3); } const src=ctx.createBufferSource(); src.buffer=buf; const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=freq||1200; bp.Q.value=0.9; const g=ctx.createGain(); g.gain.value=gain||0.4; src.connect(bp); bp.connect(g); g.connect(ctx.destination); src.start(now+start); }
+  switch(kind){
+    case 'move':    click(0,0.32,1150); break;
+    case 'capture': click(0,0.5,820); click(0.018,0.34,2100); break;
+    case 'castle':  click(0,0.32,1150); click(0.085,0.28,1150); break;
+    case 'check':   tone(880,0,0.12,0.16,'sine'); tone(1320,0.1,0.14,0.14,'sine'); break;
+    case 'end':     tone(523,0,0.18,0.13,'sine'); tone(659,0.14,0.18,0.13,'sine'); tone(784,0.28,0.32,0.13,'sine'); break;
+    default:        click(0,0.32,1150);
+  }
+}
+
 const CAP_VAL = { P:1, N:3, B:3, R:5, Q:9, K:0 };
 
 function _setDot(id, col){ const d=document.getElementById(id); if(d) d.className = 'pb-dot ' + col; }
@@ -2967,7 +2993,7 @@ function renderBoard(){
   for(let ri=0;ri<8;ri++) for(let ci=0;ci<8;ci++){
     const r = flip ? 7-ri : ri;
     const c = flip ? 7-ci : ci;
-    const cell=document.createElement('div');cell.className='cell '+((r+c)%2===0?'light':'dark');
+    const cell=document.createElement('div');cell.className='cell '+((r+c)%2===0?'light':'dark');cell.dataset.r=r;cell.dataset.c=c;
     if(lastMove&&((lastMove[0]===r&&lastMove[1]===c)||(lastMove[2]===r&&lastMove[3]===c)))cell.classList.add('last-move');
     if(selected&&selected[0]===r&&selected[1]===c)cell.classList.add('selected');
     const pm=possibleMoves.find(([pr,pc])=>pr===r&&pc===c);
@@ -2994,10 +3020,20 @@ function renderBoard(){
       };
       cell.appendChild(p);
     }
+    if(ci===0){const _sn=document.createElement('span');_sn.className='sq-coord sq-rank';_sn.textContent=(8-r);cell.appendChild(_sn);}
+    if(ri===7){const _sf=document.createElement('span');_sf.className='sq-coord sq-file';_sf.textContent='abcdefgh'[c];cell.appendChild(_sf);}
     cell.addEventListener('click',()=>handleClick(r,c));el.appendChild(cell);
   }
   // Applique le thème d'échiquier choisi
   if(typeof applyBoardTheme==='function') applyBoardTheme();
+  if(_animMove){ const m=_animMove; _animMove=null; try{
+    const _fcl=el.querySelector('.cell[data-r="'+m.fr+'"][data-c="'+m.fc+'"]');
+    const _tcl=el.querySelector('.cell[data-r="'+m.tr+'"][data-c="'+m.tc+'"]');
+    const _pe=_tcl&&_tcl.querySelector('.board-piece');
+    if(_fcl&&_tcl&&_pe){ const a=_fcl.getBoundingClientRect(),b=_tcl.getBoundingClientRect(); const dx=a.left-b.left,dy=a.top-b.top;
+      if(dx||dy){ _pe.style.transition='none'; _pe.style.transform='translate('+dx+'px,'+dy+'px)'; _pe.style.zIndex='6';
+        requestAnimationFrame(()=>requestAnimationFrame(()=>{ _pe.style.transition='transform .19s cubic-bezier(.22,.68,.32,1)'; _pe.style.transform='translate(0,0)'; setTimeout(()=>{ try{_pe.style.zIndex='';_pe.style.transition='';}catch(e){} },230); })); } }
+  }catch(e){} }
   // Bandeaux joueur + pièces capturées (style mobile)
   try{ updatePlayerBars(); updateCapturedDisplay(); }catch(e){}
   // Les numéros sont gérés par buildCoords - ne pas reconstruire ici
@@ -3761,7 +3797,7 @@ function updateSpeakerBtn(){
   const b = document.getElementById('speakerBtn');
   if(!b) return;
   b.classList.toggle('muted', voiceMuted);
-  b.title = voiceMuted ? "Activer la voix de l'IA" : "Couper la voix de l'IA";
+  b.title = voiceMuted ? "Activer le son" : "Couper le son";
   b.setAttribute('aria-label', b.title);
 }
 function toggleVoiceMute(){
@@ -3772,7 +3808,7 @@ function toggleVoiceMute(){
     try { aiSpeaking = false; } catch(e){}
   }
   updateSpeakerBtn();
-  if(typeof showToast==='function') showToast(voiceMuted ? '🔇 Voix coupée' : '🔊 Voix activée', 'success');
+  if(typeof showToast==='function') showToast(voiceMuted ? '🔇 Son coupé' : '🔊 Son activé', 'success');
 }
 
 function speak(text, onEnd){
