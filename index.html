@@ -1241,9 +1241,8 @@ const PIECE_SETS = [
 const PIECE_CDN = 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/';
 
 // Set actif (mémorisé)
-let pieceSet = 'mpchess';
+let pieceSet = 'merida';
 try { const saved = localStorage.getItem('dysc_pieceset'); if(saved) pieceSet = saved; } catch(e){}
-
 // ── THÈMES D'ÉCHIQUIER ──────────────────────────────
 // Couleurs CSS (rapides) + textures Lichess (jpg)
 const BOARD_THEMES = [
@@ -1275,8 +1274,18 @@ const BOARD_THEMES = [
 
 const BOARD_CDN = 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/images/board/';
 
-let boardTheme = 'green';
+let boardTheme = 'blue3';
 try { const sv = localStorage.getItem('dysc_board'); if(sv) boardTheme = sv; } catch(e){}
+
+// Migration unique : impose les nouveaux défauts (Merida + Bleu 3) une seule fois,
+// même si d'anciens choix sont déjà mémorisés. Respecte tout choix fait APRÈS la migration.
+try {
+  if(localStorage.getItem('dysc_defaults_v2') !== '1'){
+    pieceSet = 'merida';   localStorage.setItem('dysc_pieceset','merida');
+    boardTheme = 'blue3';  localStorage.setItem('dysc_board','blue3');
+    localStorage.setItem('dysc_defaults_v2','1');
+  }
+} catch(e){}
 
 function getBoardTheme(){ return BOARD_THEMES.find(t=>t.id===boardTheme) || BOARD_THEMES[0]; }
 
