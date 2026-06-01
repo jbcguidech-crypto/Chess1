@@ -3451,32 +3451,32 @@ function _lev(a,b){
 // ── CORRECTION PHONÉTIQUE mot par mot ──────────────
 // Mappe les sons/variantes/erreurs vers lettre de colonne, chiffre, ou nom de pièce
 const _PHON_FILES = {
-  a:['a','ah','as','ha','at'],
-  b:['b','be','bee','bay','bi'],
-  c:['c','ce','ces','se','say','cee','ci'],
-  d:['d','de','des','dey','di'],
-  e:['e','eu','heu','euh','eux'],
-  f:['f','ef','eff','effe','aef'],
-  g:['g','ge','je','jee','gee','ze'],
-  h:['h','ache','hache','ash','hash']
+  a:['a','ah','as','ha','at','â','ace'],
+  b:['b','be','bee','bay','bi','bé','bébé','bébère','baie','bay'],
+  c:['c','ce','ces','se','say','cee','ci','cé','c\'est','ces','sait','sais','session'],
+  d:['d','de','des','dey','di','dé','dés','dais','dée'],
+  e:['e','eu','heu','euh','eux','é','ai','et','est','euuh'],
+  f:['f','ef','eff','effe','aef','aiffe','effet','fe'],
+  g:['g','ge','je','jee','gee','ze','gé','j','j\'ai','geai','jet']
+,  h:['h','ache','hache','ash','hash','aches','hâche']
 };
 const _PHON_RANKS = {
-  '1':['1','un','une','hun','in'],
-  '2':['2','deux','deu','do'],
-  '3':['3','trois','troi','troie','troy','toi'],
-  '4':['4','quatre','quat','catre','quattro','cat','car'],
-  '5':['5','cinq','sink','sain','sin','saint','sinq'],
-  '6':['6','six','sis','cisse','sisse','sics'],
-  '7':['7','sept','set','cet','sete','cette','sept'],
-  '8':['8','huit','wit','uit','hui','houit']
+  '1':['1','un','une','hun','in','1er','premier','ain'],
+  '2':['2','deux','deu','do','d2','de'],
+  '3':['3','trois','troi','troie','troy','toi','troit'],
+  '4':['4','quatre','quat','catre','quattro','cat','car','quatres','quart'],
+  '5':['5','cinq','sink','sain','sin','saint','sinq','sank'],
+  '6':['6','six','sis','cisse','sisse','sics','cease','seas'],
+  '7':['7','sept','set','cet','sete','cette','sète','cèt'],
+  '8':['8','huit','wit','uit','hui','houit','wee','we']
 };
 const _PHON_PIECES = {
-  cavalier:['cavalier','cavalie','cavaliers','caval','chevalier','cheval','knight','nait','night'],
-  tour:['tour','tours','tor','tower','rook','rouk'],
-  fou:['fou','fous','foux','foo','bishop','bichop'],
-  dame:['dame','dames','reine','reines','queen','quine'],
-  roi:['roi','rois','rwa','roy','king','kingue'],
-  pion:['pion','pions','pian','pied','pawn','pone','pont']
+  cavalier:['cavalier','cavalie','cavaliers','caval','chevalier','cheval','knight','nait','night','cavalié','cavalié','cav'],
+  tour:['tour','tours','tor','tower','rook','rouk','tourre','toure'],
+  fou:['fou','fous','foux','foo','bishop','bichop','fouh','faux','phou'],
+  dame:['dame','dames','reine','reines','queen','quine','dam','dames','rene'],
+  roi:['roi','rois','rwa','roy','king','kingue','roua','roie'],
+  pion:['pion','pions','pian','pied','pawn','pone','pont','pierre','peon','pyon']
 };
 // Hésitations pures à ignorer (ne pas confondre avec une lettre)
 const _FILLERS = new Set(['euhm','hum','hmm','ben','bah','alors','voila','voilà','donc','ola','mmh','hein']);
@@ -3497,12 +3497,31 @@ function _classifyWord(w){
 
 // Renvoie une LISTE de tokens classés ('a'..'h', '1'..'8', noms de pièce, ou mot brut)
 function _phonTokens(text){
-  const words = text.toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')   // retire accents
-    .replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(Boolean);
+  let raw = text.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'');   // retire accents
+  // Pré-corrections : homophones FR fréquents de Chrome pour les cases d'échecs
+  raw = raw
+    .replace(/\bbebe\b/g,'b e')          // "bébé" → b + e? souvent "b6"; on laisse e mais souvent capté seul
+    .replace(/\bcedez?\b/g,'c d')        // "cédez" → c d
+    .replace(/\bachete\b/g,'h')          // "acheté" parfois pour "h"
+    .replace(/([a-z])\s*-\s*([0-9])/g,'$1 $2'); // "e-4" → "e 4"
+  const words = raw.replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(Boolean);
   const out=[];
   for(const w of words){
+    // Case déjà propre "e4"
     if(/^[a-h][1-8]$/.test(w)){ out.push(w[0]); out.push(w[1]); continue; }
+    // Mot collé lettre-phonétique + chiffre : "ce4", "de5", "be6", "f3" déjà géré ci-dessus
+    let mm = w.match(/^([a-z]{1,5})([1-8])$/);
+    if(mm){
+      const lc=_classifyWord(mm[1]);
+      if(lc && /^[a-h]$/.test(lc)){ out.push(lc); out.push(mm[2]); continue; }
+    }
+    // Chiffre collé + lettre : "4c"
+    mm = w.match(/^([1-8])([a-z]{1,5})$/);
+    if(mm){
+      const lc=_classifyWord(mm[2]);
+      if(lc && /^[a-h]$/.test(lc)){ out.push(lc); out.push(mm[1]); continue; }
+    }
     const cls=_classifyWord(w);
     if(cls!==null) out.push(cls);
     else out.push(w); // mot inconnu conservé (peut être un nom de pièce déjà propre)
