@@ -537,20 +537,21 @@ body {
 }
 .online-create:hover { background:var(--gold-light);transform:translateY(-1px); }
 .online-sep { text-align:center;color:var(--text-muted);font-size:.8rem; }
-.online-join-row { display:flex;gap:8px; }
+.online-join-row { display:flex;flex-direction:column;gap:10px; }
 .online-input {
-  flex:1;padding:13px;border-radius:11px;border:1px solid var(--border);
+  width:100%;box-sizing:border-box;padding:14px;border-radius:11px;border:1px solid var(--border);
   background:var(--surface-hi);color:var(--text-light);
-  font-family:'JetBrains Mono',monospace;font-size:1.3rem;font-weight:800;
-  text-align:center;letter-spacing:4px;text-transform:uppercase;
+  font-family:'JetBrains Mono',monospace;font-size:1.4rem;font-weight:800;
+  text-align:center;letter-spacing:6px;text-transform:uppercase;
 }
 .online-input:focus { outline:none;border-color:var(--gold); }
 .online-join {
-  padding:0 18px;border-radius:11px;cursor:pointer;border:1px solid var(--border-gold);
-  background:rgba(91,141,239,.18);color:var(--gold-light);font-weight:700;
-  font-family:'Manrope',system-ui,sans-serif;
+  width:100%;box-sizing:border-box;padding:14px;border-radius:11px;cursor:pointer;border:1px solid var(--border-gold);
+  background:rgba(91,141,239,.18);color:var(--gold-light);font-weight:800;font-size:.95rem;
+  font-family:'Manrope',system-ui,sans-serif;transition:all .15s;
 }
 .online-join:hover { background:rgba(91,141,239,.28); }
+.online-join:active { transform:scale(.98); }
 .online-banner {
   display:flex;align-items:center;gap:10px;width:100%;max-width:420px;
   margin:0 auto 10px;padding:9px 12px;box-sizing:border-box;
@@ -1020,7 +1021,9 @@ canvas#eloChart { width:100%!important;height:90px!important; }
       <button class="online-create" onclick="createOnlineGame()">➕ Créer une partie</button>
       <div class="online-sep">— ou —</div>
       <div class="online-join-row">
-        <input id="onlineCodeInput" class="online-input" maxlength="4" placeholder="CODE" autocapitalize="characters" oninput="this.value=this.value.toUpperCase()">
+        <input id="onlineCodeInput" class="online-input" maxlength="4" placeholder="CODE" autocapitalize="characters" inputmode="text" enterkeyhint="go"
+          oninput="this.value=this.value.toUpperCase(); if(this.value.length===4){ joinOnlineGame(this.value); }"
+          onkeydown="if(event.key==='Enter'){ event.preventDefault(); joinOnlineGame(this.value); }">
         <button class="online-join" onclick="joinOnlineGame(document.getElementById('onlineCodeInput').value)">Rejoindre</button>
       </div>
     </div>
