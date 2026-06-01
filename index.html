@@ -1761,6 +1761,7 @@ function showSplash(){
     s.style.display = 'flex';
     s.style.opacity = '1';
     s.style.transform = 'scale(1)';
+    s.style.pointerEvents = 'auto';   // ré-active les clics (hideSplash les avait coupés)
   }
   // ── ARRÊT COMPLET : aucune parole/coup ne doit survenir sur le splash ──
   voiceContinuous = false;
