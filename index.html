@@ -608,6 +608,28 @@ input[type=range]::-webkit-slider-thumb {
 #voiceBtn:disabled { opacity:.4;cursor:not-allowed;transform:none; }
 @keyframes pulse-mic{0%,100%{box-shadow:0 0 0 0 rgba(224,82,82,.45)}50%{box-shadow:0 0 0 12px rgba(224,82,82,0)}}
 
+/* Micro + haut-parleur côte à côte */
+.mic-row { display:flex;align-items:center;justify-content:center;gap:14px; }
+.mic-row #voiceBtn { margin:0; }
+.speaker-btn {
+  position:relative;width:52px;height:52px;border-radius:50%;
+  border:1px solid var(--border-hi);cursor:pointer;
+  background:var(--surface);color:var(--text-muted);
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;flex-shrink:0;
+}
+.speaker-btn:hover { border-color:var(--gold);color:var(--gold-light);transform:translateY(-1px); }
+.speaker-btn:active { transform:scale(.95); }
+.speaker-btn .spk-svg { width:24px;height:24px; }
+.speaker-btn .spk-slash {
+  display:none;position:absolute;width:34px;height:3px;border-radius:3px;
+  background:var(--red);transform:rotate(-45deg);box-shadow:0 0 0 3px var(--surface);
+}
+/* voix coupée */
+.speaker-btn.muted { color:var(--red);border-color:rgba(229,72,77,.5); }
+.speaker-btn.muted .spk-waves { display:none; }
+.speaker-btn.muted .spk-slash { display:block; }
+
 /* ── MICRO + HISTORIQUE SOUS L'ÉCHIQUIER ──────── */
 .below-board {
   display:flex;flex-direction:column;align-items:stretch;gap:10px;width:100%;
@@ -923,6 +945,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 
   <!-- COLONNE LATÉRALE : micro + historique -->
   <div class="below-board">
+    <div class="mic-row">
     <button id="voiceBtn" class="mic-btn" onclick="toggleVoice()" aria-label="Commande vocale" title="Commande vocale">
       <svg class="mic-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="9" y="2" width="6" height="12" rx="3"></rect>
@@ -933,6 +956,15 @@ canvas#eloChart { width:100%!important;height:90px!important; }
       <span class="mic-slash"></span>
       <span id="voiceBtnText" style="display:none"></span>
     </button>
+    <button id="speakerBtn" class="speaker-btn" onclick="toggleVoiceMute()" aria-label="Couper la voix de l'IA" title="Couper / activer la voix de l'IA">
+      <svg class="spk-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <path class="spk-waves" d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        <path class="spk-waves" d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+      </svg>
+      <span class="spk-slash"></span>
+    </button>
+    </div>
     <div id="status" class="mic-status">Micro coupé</div>
     <div class="ai-spinner" id="aiSpinner">
       <div class="sdot"></div><div class="sdot"></div><div class="sdot"></div>
@@ -1073,6 +1105,8 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 let playerColor = 'w'; // couleur que joue l'humain
 let voiceContinuous = false; // écoute continue activée
 let userInteracted = false; // synthèse vocale autorisée après interaction
+let voiceMuted = false; // voix de l'IA coupée par l'utilisateur
+try { voiceMuted = (localStorage.getItem('dysc-muted') === '1'); } catch(e){}
 
 const PIECE_GLYPHS = {wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'};
 
@@ -3543,9 +3577,28 @@ function testVoice(){
   speak(t);
 }
 
+function updateSpeakerBtn(){
+  const b = document.getElementById('speakerBtn');
+  if(!b) return;
+  b.classList.toggle('muted', voiceMuted);
+  b.title = voiceMuted ? "Activer la voix de l'IA" : "Couper la voix de l'IA";
+  b.setAttribute('aria-label', b.title);
+}
+function toggleVoiceMute(){
+  voiceMuted = !voiceMuted;
+  try { localStorage.setItem('dysc-muted', voiceMuted ? '1' : '0'); } catch(e){}
+  if(voiceMuted){
+    try { if(window.speechSynthesis) window.speechSynthesis.cancel(); } catch(e){}
+    try { aiSpeaking = false; } catch(e){}
+  }
+  updateSpeakerBtn();
+  if(typeof showToast==='function') showToast(voiceMuted ? '🔇 Voix coupée' : '🔊 Voix activée', 'success');
+}
+
 function speak(text, onEnd){
   if(!window.speechSynthesis || !text) return;
   if(!gameActive){ if(onEnd) setTimeout(onEnd,50); return; } // pas de voix hors partie (ex: splash)
+  if(voiceMuted){ if(onEnd) setTimeout(onEnd, 50); return; } // voix coupée : on n'annonce pas mais la partie continue
   if(!userInteracted){
     pendingSpeech = text;
     if(onEnd) setTimeout(onEnd, 1500);
@@ -3742,7 +3795,7 @@ function resetGame(){
 
 
 initBoard(); renderBoard();
-try{ onSplashEloSlide(document.getElementById('splashEloSlider')?.value || 800); }catch(e){} updateSidebar(); initStockfish(); updateEloUI(); applyLang(); try{ initTheme(); }catch(e){}
+try{ onSplashEloSlide(document.getElementById('splashEloSlider')?.value || 800); }catch(e){} updateSidebar(); initStockfish(); updateEloUI(); applyLang(); try{ initTheme(); }catch(e){} try{ updateSpeakerBtn(); }catch(e){}
 try{ updateColorButtons(); }catch(e){} // Reconnaissance vocale démarrée manuellement via le bouton
 const hasProfile = loadProfile();
 if (!hasProfile) { setTimeout(showProfile, 600); }
