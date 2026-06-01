@@ -3713,7 +3713,7 @@ function _parseStrict(text){
     // Accents résiduels
     .replace(/\bé\b/g,'e').replace(/\bà\b/g,'a')
     // Mots parasites
-    .replace(/\b(en|sur|de|la|le|du|au|aux|vers|et|case|pièce|piece|joue|jouer|déplace|déplacer|déplace|va|aller|met|mettre|prend|prendre|mange|manger|capture|capturer|s'il|te|plaît|stp|svp|alors|donc|puis|ensuite|maintenant)\b/g,' ')
+    .replace(/\b(en|sur|de|la|le|du|au|aux|vers|et|case|pièce|piece|joue|jouer|déplace|déplacer|va|aller|met|mettre|prend|prends|pran|pron|prendre|mange|manges|manger|mangé|capture|captures|capturer|capturé|prise|s'il|te|plaît|stp|svp|alors|donc|puis|ensuite|maintenant|x)\b/g,' ')
     .replace(/\s+/g,' ').trim();
 
   const coords=[],re=/([a-h])\s*([1-8])/g;let m;
