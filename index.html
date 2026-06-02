@@ -2304,10 +2304,12 @@ function saveProfile() {
   updateNavUser();
   document.getElementById('profileModal').classList.remove('show');
   try{ addToLeaderboard(); }catch(e){}
+  try{ if(typeof maybeShowVoiceWelcome==='function') maybeShowVoiceWelcome(); }catch(e){}
 }
 
 function skipProfile() {
   document.getElementById('profileModal').classList.remove('show');
+  try{ if(typeof maybeShowVoiceWelcome==='function') maybeShowVoiceWelcome(); }catch(e){}
 }
 
 // ===== ELO RATING =====
@@ -2707,6 +2709,21 @@ async function logoutGoogle() {
 
 function fbGetUid() {
   try { return window._auth?.auth?.currentUser?.uid || null; } catch(e) { return null; }
+}
+
+// Exige une connexion Google pour le jeu en ligne. Si non connecté, propose la
+// connexion et renvoie false. Le jeu contre l'IA n'appelle jamais ceci.
+async function _requireLogin(){
+  if(fbGetUid()) return true;
+  if(!window._auth){
+    showToast(currentLang==='fr'?'⚠️ Connexion indisponible (Firebase non configuré).':'⚠️ Login unavailable.', 'error');
+    return false;
+  }
+  showToast(currentLang==='fr'?'Connexion Google requise pour jouer en ligne…':'Google sign-in required for online play…', '');
+  try{
+    await loginGoogle();
+  }catch(e){}
+  return !!fbGetUid();
 }
 
 // ===== TOAST =====
@@ -5547,6 +5564,7 @@ function _stopEverything(){
 
 // Crée une nouvelle partie en ligne → renvoie le code
 async function createOnlineGame(){
+  if(!(await _requireLogin())) return; // connexion Google obligatoire pour le jeu en ligne
   if(!fbReady || !db){ alert(currentLang==='fr'?'Firebase non connecté. Vérifiez votre connexion.':'Firebase not connected.'); return; }
   _stopEverything();
   const { doc, setDoc } = window._fb;
@@ -5576,6 +5594,7 @@ async function createOnlineGame(){
 async function joinOnlineGame(code){
   code=(code||'').toUpperCase().trim();
   if(code.length!==4){ alert(currentLang==='fr'?'Code à 4 caractères attendu.':'Enter a 4-character code.'); return; }
+  if(!(await _requireLogin())) return; // connexion Google obligatoire pour le jeu en ligne
   if(!fbReady || !db){ alert(currentLang==='fr'?'Firebase non connecté.':'Firebase not connected.'); return; }
   const { doc, getDoc, updateDoc } = window._fb;
   let snap;
@@ -5672,18 +5691,18 @@ try{ const _bb=document.getElementById('board'); if(_bb && blindfold) _bb.classL
 try{ const a=document.getElementById('evalToggleGame'); if(a) a.checked=evalEnabled; const b=document.getElementById('blindToggleGame'); if(b) b.checked=blindfold; const p=document.getElementById('premoveToggleGame'); if(p) p.checked=premoveEnabled; }catch(e){}
 try{ updateColorButtons(); }catch(e){} // Reconnaissance vocale démarrée manuellement via le bouton
 const hasProfile = loadProfile();
-if (!hasProfile) { setTimeout(showProfile, 600); }
-// Fenêtre d'accueil du pilotage vocal : affichée sauf si l'utilisateur l'a refusée,
-// et seulement quand aucune fenêtre de profil ne s'affiche (pour ne pas se chevaucher).
-try{
-  let voiceWelcomeOff = false;
-  try{ voiceWelcomeOff = localStorage.getItem('dysc_voice_welcome')==='off'; }catch(e){}
-  const vw = document.getElementById('voiceWelcome');
-  if(vw){
-    if(voiceWelcomeOff || !hasProfile){ vw.classList.add('hidden'); }
-    // sinon : elle reste visible au lancement
-  }
-}catch(e){}
+// Fenêtre d'accueil du pilotage vocal : affichée au lancement, sauf si refusée.
+function maybeShowVoiceWelcome(){
+  try{
+    let off=false; try{ off = localStorage.getItem('dysc_voice_welcome')==='off'; }catch(e){}
+    const vw=document.getElementById('voiceWelcome');
+    if(vw && !off){ vw.classList.remove('hidden'); }
+    else if(vw){ vw.classList.add('hidden'); }
+  }catch(e){}
+}
+// Aucun compte/pseudo n'est requis pour jouer contre l'IA : on n'affiche plus
+// la fenêtre de pseudo au démarrage. Seule la fenêtre de pilotage vocal s'affiche.
+maybeShowVoiceWelcome();
 initFirebase();
 </script>
 <script>
