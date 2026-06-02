@@ -3622,19 +3622,24 @@ function _attachBoardPointer(boardEl){
   };
   document.addEventListener('pointerup', endDrag);
   document.addEventListener('pointercancel', ()=>{ _cancelDrag(); });
-  // Clic droit pendant un glissement/sélection → annule (contextmenu est l'événement
-  // le plus fiable au clic droit). Phase capture pour l'attraper en premier.
-  document.addEventListener('contextmenu', (ev)=>{
-    if(_dragState || selected){
+  // ── Annulation au CLIC DROIT pendant un glissement (clic gauche maintenu) ──
+  // Selon le navigateur, presser le bouton droit alors que le gauche est tenu déclenche
+  // soit un 'pointerdown' (button 2), soit un 'mousedown' (button 2), soit 'contextmenu'.
+  // On écoute les trois, en phase capture, pour couvrir tous les cas.
+  function _rightCancel(ev){
+    if((_dragState || selected)){
       ev.preventDefault();
       ev.stopPropagation();
       _cancelDrag();
     }
+  }
+  document.addEventListener('pointerdown', (ev)=>{
+    if(ev.button===2 || ev.buttons===2){ _rightCancel(ev); }
   }, true);
-  // Filet supplémentaire : bouton droit enfoncé pendant un glissement
   document.addEventListener('mousedown', (ev)=>{
-    if(ev.button===2 && (_dragState || selected)){ ev.preventDefault(); _cancelDrag(); }
+    if(ev.button===2){ _rightCancel(ev); }
   }, true);
+  document.addEventListener('contextmenu', (ev)=>{ _rightCancel(ev); }, true);
 }
 
 function handleClick(r,c){
