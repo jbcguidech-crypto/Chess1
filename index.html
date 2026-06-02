@@ -1913,11 +1913,12 @@ function updateNavLeft(){
 // ═══ PILOTAGE VOCAL DU SPLASH (mains-libres dès l'accueil) ═══
 let _splashRecog = null;
 let _splashListening = false;
+let _splashVoiceWanted = false; // l'utilisateur a utilisé le micro du splash → on le réactive au retour
 
 function _splashStatus(msg){ const el=document.getElementById('splashVoiceStatus'); if(el) el.textContent = msg||''; }
 
 function toggleSplashVoice(){
-  if(_splashListening) stopSplashVoice();
+  if(_splashListening){ _splashVoiceWanted = false; stopSplashVoice(); }
   else startSplashListening();
 }
 
@@ -1931,6 +1932,7 @@ function stopSplashVoice(){
 function startSplashListening(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){ _splashStatus(currentLang==='fr'?'Reconnaissance vocale non disponible':'Speech recognition unavailable'); return; }
+  _splashVoiceWanted = true; // mémorise que l'utilisateur veut le pilotage vocal
   try{ if(_splashRecog) _splashRecog.abort(); }catch(e){}
   _splashRecog = new SR();
   _splashRecog.lang = currentLang==='fr' ? 'fr-FR' : 'en-US';
@@ -2023,6 +2025,10 @@ function showSplash(){
   if(typeof buildPieceSetSelector==='function') buildPieceSetSelector();
   if(typeof buildBoardThemeSelector==='function') buildBoardThemeSelector();
   if(typeof updateColorButtons==='function') updateColorButtons();
+  // Si l'utilisateur pilotait à la voix, on réactive l'écoute du splash au retour au menu
+  if(_splashVoiceWanted){
+    setTimeout(()=>{ if(!_splashListening && document.getElementById('splash') && document.getElementById('splash').style.display!=='none') startSplashListening(); }, 700);
+  }
 }
 
 function confirmQuit(yes){
@@ -4180,7 +4186,7 @@ function startListening(){
           return;
         }
         // Commandes informatives / de contrôle autorisées même quand l'IA réfléchit
-        if(a && (a.kind==='state' || a.kind==='resign' || a.kind==='newgame')){
+        if(a && (a.kind==='state' || a.kind==='resign' || a.kind==='newgame' || a.kind==='mute' || a.kind==='menu' || a.kind==='review' || a.kind==='toggle' || a.kind==='hint')){
           executeVoiceAction(a, true);
           return;
         }
@@ -4197,7 +4203,7 @@ function startListening(){
       const act = parseVoiceToAction(cleaned);
       // On ne JOUE un coup que sur un résultat FINAL (quand l'utilisateur a fini de parler).
       // Les résultats intermédiaires ne servent qu'à l'affichage → évite les coups parasites.
-      if(anyFinal && act && (act.kind==='move' || act.kind==='castle' || act.kind==='reset' || act.kind==='resign' || act.kind==='newgame' || act.kind==='state' || act.kind==='hint')){
+      if(anyFinal && act && (act.kind==='move' || act.kind==='castle' || act.kind==='reset' || act.kind==='resign' || act.kind==='newgame' || act.kind==='state' || act.kind==='hint' || act.kind==='mute' || act.kind==='menu' || act.kind==='review' || act.kind==='toggle')){
         if(act.kind==='move'||act.kind==='castle'||act.kind==='reset'){ moveJustPlayed = true; setTimeout(()=>{ moveJustPlayed = false; }, 1200); }
         _pendingAmbiguous = null; // un nouveau coup annule l'ambiguïté précédente
         executeVoiceAction(act, true);
@@ -4656,7 +4662,7 @@ function parseVoiceToAction(text){
   // 1) Strict sur le texte CORRIGÉ phonétiquement (canonise les noms de pièce : caval→cavalier…)
   const phon = phoneticNormalize(text);
   let act = _parseStrict(phon);
-  const CMD = (k)=> ['move','castle','reset','undo','resign','newgame','state','hint'].includes(k);
+  const CMD = (k)=> ['move','castle','reset','undo','resign','newgame','state','hint','mute','menu','review','toggle'].includes(k);
   if(CMD(act.kind)) return act;
   // 2) Strict sur le texte brut (au cas où la normalisation aurait trop simplifié)
   const actRaw = _parseStrict(text);
@@ -4692,6 +4698,23 @@ function _parseStrict(text){
   if(/\b(aide|aidez moi|que puis je dire|commandes|help|what can i say)\b/.test(_n)) return {kind:'state', what:'help'};
   // Indice / suggestion
   if(/\b(indice|conseil|suggestion|quel coup|aide moi a jouer|hint|suggest)\b/.test(_n)) return {kind:'hint'};
+  // Couper / activer la voix de l'IA
+  if(/\b(coupe le son|coupe la voix|silence|muet|mute|tais toi)\b/.test(_n)) return {kind:'mute', on:true};
+  if(/\b(active le son|remets le son|active la voix|parle|unmute|son)\b/.test(_n)) return {kind:'mute', on:false};
+  // Retour au menu / accueil
+  if(/\b(menu|accueil|retour au menu|page d accueil|home|quitter au menu)\b/.test(_n)) return {kind:'menu'};
+  // Navigation de revue
+  if(/\b(coup precedent|precedent|reculer|en arriere|previous|back)\b/.test(_n)) return {kind:'review', dir:-1};
+  if(/\b(coup suivant|suivant|avancer|en avant|next|forward)\b/.test(_n)) return {kind:'review', dir:1};
+  if(/\b(debut|au debut|premier coup|start|beginning)\b/.test(_n)) return {kind:'review', dir:'start'};
+  if(/\b(en direct|reviens au direct|position actuelle|live|maintenant)\b/.test(_n)) return {kind:'review', dir:'live'};
+  // Bascules d'affichage
+  if(/\b(active l analyse|montre l analyse|affiche la jauge|jauge|analyse)\b/.test(_n) && !/dernier|position/.test(_n)) return {kind:'toggle', which:'eval', on:true};
+  if(/\b(cache l analyse|enleve la jauge|masque l analyse)\b/.test(_n)) return {kind:'toggle', which:'eval', on:false};
+  if(/\b(mode aveugle|cache les pieces|aveugle|blindfold)\b/.test(_n)) return {kind:'toggle', which:'blind', on:true};
+  if(/\b(montre les pieces|affiche les pieces|desactive l aveugle|enleve l aveugle)\b/.test(_n)) return {kind:'toggle', which:'blind', on:false};
+  if(/\b(desactive|enleve|cache|retire)\b.*\bpre[\s-]?coups?\b/.test(_n)) return {kind:'toggle', which:'premove', on:false};
+  if(/\bpre[\s-]?coups?\b/.test(_n)) return {kind:'toggle', which:'premove', on:true};
 
   if(text.includes(L().new_game)||text.includes(L().resign)) return {kind:'reset'};
   // Annulation du dernier coup
@@ -4864,6 +4887,24 @@ function executeVoiceAction(act, verbose){
     }
     case 'hint': _voiceHint(); return true;
     case 'state': _voiceState(act.what); return true;
+    case 'mute':
+      try{ if(typeof voiceMuted!=='undefined' && voiceMuted!==act.on) toggleVoiceMute(); }catch(e){}
+      _voiceSay(act.on ? (currentLang==='fr'?'Voix coupée.':'Voice muted.') : (currentLang==='fr'?'Voix activée.':'Voice on.'));
+      return true;
+    case 'menu':
+      _voiceSay(currentLang==='fr'?'Retour au menu.':'Back to menu.');
+      setTimeout(()=>{ if(typeof goHome==='function') goHome(); else if(typeof showSplash==='function') showSplash(); }, 600);
+      return true;
+    case 'review':
+      if(act.dir==='start' && typeof reviewStart==='function') reviewStart();
+      else if(act.dir==='live' && typeof reviewEnd==='function') reviewEnd();
+      else if(typeof reviewGo==='function') reviewGo(act.dir);
+      return true;
+    case 'toggle':
+      if(act.which==='eval' && typeof setEvalEnabled==='function'){ setEvalEnabled(act.on); _voiceSay(act.on?(currentLang==='fr'?'Analyse activée.':'Analysis on.'):(currentLang==='fr'?'Analyse masquée.':'Analysis off.')); }
+      else if(act.which==='blind' && typeof setBlindfold==='function'){ setBlindfold(act.on); _voiceSay(act.on?(currentLang==='fr'?'Mode aveugle activé.':'Blindfold on.'):(currentLang==='fr'?'Pièces affichées.':'Pieces shown.')); }
+      else if(act.which==='premove' && typeof setPremoveEnabled==='function'){ setPremoveEnabled(act.on); _voiceSay(act.on?(currentLang==='fr'?'Pré-coups activés.':'Premoves on.'):(currentLang==='fr'?'Pré-coups désactivés.':'Premoves off.')); }
+      return true;
     case 'move':
       if(verbose) setStatus((currentLang==='fr'?'✓ Joué en ':'✓ Played to ')+String.fromCharCode(97+act.tc)+(8-act.tr),'success');
       makeMove(act.fr,act.fc,act.tr,act.tc,null,act.promo);
