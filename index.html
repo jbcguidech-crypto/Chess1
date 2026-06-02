@@ -5409,7 +5409,9 @@ function speak(text, onEnd, who){
     const chosen = getVoiceFor(who || 'me');
     if(chosen) u.voice = chosen;
     // Légère différence de hauteur pour mieux distinguer les deux voix
-    u.pitch = (who==='ai') ? 0.9 : 1.08;
+    // Écart de tonalité marqué pour bien distinguer les deux voix :
+    // IA nettement plus grave, joueur plus aigu (échelle 0–2).
+    u.pitch = (who==='ai') ? 0.7 : 1.25;
     u.rate = 1;
     u.volume = 1;
     u.onend = ()=>{
