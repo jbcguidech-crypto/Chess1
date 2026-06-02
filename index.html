@@ -4741,7 +4741,27 @@ if('serviceWorker' in navigator){
     // Chemin du SW relatif au dossier courant (robuste sur GitHub Pages /Chess1/)
     var base = location.pathname.replace(/[^/]*$/, '');
     navigator.serviceWorker.register(base + 'sw.js', { scope: base })
+      .then(function(reg){
+        // Vérifie les mises à jour à chaque chargement
+        reg.update();
+        // Quand une nouvelle version est trouvée, on l'active dès qu'elle est prête
+        reg.addEventListener('updatefound', function(){
+          var nw = reg.installing;
+          if(!nw) return;
+          nw.addEventListener('statechange', function(){
+            if(nw.state === 'installed' && navigator.serviceWorker.controller){
+              nw.postMessage && nw.postMessage('SKIP_WAITING');
+            }
+          });
+        });
+      })
       .catch(function(){ /* hors-ligne ou non supporté */ });
+    // Recharge une seule fois quand le nouveau SW prend le contrôle
+    var _reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function(){
+      if(_reloaded) return; _reloaded = true;
+      window.location.reload();
+    });
   });
 }
 </script>
