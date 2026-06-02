@@ -5409,9 +5409,9 @@ function speak(text, onEnd, who){
     const chosen = getVoiceFor(who || 'me');
     if(chosen) u.voice = chosen;
     // Légère différence de hauteur pour mieux distinguer les deux voix
-    // Écart de tonalité marqué pour bien distinguer les deux voix :
-    // IA nettement plus grave, joueur plus aigu (échelle 0–2).
-    u.pitch = (who==='ai') ? 0.7 : 1.25;
+    // Tonalité naturelle pour les deux voix (pas de déformation).
+    // La distinction se fait par le CHOIX de voix (France / Canada), pas par le pitch.
+    u.pitch = 1.0;
     u.rate = 1;
     u.volume = 1;
     u.onend = ()=>{
