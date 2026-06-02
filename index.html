@@ -5041,10 +5041,17 @@ function executeVoiceAction(act, verbose){
       return true;
     case 'newgame': {
       if(act.elo){ try{ currentElo=Math.max(400,Math.min(3000,act.elo)); userProfile.elo=currentElo; }catch(e){} }
-      resetGame();
-      _voiceSay(currentLang==='fr'
+      // Verrou prolongé : resetGame relance l'écoute du micro, qui pourrait capter
+      // l'écho « nouvelle partie » et reboucler. On bloque toute commande le temps
+      // que l'annonce se termine.
+      _cmdLock = true; setTimeout(()=>{ _cmdLock=false; }, 4000);
+      const _msg = (currentLang==='fr'
         ? ('Nouvelle partie'+(act.elo?(' contre niveau '+act.elo):'')+'. À vous de jouer.')
         : ('New game'+(act.elo?(' versus '+act.elo):'')+'. Your move.'));
+      resetGame();
+      // Coupe le micro et parle APRÈS le reset ; l'écoute ne reprendra qu'à la fin de l'annonce
+      try{ aiSpeaking = true; if(recognition && listening){ recognition.abort(); } listening = false; }catch(e){}
+      setTimeout(()=>{ _voiceSay(_msg); }, 150);
       return true;
     }
     case 'hint': _voiceHint(); return true;
