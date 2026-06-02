@@ -467,17 +467,18 @@ html[data-theme="dark"] .settings-preview img {
   color:var(--gold-light);
   text-shadow:0 2px 8px rgba(91,141,239,.4);
 }
-/* Pendant la partie, le titre devient un bouton "Abandonner" */
+/* Pendant la partie, le logo devient une icône maison (retour menu / abandon) */
 .nav-logo.nav-abandon {
-  font-size:.82rem;font-weight:700;letter-spacing:.3px;
-  padding:7px 16px;border-radius:50px;
-  border:1px solid rgba(224,82,82,.5);
-  color:#e07070;text-shadow:none;
-  background:rgba(224,82,82,.08);
+  font-size:1.2rem;
+  width:42px;height:42px;padding:0;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--border-gold);
+  color:var(--gold-light);text-shadow:none;
+  background:rgba(91,141,239,.10);
   transition:all .18s;
 }
-.nav-logo.nav-abandon:hover { background:rgba(224,82,82,.18);border-color:#e07070; }
-.nav-logo.nav-abandon:active { transform:scale(.96); }
+.nav-logo.nav-abandon:hover { background:rgba(91,141,239,.2);transform:scale(1.08); }
+.nav-logo.nav-abandon:active { transform:scale(.94); }
 .nav-center { display:flex;gap:4px; }
 .nav-tab {
   padding:7px 14px;border-radius:50px;border:none;
@@ -514,7 +515,7 @@ html[data-theme="dark"] .settings-preview img {
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 
 /* ── GAME LAYOUT ─────────────────────────────── */
-.game-layout { display:flex;flex-direction:column;gap:8px;align-items:stretch;width:100%; }
+.game-layout { display:flex;flex-direction:column;gap:8px;align-items:stretch;width:100%;padding-top:8px; }
 
 /* ── BOARD ───────────────────────────────────── */
 .board-container {
@@ -1343,7 +1344,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 </div>
 
 <nav class="nav">
-  <div class="nav-logo" id="navLeft" onclick="goHome()" style="cursor:pointer;">♟ Do You Speak Chess?</div>
+  <div class="nav-logo nav-abandon" id="navLeft" onclick="goHome()" style="cursor:pointer;" title="Menu">🏠</div>
   <div class="nav-center">
     <button class="nav-tab active" onclick="showPage('game')">🎮 Jouer</button>
   </div>
@@ -2029,11 +2030,11 @@ function updateNavLeft(){
   const el = document.getElementById('navLeft');
   if(!el) return;
   if(gameActive){
-    el.innerHTML = '🏳️ Abandonner';
+    el.innerHTML = '🏠';
     el.classList.add('nav-abandon');
   } else {
-    el.innerHTML = '♟ Do You Speak Chess?';
-    el.classList.remove('nav-abandon');
+    el.innerHTML = '🏠';
+    el.classList.add('nav-abandon');
   }
 }
 
