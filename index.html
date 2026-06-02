@@ -325,6 +325,9 @@ body {
 .splash-diff-label #splashEloTier { letter-spacing:.02em; }
 .sd-elo { color:var(--gold);font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1.05rem;font-variant-numeric:tabular-nums; }
 .sd-elo-unit { font-size:.62rem;color:var(--text-muted);font-weight:600;letter-spacing:.04em; }
+/* Petite icône « voix » indiquant qu'on peut dicter le choix */
+.voice-ico { width:.92em;height:.92em;vertical-align:-.12em;margin-right:.32em;opacity:.85;display:inline-block; }
+.sd-elo-niveau { font-size:.82rem;color:var(--text-muted);font-weight:600;margin-right:.15em; }
 .splash-diff input[type=range]{
   width:100%;height:22px;            /* cible tactile correcte, plus compacte */
   -webkit-appearance:none;background:transparent;outline:none;cursor:pointer;
@@ -427,7 +430,7 @@ html[data-theme="dark"] .settings-preview img {
 .splash-btn:active { transform:translateY(1px); }
 .btn-king { width:46px;height:46px;display:flex;align-items:center;justify-content:center; }
 .king-ico { width:100%;height:100%;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3)); }
-.btn-lbl { line-height:1; }
+.btn-lbl { line-height:1;display:inline-flex;align-items:center;justify-content:center; }
 
 /* Blancs — carte claire */
 .splash-white {
@@ -1201,7 +1204,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-diff">
     <div class="splash-diff-label">
       <span id="splashEloTier">Novice</span>
-      <span class="sd-elo"><span id="splashEloVal">800</span> <span class="sd-elo-unit">Elo</span></span>
+      <span class="sd-elo"><svg class="voice-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4c1.6 1.8 2.5 4.2 2.5 8s-.9 6.2-2.5 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M9.5 6c1 1.3 1.6 2.8 1.6 6s-.6 4.7-1.6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5.5 8.5c.6.8 1 1.7 1 3.5s-.4 2.7-1 3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="sd-elo-niveau">niveau</span> <span id="splashEloVal">800</span> <span class="sd-elo-unit">Elo</span></span>
     </div>
     <input type="range" id="splashEloSlider" min="400" max="3000" step="50" value="800"
       oninput="onSplashEloSlide(this.value)" onchange="onSplashEloSlide(this.value)"
@@ -1211,15 +1214,15 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-btns">
     <button class="splash-btn splash-white" onclick="splashChooseColor('w')">
       <span class="btn-king" id="kingWhite"></span>
-      <span class="btn-lbl">Blancs</span>
+      <span class="btn-lbl"><svg class="voice-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4c1.6 1.8 2.5 4.2 2.5 8s-.9 6.2-2.5 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M9.5 6c1 1.3 1.6 2.8 1.6 6s-.6 4.7-1.6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5.5 8.5c.6.8 1 1.7 1 3.5s-.4 2.7-1 3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Blancs</span>
     </button>
     <button class="splash-btn splash-random" onclick="splashChooseColor('r')">
       <span class="btn-king" id="kingRandom"></span>
-      <span class="btn-lbl">Aléatoire</span>
+      <span class="btn-lbl"><svg class="voice-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4c1.6 1.8 2.5 4.2 2.5 8s-.9 6.2-2.5 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M9.5 6c1 1.3 1.6 2.8 1.6 6s-.6 4.7-1.6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5.5 8.5c.6.8 1 1.7 1 3.5s-.4 2.7-1 3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Aléatoire</span>
     </button>
     <button class="splash-btn splash-black" onclick="splashChooseColor('b')">
       <span class="btn-king" id="kingBlack"></span>
-      <span class="btn-lbl">Noirs</span>
+      <span class="btn-lbl"><svg class="voice-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4c1.6 1.8 2.5 4.2 2.5 8s-.9 6.2-2.5 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M9.5 6c1 1.3 1.6 2.8 1.6 6s-.6 4.7-1.6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5.5 8.5c.6.8 1 1.7 1 3.5s-.4 2.7-1 3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Noirs</span>
     </button>
   </div>
   <button class="splash-online-btn" onclick="openOnlineModal()">🌐 Jouer en ligne avec un ami</button>
