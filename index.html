@@ -1440,8 +1440,12 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     <button class="rv-btn" id="reviewLive" onclick="reviewEnd()" title="Revenir au direct">⏭</button>
   </div>
 
-  <!-- INTERRUPTEURS EN JEU : mode aveugle + pré-coups -->
+  <!-- INTERRUPTEURS EN JEU : mes coups + mode aveugle + pré-coups -->
   <div class="ingame-toggles">
+    <label class="igt-pill">
+      <input type="checkbox" id="speakSelfToggle" checked onchange="setSpeakSelf(this.checked)">
+      <span>🗣 Mes coups</span>
+    </label>
     <label class="igt-pill">
       <input type="checkbox" id="blindToggleGame" onchange="setBlindfold(this.checked)">
       <span>🙈 Aveugle</span>
@@ -1584,6 +1588,8 @@ let _animMove = null;
 let voiceContinuous = false; // écoute continue activée
 let userInteracted = false; // synthèse vocale autorisée après interaction
 let voiceMuted = false; // voix de l'IA coupée par l'utilisateur
+let speakSelf = true;   // annoncer (ou non) ses propres coups à voix haute
+try { speakSelf = (localStorage.getItem('dysc_speak_self') !== '0'); } catch(e){}
 try { voiceMuted = (localStorage.getItem('dysc-muted') === '1'); } catch(e){}
 
 const PIECE_GLYPHS = {wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'};
@@ -3392,12 +3398,14 @@ function makeMove(fr,fc,tr,tc,castleType,promo,byVoice){
   const st=checkGameState();
   try{ if(st.over) playSound('end'); else if(st.check) playSound('check'); else if(castleType) playSound('castle'); else if(_isCap) playSound('capture'); else playSound('move'); }catch(e){}
   // Annonce du coup du joueur : version courte « Pion d4 » (validation rapide)
-  let say = humanSpokenShort;
-  if(st.check && !st.over) say = (say||'') + (currentLang==='fr'?', échec':', check');
+  // Respecte l'option « Mes coups » : si désactivée, on n'annonce pas, mais l'IA joue quand même.
+  let say = speakSelf ? humanSpokenShort : '';
+  if(speakSelf && st.check && !st.over) say = (say||'') + (currentLang==='fr'?', échec':', check');
   if(st.over){
     if(say) speak(say, ()=>{ if(st.msg) speak(st.msg, null, 'me'); }, 'me');   // coup PUIS message de fin
   } else if(gameMode==='ai' && turn!==playerColor){
-    speak(say, ()=>askStockfish(), 'me');                    // coup (+échec) PUIS l'IA joue
+    if(say) speak(say, ()=>askStockfish(), 'me');                // coup (+échec) PUIS l'IA joue
+    else askStockfish();                                          // pas d'annonce → l'IA joue directement
   } else {
     if(say) speak(say, null, 'me');
   }
@@ -5294,9 +5302,29 @@ function setVoiceAi(uri){
   try { localStorage.setItem('dysc_voice_ai', uri); } catch(e){}
 }
 
-// Construit la liste d'options (max 5 voix FR) pour un <select> donné
+// Liste des voix proposées dans les menus : toutes les voix FR d'abord,
+// puis (s'il y en a peu) les autres voix du système, étiquetées par langue.
+function getVoiceChoices(){
+  const prefix = (currentLang==='fr') ? 'fr' : 'en';
+  const fr = availableVoices.filter(v => v.lang && v.lang.toLowerCase().startsWith(prefix));
+  const others = availableVoices.filter(v => !(v.lang && v.lang.toLowerCase().startsWith(prefix)));
+  // On met les voix de la langue en tête, puis les autres pour offrir plus de choix
+  return fr.concat(others);
+}
+
+function _voiceLabel(v){
+  const prefix = (currentLang==='fr') ? 'fr' : 'en';
+  const isLangMatch = v.lang && v.lang.toLowerCase().startsWith(prefix);
+  let label = v.name;
+  if(v.localService===false) label += ' ☁️';
+  // Pour une voix d'une autre langue, on précise la langue entre parenthèses
+  if(!isLangMatch && v.lang) label += ' ('+v.lang+')';
+  return label;
+}
+
+// Construit la liste d'options pour un <select> donné
 function _fillVoiceOptions(sel, currentURI, autoFallback){
-  const list = getVoicesForLang().slice(0, 5); // on propose jusqu'à 5 voix
+  const list = getVoiceChoices(); // toutes les voix disponibles
   sel.innerHTML = '';
   if(!list.length){
     const o = document.createElement('option');
@@ -5314,7 +5342,7 @@ function _fillVoiceOptions(sel, currentURI, autoFallback){
   list.forEach(v => {
     const o = document.createElement('option');
     o.value = v.voiceURI;
-    o.textContent = v.name + (v.localService===false ? ' ☁️' : '');
+    o.textContent = _voiceLabel(v);
     if(v.voiceURI === currentURI) o.selected = true;
     sel.appendChild(o);
   });
@@ -5357,6 +5385,14 @@ function toggleVoiceMute(){
   }
   updateSpeakerBtn();
   if(typeof showToast==='function') showToast(voiceMuted ? '🔇 Son coupé' : '🔊 Son activé', 'success');
+}
+
+// Active / désactive l'annonce vocale de SES PROPRES coups (n'affecte pas la voix de l'IA)
+function setSpeakSelf(on){
+  speakSelf = !!on;
+  try { localStorage.setItem('dysc_speak_self', speakSelf ? '1' : '0'); } catch(e){}
+  const t = document.getElementById('speakSelfToggle'); if(t) t.checked = speakSelf;
+  if(typeof showToast==='function') showToast(speakSelf ? '🗣 Vos coups seront annoncés' : '🔇 Vos coups ne seront plus annoncés', 'success');
 }
 
 function speak(text, onEnd, who){
@@ -5788,7 +5824,7 @@ initBoard(); renderBoard();
 try{ onSplashEloSlide(document.getElementById('splashEloSlider')?.value || 800); }catch(e){} updateSidebar(); initStockfish(); updateEloUI(); applyLang(); try{ initTheme(); }catch(e){} try{ updateSpeakerBtn(); }catch(e){} try{ updateSplashAuth((window._auth&&window._auth.auth&&window._auth.auth.currentUser)||null); }catch(e){}
 try{ const _eg=document.getElementById('evalGauge'); if(_eg) _eg.style.display = evalEnabled ? 'flex' : 'none'; }catch(e){}
 try{ const _bb=document.getElementById('board'); if(_bb && blindfold) _bb.classList.add('blindfold'); }catch(e){}
-try{ const a=document.getElementById('evalToggleGame'); if(a) a.checked=evalEnabled; const b=document.getElementById('blindToggleGame'); if(b) b.checked=blindfold; const p=document.getElementById('premoveToggleGame'); if(p) p.checked=premoveEnabled; }catch(e){}
+try{ const a=document.getElementById('evalToggleGame'); if(a) a.checked=evalEnabled; const b=document.getElementById('blindToggleGame'); if(b) b.checked=blindfold; const p=document.getElementById('premoveToggleGame'); if(p) p.checked=premoveEnabled; const s=document.getElementById('speakSelfToggle'); if(s) s.checked=speakSelf; }catch(e){}
 try{ updateColorButtons(); }catch(e){} // Reconnaissance vocale démarrée manuellement via le bouton
 const hasProfile = loadProfile();
 // Fenêtre d'accueil du pilotage vocal : affichée au lancement, sauf si refusée.
