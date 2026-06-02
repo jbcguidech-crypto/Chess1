@@ -99,6 +99,17 @@ html[data-theme="light"] .nav-username { color:var(--text-muted); }
 }
 .theme-toggle:hover { background:rgba(91,141,239,.2);transform:scale(1.08); }
 .theme-toggle:active { transform:scale(.94); }
+/* Bouton engrenage (Personnaliser) à gauche du thème */
+.settings-toggle {
+  position:absolute;top:18px;right:68px;z-index:20;
+  width:42px;height:42px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(91,141,239,.10);border:1px solid var(--border-gold);
+  color:var(--gold-light);font-size:1.15rem;cursor:pointer;
+  transition:all .2s;line-height:1;-webkit-tap-highlight-color:transparent;
+}
+.settings-toggle:hover { background:rgba(91,141,239,.2);transform:scale(1.08); }
+.settings-toggle:active { transform:scale(.94); }
 
 /* Bouton connexion / inscription (sur le splash) */
 .splash-auth {
@@ -615,22 +626,32 @@ html[data-theme="dark"] .settings-preview img {
 @keyframes boardFloat { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
 .splash-mic-center {
   position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:15;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
-  width:84px;height:84px;border-radius:50%;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  width:72px;height:72px;border-radius:50%;cursor:pointer;
   background:radial-gradient(circle at 50% 38%, #6ea0ff, #3a6fd8);
   border:3px solid rgba(255,255,255,.92);color:#fff;
-  box-shadow:0 6px 24px rgba(0,0,0,.45), 0 0 0 6px rgba(91,141,239,.28);
-  transition:all .18s;-webkit-tap-highlight-color:transparent;
+  box-shadow:0 6px 24px rgba(0,0,0,.45), 0 0 0 0 rgba(91,141,239,.5);
+  -webkit-tap-highlight-color:transparent;
+  /* Pulsation légère permanente en bleu (au repos) */
+  animation:micRestPulse 2.2s ease-in-out infinite;
 }
-.splash-mic-center svg { width:30px;height:30px; }
-.smc-label { font-family:'Manrope',system-ui,sans-serif;font-weight:700;font-size:.56rem;letter-spacing:.02em;line-height:1;text-align:center;padding:0 6px; }
+.splash-mic-center svg { width:32px;height:32px; }
+@keyframes micRestPulse {
+  0%,100%{ box-shadow:0 6px 24px rgba(0,0,0,.45), 0 0 0 0 rgba(110,160,255,.45); }
+  50%{ box-shadow:0 6px 24px rgba(0,0,0,.45), 0 0 0 10px rgba(110,160,255,0); }
+}
 .splash-mic-center:hover { transform:translate(-50%,-50%) scale(1.06); }
 .splash-mic-center:active { transform:translate(-50%,-50%) scale(.95); }
+/* Activé → rouge, pulsation plus marquée */
 .splash-mic-center.listening {
-  background:radial-gradient(circle at 50% 38%, #ff8a7a, #e0483c);
-  border-color:#fff;animation:splashMicPulse 1.1s ease-in-out infinite;
+  background:radial-gradient(circle at 50% 38%, #ff6a5a, #d6342a);
+  border-color:#fff;
+  animation:micActivePulse 1.1s ease-in-out infinite;
 }
-@keyframes splashMicPulse { 0%,100%{box-shadow:0 6px 24px rgba(0,0,0,.45), 0 0 0 0 rgba(231,76,60,.55);} 50%{box-shadow:0 6px 24px rgba(0,0,0,.45), 0 0 0 16px rgba(231,76,60,0);} }
+@keyframes micActivePulse {
+  0%,100%{ box-shadow:0 6px 24px rgba(0,0,0,.45), 0 0 0 0 rgba(231,76,60,.6); }
+  50%{ box-shadow:0 6px 24px rgba(0,0,0,.45), 0 0 0 16px rgba(231,76,60,0); }
+}
 .splash-voice-status { margin-top:8px;font-size:.78rem;color:var(--text-muted);min-height:18px;text-align:center;max-width:340px; }
 .online-modal {
   display:none;position:fixed;inset:0;z-index:1300;
@@ -1158,19 +1179,19 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 <div id="splash">
   <button class="splash-auth" id="splashAuthBtn" onclick="loginGoogle()" title="Se connecter ou créer un compte">🔑 Connexion / Inscription</button>
   <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Mode clair" title="Mode clair / sombre">☀️</button>
+  <button class="settings-toggle" id="settingsToggle" onclick="openSettings()" aria-label="Personnaliser" title="Personnaliser">⚙️</button>
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
   <!-- Échiquier d'aperçu avec micro central pour activer la commande vocale -->
   <div class="splash-board-wrap">
     <div class="splash-mini-board" id="splashBoard"></div>
-    <button class="splash-mic-center" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Toucher pour parler">
+    <button class="splash-mic-center" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="9" y="2" width="6" height="12" rx="3"></rect>
         <path d="M5 10v2a7 7 0 0 0 14 0v-2"></path>
         <line x1="12" y1="19" x2="12" y2="22"></line>
       </svg>
-      <span class="smc-label">Toucher pour parler</span>
     </button>
   </div>
   <!-- Difficulté sur l'écran d'accueil -->
@@ -1185,9 +1206,6 @@ canvas#eloChart { width:100%!important;height:90px!important; }
       style="width:100%;max-width:280px;touch-action:none;position:relative;z-index:10;height:30px;">
   </div>
   <!-- Bouton configuration -->
-  <button class="splash-settings-btn" onclick="openSettings()">
-    <span class="gear-icon">⚙️</span> Personnaliser
-  </button>
   <div class="splash-btns">
     <button class="splash-btn splash-white" onclick="splashChooseColor('w')">
       <span class="btn-king" id="kingWhite"></span>
