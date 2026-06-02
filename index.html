@@ -2117,8 +2117,8 @@ function parseSplashCommand(text){
   if(/\b(blanc|blancs|white|avec les blancs)\b/.test(t)){ stopSplashVoice(); splashChooseColor('w'); return true; }
   if(/\b(noir|noirs|black|avec les noirs)\b/.test(t)){ stopSplashVoice(); splashChooseColor('b'); return true; }
   if(/\b(aleatoire|hasard|au hasard|random|peu importe)\b/.test(t)){ stopSplashVoice(); splashChooseColor('r'); return true; }
-  // "jouer" / "commencer" / "nouvelle partie" sans couleur → blancs par défaut
-  if(/\b(jouer|commencer|demarrer|nouvelle partie|c est parti|go|play|start)\b/.test(t)){ stopSplashVoice(); splashChooseColor('w'); return true; }
+  // "jouer" / "commencer" / "nouvelle partie" sans couleur précisée → tirage au sort
+  if(/\b(jouer|commencer|demarrer|nouvelle partie|c est parti|go|play|start)\b/.test(t)){ stopSplashVoice(); splashChooseColor('r'); return true; }
   if(levelSet) return true; // le niveau a été réglé, on attend la couleur
   return false;
 }
@@ -2184,7 +2184,7 @@ function splashChooseColor(color) {
   gameMode='ai';
   // Choisit la couleur puis cache le splash
   if(color==='r'){
-    const chosen = (Date.now() % 2 === 0) ? 'w' : 'b';
+    const chosen = (Math.random() < 0.5) ? 'w' : 'b';
     const btn = document.querySelector('.splash-random');
     const ico = btn ? btn.querySelector('.btn-king') : null;
     const lbl = btn ? btn.querySelector('.btn-lbl') : null;
@@ -5398,7 +5398,7 @@ function setPlayerColor(color){
   gameMode='ai';
   if(color==='r'){
     // Aléatoire — tirage au sort
-    const chosen = (Date.now() % 2 === 0) ? 'w' : 'b';
+    const chosen = (Math.random() < 0.5) ? 'w' : 'b';
     playerColor = chosen;
     const msg = chosen==='w'
       ? (currentLang==='fr'?'🎲 Vous jouez les Blancs !':'🎲 You play White!')
