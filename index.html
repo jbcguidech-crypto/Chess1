@@ -1293,7 +1293,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
             <div class="gloss-row"><span class="gloss-ex">« annule » / « non » / « c'est faux »</span><span class="gloss-desc">revenir en arrière si mal compris</span></div>
             <div class="gloss-row"><span class="gloss-ex">« indice »</span><span class="gloss-desc">le moteur suggère un coup</span></div>
             <div class="gloss-row"><span class="gloss-ex">« abandonne »</span><span class="gloss-desc">abandonner la partie</span></div>
-            <div class="gloss-row"><span class="gloss-ex">« nouvelle partie » / « contre 1500 »</span><span class="gloss-desc">recommencer (niveau au choix)</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« nouvelle partie » / « ... aléatoire » / « contre 1500 »</span><span class="gloss-desc">recommencer (couleur au hasard, niveau au choix)</span></div>
             <div class="gloss-row"><span class="gloss-ex">« menu »</span><span class="gloss-desc">retour à l'accueil</span></div>
           </div>
           <div class="gloss-group">
@@ -1313,7 +1313,8 @@ canvas#eloChart { width:100%!important;height:90px!important; }
           </div>
           <div class="gloss-group">
             <div class="gloss-head">🏠 Depuis le menu d'accueil</div>
-            <div class="gloss-row"><span class="gloss-ex">« jouer avec les blancs / noirs »</span><span class="gloss-desc">démarrer une partie</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« jouer avec les blancs / noirs »</span><span class="gloss-desc">démarrer avec une couleur précise</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« jouer aléatoire » / « au hasard » / « jouer »</span><span class="gloss-desc">démarrer avec une couleur tirée au sort</span></div>
             <div class="gloss-row"><span class="gloss-ex">« niveau 1500 »</span><span class="gloss-desc">régler la difficulté</span></div>
             <div class="gloss-row"><span class="gloss-ex">« jouer en ligne » / « créer une partie »</span><span class="gloss-desc">multijoueur</span></div>
             <div class="gloss-row"><span class="gloss-ex">« personnaliser » / « mode sombre »</span><span class="gloss-desc">réglages et thème</span></div>
@@ -4843,10 +4844,14 @@ function _parseStrict(text){
   // ── COMMANDES VOCALES GÉNÉRALES (pilotage mains-libres) ──
   // Abandonner
   if(/\b(abandonne|abandonner|abandon|je perds|je me rends|i resign|resign|give up)\b/.test(_n)) return {kind:'resign'};
-  // Nouvelle partie (avec niveau éventuel : "nouvelle partie contre 1500")
+  // Nouvelle partie (niveau éventuel + couleur éventuelle)
   if(/\b(nouvelle partie|recommence|recommencer|rejouer|rejoue|new game|restart|reset)\b/.test(_n)){
     const lvl = _n.match(/\b(\d{3,4})\b/);
-    return {kind:'newgame', elo: lvl ? parseInt(lvl[1]) : null};
+    let col = null; // null = tirage au sort
+    if(/\b(blanc|blancs|white)\b/.test(_n)) col='w';
+    else if(/\b(noir|noirs|black)\b/.test(_n)) col='b';
+    else if(/\b(aleatoire|hasard|au hasard|random|peu importe)\b/.test(_n)) col='r';
+    return {kind:'newgame', elo: lvl ? parseInt(lvl[1]) : null, color: col};
   }
   // Répéter / décrire la position
   if(/\b(repete|repeter|repete la position|la position|ou en est|ou en sommes|etat|situation|describe|repeat|position)\b/.test(_n)) return {kind:'state', what:'position'};
@@ -5041,13 +5046,19 @@ function executeVoiceAction(act, verbose){
       return true;
     case 'newgame': {
       if(act.elo){ try{ currentElo=Math.max(400,Math.min(3000,act.elo)); userProfile.elo=currentElo; }catch(e){} }
+      // Couleur : 'w'/'b' si précisée, sinon tirage au sort (cas par défaut et 'r')
+      let newCol;
+      if(act.color==='w' || act.color==='b') newCol = act.color;
+      else newCol = (Math.random() < 0.5) ? 'w' : 'b';
+      playerColor = newCol;
+      const colWord = (newCol==='w') ? (currentLang==='fr'?'les blancs':'White') : (currentLang==='fr'?'les noirs':'Black');
       // Verrou prolongé : resetGame relance l'écoute du micro, qui pourrait capter
       // l'écho « nouvelle partie » et reboucler. On bloque toute commande le temps
       // que l'annonce se termine.
       _cmdLock = true; setTimeout(()=>{ _cmdLock=false; }, 4000);
       const _msg = (currentLang==='fr'
-        ? ('Nouvelle partie'+(act.elo?(' contre niveau '+act.elo):'')+'. À vous de jouer.')
-        : ('New game'+(act.elo?(' versus '+act.elo):'')+'. Your move.'));
+        ? ('Nouvelle partie'+(act.elo?(' contre niveau '+act.elo):'')+'. Vous jouez '+colWord+'.')
+        : ('New game'+(act.elo?(' versus '+act.elo):'')+'. You play '+colWord+'.'));
       resetGame();
       // Coupe le micro et parle APRÈS le reset ; l'écoute ne reprendra qu'à la fin de l'annonce
       try{ aiSpeaking = true; if(recognition && listening){ recognition.abort(); } listening = false; }catch(e){}
