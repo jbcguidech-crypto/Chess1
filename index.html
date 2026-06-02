@@ -680,6 +680,7 @@ body {
   width:92%;height:92%;
   object-fit:contain;
   filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));
+  -webkit-user-drag:none;user-select:none;
 }
 /* Pièces NOIRES sur l'échiquier : contour discret, sans halo lumineux */
 .board-piece[data-code^="b"] {
@@ -3484,10 +3485,13 @@ function _attachBoardPointer(boardEl){
     };
     // Si on appuie sur une pièce à soi → on prépare un drag et on la sélectionne
     if(isOwn){
+      ev.preventDefault();   // empêche le drag d'image natif (souris/PC)
       selected=[hit.r,hit.c]; possibleMoves=legalMoves(hit.r,hit.c); renderBoard();
       try{ boardEl.setPointerCapture(ev.pointerId); }catch(e){}
     }
   });
+  // Bloque le glisser-déposer natif des images (sinon, sur PC, il avale nos pointermove)
+  boardEl.addEventListener('dragstart', (ev)=>{ ev.preventDefault(); });
 
   boardEl.addEventListener('pointermove', (ev)=>{
     if(!_dragState) return;
