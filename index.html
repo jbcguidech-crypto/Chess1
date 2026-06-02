@@ -260,9 +260,9 @@ body {
 }
 .settings-done:active { transform:translateY(2px);box-shadow:0 2px 0 var(--gold-dark); }
 
-.splash-pieces { display:flex;gap:14px;margin-bottom:4px; }
+.splash-pieces { display:flex;gap:14px;margin-bottom:4px;justify-content:space-between;width:100%;max-width:360px; }
 /* Bandeau de pièces réduit (sous le titre / en haut) */
-.splash-pieces-sm { gap:8px;margin-top:4px;margin-bottom:2px; }
+.splash-pieces-sm { gap:4px;margin-top:4px;margin-bottom:2px;justify-content:space-around;width:100%;max-width:340px; }
 .splash-pieces-sm > div { width:30px !important;height:30px !important; }
 .splash-pieces-sm > div img { width:28px !important;height:28px !important; }
 .splash-piece {
@@ -338,15 +338,6 @@ body {
   width:24px;height:24px;border-radius:50%;border:3px solid var(--cream);
   background:radial-gradient(circle at 35% 35%,var(--gold-light),var(--gold-dark));cursor:pointer;
 }
-.splash-diff-presets {
-  display:flex;gap:6px;
-}
-.splash-diff-presets button {
-  padding:4px 10px;border-radius:20px;border:1px solid var(--border-gold);
-  background:transparent;color:var(--text-muted);font-family:'Manrope',system-ui,sans-serif;
-  font-weight:700;font-size:.65rem;cursor:pointer;transition:all .15s;
-}
-.splash-diff-presets button:hover { border-color:var(--gold-light);color:var(--gold-light); }
 .splash-pieceset {
   width:100%;max-width:340px;
   background:rgba(0,0,0,.2);border:1px solid var(--border-gold);
@@ -1192,13 +1183,6 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     <input type="range" id="splashEloSlider" min="400" max="3000" step="50" value="800"
       oninput="onSplashEloSlide(this.value)" onchange="onSplashEloSlide(this.value)"
       style="width:100%;max-width:280px;touch-action:none;position:relative;z-index:10;height:30px;">
-    <div class="splash-diff-presets">
-      <button onclick="setSplashElo(400)">400</button>
-      <button onclick="setSplashElo(800)">800</button>
-      <button onclick="setSplashElo(1200)">1200</button>
-      <button onclick="setSplashElo(1800)">1800</button>
-      <button onclick="setSplashElo(2500)">2500</button>
-    </div>
   </div>
   <!-- Bouton configuration -->
   <button class="splash-settings-btn" onclick="openSettings()">
@@ -1797,7 +1781,7 @@ function buildSplash() {
   const sp = document.getElementById('splashPieces');
   if(sp) {
     sp.innerHTML = ''; // reset pour éviter les doublons
-    [['wK','♔'],['wQ','♕'],['bN','♞'],['bQ','♛'],['wR','♖'],['bP','♟']].forEach(([code,glyph],i) => {
+    [['wR','♖'],['bN','♞'],['wB','♗'],['bQ','♛'],['wK','♔'],['bB','♝'],['wN','♘'],['bR','♜']].forEach(([code,glyph],i) => {
       const isW = code[0]==='w';
       const isDark = document.documentElement.getAttribute('data-theme')==='dark';
       // En thème sombre : halo clair autour de TOUTES les pièces du splash pour les détacher du fond foncé
