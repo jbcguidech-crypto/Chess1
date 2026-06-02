@@ -1379,7 +1379,6 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     <button class="nav-tab active" onclick="showPage('game')">🎮 Jouer</button>
   </div>
   <div class="nav-right">
-        <button id="langBtn" onclick="toggleLang()">🇫🇷 FR</button>
     <div class="nav-user" onclick="showProfile()">
       <div class="nav-username" id="navUsername">Vous</div>
     </div>
@@ -4557,9 +4556,8 @@ const LANG = {
 };
 
 function toggleLang() {
-  currentLang = currentLang === 'fr' ? 'en' : 'fr';
-  applyLang();
-  showToast(currentLang === 'en' ? '🇬🇧 English activated!' : '🇫🇷 Français activé !', 'success');
+  // L'application est uniquement en français.
+  currentLang = 'fr';
 }
 
 function applyTheme(t) {
@@ -5302,23 +5300,15 @@ function setVoiceAi(uri){
   try { localStorage.setItem('dysc_voice_ai', uri); } catch(e){}
 }
 
-// Liste des voix proposées dans les menus : toutes les voix FR d'abord,
-// puis (s'il y en a peu) les autres voix du système, étiquetées par langue.
+// Liste des voix proposées dans les menus : uniquement les voix françaises.
 function getVoiceChoices(){
-  const prefix = (currentLang==='fr') ? 'fr' : 'en';
-  const fr = availableVoices.filter(v => v.lang && v.lang.toLowerCase().startsWith(prefix));
-  const others = availableVoices.filter(v => !(v.lang && v.lang.toLowerCase().startsWith(prefix)));
-  // On met les voix de la langue en tête, puis les autres pour offrir plus de choix
-  return fr.concat(others);
+  const fr = availableVoices.filter(v => v.lang && v.lang.toLowerCase().startsWith('fr'));
+  return fr;
 }
 
 function _voiceLabel(v){
-  const prefix = (currentLang==='fr') ? 'fr' : 'en';
-  const isLangMatch = v.lang && v.lang.toLowerCase().startsWith(prefix);
   let label = v.name;
   if(v.localService===false) label += ' ☁️';
-  // Pour une voix d'une autre langue, on précise la langue entre parenthèses
-  if(!isLangMatch && v.lang) label += ' ('+v.lang+')';
   return label;
 }
 
