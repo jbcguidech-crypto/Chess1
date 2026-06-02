@@ -1571,8 +1571,8 @@ function buildSplash() {
     [['wK','♔'],['wQ','♕'],['bN','♞'],['bQ','♛'],['wR','♖'],['bP','♟']].forEach(([code,glyph],i) => {
       const isW = code[0]==='w';
       const isDark = document.documentElement.getAttribute('data-theme')==='dark';
-      // Halo clair pour les pièces noires en thème sombre (meilleur contraste sur fond foncé)
-      const haloFilter = (!isW && isDark)
+      // En thème sombre : halo clair autour de TOUTES les pièces du splash pour les détacher du fond foncé
+      const haloFilter = isDark
         ? 'drop-shadow(0 0 2px rgba(255,255,255,.95)) drop-shadow(0 0 4px rgba(255,255,255,.8)) drop-shadow(0 0 8px rgba(255,255,255,.5)) drop-shadow(0 5px 12px rgba(0,0,0,.6))'
         : 'drop-shadow(0 5px 12px rgba(0,0,0,.6))';
       // Conteneur animé
