@@ -704,6 +704,8 @@ html[data-theme="dark"] .settings-preview img {
 .cell:hover { filter:brightness(1.07);z-index:2; }
 .cell.last-move::before { content:'';position:absolute;inset:0;background:rgba(255,206,84,.38);pointer-events:none;z-index:0; }
 .cell.selected::before { content:'';position:absolute;inset:0;background:rgba(255,206,84,.5);box-shadow:inset 0 0 0 3px rgba(250,190,40,.95);pointer-events:none;z-index:0; }
+/* Pré-coup en attente : surbrillance orangée distincte */
+.cell.premove::before { content:'';position:absolute;inset:0;background:rgba(255,120,60,.45);box-shadow:inset 0 0 0 3px rgba(255,110,50,.9);pointer-events:none;z-index:0; }
 .cell.in-check::before { content:'';position:absolute;inset:0;pointer-events:none;z-index:0;background:radial-gradient(circle,rgba(229,72,77,.92),rgba(229,72,77,.32) 58%,transparent 74%);animation:shake-chk .4s ease; }
 .cell.possible-move::after { content:'';position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(20,30,25,.22);pointer-events:none;z-index:1;animation:dot-pop .18s cubic-bezier(.34,1.56,.64,1); }
 .cell.possible-capture::after { content:'';position:absolute;inset:0;box-shadow:inset 0 0 0 4px rgba(20,30,25,.26);pointer-events:none;z-index:1; }
@@ -1268,7 +1270,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     <button class="rv-btn" id="reviewLive" onclick="reviewEnd()" title="Revenir au direct">⏭</button>
   </div>
 
-  <!-- INTERRUPTEURS EN JEU : jauge d'analyse + mode aveugle -->
+  <!-- INTERRUPTEURS EN JEU : jauge d'analyse + mode aveugle + pré-coups -->
   <div class="ingame-toggles">
     <label class="igt-pill">
       <input type="checkbox" id="evalToggleGame" onchange="setEvalEnabled(this.checked)">
@@ -1277,6 +1279,10 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     <label class="igt-pill">
       <input type="checkbox" id="blindToggleGame" onchange="setBlindfold(this.checked)">
       <span>🙈 Aveugle</span>
+    </label>
+    <label class="igt-pill">
+      <input type="checkbox" id="premoveToggleGame" onchange="setPremoveEnabled(this.checked)">
+      <span>⚡ Pré-coups</span>
     </label>
   </div>
 
@@ -2858,9 +2864,11 @@ function applyStockfishMove(uciMove){
   setStatus('🔊 '+aiMsg,'ai');
   if(st.over){
     speak(aiMsg, ()=>{ if(st.msg) speak(st.msg); });   // coup IA PUIS message de fin
+    clearPremove();
   } else {
     speak(aiMsg);   // la reprise du micro est gérée par speak() après un délai de sécurité
     setTimeout(requestEvalUpdate, 200);  // met à jour la jauge (c'est ton tour)
+    tryExecutePremove();                 // exécute le pré-coup en attente, si légal
   }
 }
 
@@ -3194,6 +3202,116 @@ function setBlindfold(on){
   // Synchronise les deux interrupteurs (réglages + en jeu)
   const t1=document.getElementById('blindToggle'); if(t1) t1.checked = blindfold;
   const t2=document.getElementById('blindToggleGame'); if(t2) t2.checked = blindfold;
+}
+
+// ===== PRÉ-COUPS (precoups) =====
+let premoveEnabled = false;
+try{ premoveEnabled = localStorage.getItem('dysc_premove')==='1'; }catch(e){}
+let _premoveQueue = []; // file de pré-coups {fr,fc,tr,tc}, exécutés dans l'ordre
+
+function setPremoveEnabled(on){
+  premoveEnabled = !!on;
+  try{ localStorage.setItem('dysc_premove', on?'1':'0'); }catch(e){}
+  const t=document.getElementById('premoveToggleGame'); if(t) t.checked = premoveEnabled;
+  if(!premoveEnabled) clearPremove();
+}
+
+function clearPremove(){
+  _premoveQueue = [];
+  try{ document.querySelectorAll('.cell.premove').forEach(c=>c.classList.remove('premove')); }catch(e){}
+}
+
+// Cases qu'une pièce POURRAIT viser sur un PLATEAU donné (mouvement géométrique,
+// sans tenir compte du trait ni des échecs) — pour valider un pré-coup "plausible".
+function _pseudoTargetsOn(bd, r, c){
+  const p = bd[r][c]; if(!p) return [];
+  const t = type(p), col = color(p), out = [];
+  const add=(rr,cc)=>{ if(rr>=0&&rr<8&&cc>=0&&cc<8){ const q=bd[rr][cc]; if(!q || color(q)!==col) out.push([rr,cc]); } };
+  const ray=(dr,dc)=>{ let rr=r+dr,cc=c+dc; while(rr>=0&&rr<8&&cc>=0&&cc<8){ const q=bd[rr][cc]; if(!q){out.push([rr,cc]);} else { if(color(q)!==col) out.push([rr,cc]); break; } rr+=dr;cc+=dc; } };
+  if(t==='P'){
+    const dir = col==='w' ? -1 : 1;
+    add(r+dir, c-1); add(r+dir, c+1);
+    if(r+dir>=0&&r+dir<8 && !bd[r+dir][c]){ out.push([r+dir,c]);
+      const start = col==='w'?6:1;
+      if(r===start && !bd[r+2*dir][c]) out.push([r+2*dir,c]);
+    }
+  } else if(t==='N'){
+    [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(([dr,dc])=>add(r+dr,c+dc));
+  } else if(t==='K'){
+    [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]].forEach(([dr,dc])=>add(r+dr,c+dc));
+    add(r, c+2); add(r, c-2);
+  } else {
+    if(t==='B'||t==='Q'){ ray(-1,-1);ray(-1,1);ray(1,-1);ray(1,1); }
+    if(t==='R'||t==='Q'){ ray(-1,0);ray(1,0);ray(0,-1);ray(0,1); }
+  }
+  return out;
+}
+
+// Applique grossièrement un pré-coup sur une copie de plateau (pour projeter la file)
+function _applyPremoveOnBoard(bd, m){
+  const nb = bd.map(row=>row.slice());
+  const p = nb[m.fr][m.fc];
+  if(p){
+    // roque approximatif
+    if(type(p)==='K' && m.fc===4 && (m.tc===6||m.tc===2)){
+      if(m.tc===6){ nb[m.fr][5]=nb[m.fr][7]; nb[m.fr][7]=null; }
+      if(m.tc===2){ nb[m.fr][3]=nb[m.fr][0]; nb[m.fr][0]=null; }
+    }
+    nb[m.tr][m.tc]=p; nb[m.fr][m.fc]=null;
+  }
+  return nb;
+}
+
+// Construit le plateau projeté après application de tous les pré-coups en file
+function _projectedBoard(){
+  let bd = board.map(row=>row.slice());
+  for(const m of _premoveQueue) bd = _applyPremoveOnBoard(bd, m);
+  return bd;
+}
+
+// Cases plausibles pour une pièce, en tenant compte de la file de pré-coups
+function _pseudoTargets(r,c){
+  return _pseudoTargetsOn(_projectedBoard(), r, c);
+}
+
+// Ajoute un pré-coup à la file si départ/arrivée sont plausibles sur le plateau projeté
+function setPremove(fr,fc,tr,tc){
+  const bd = _projectedBoard();
+  const p = bd[fr][fc];
+  const myColor = (gameMode==='online') ? onlineColor : playerColor;
+  if(!p || color(p)!==myColor) return false;
+  const ok = _pseudoTargetsOn(bd, fr, fc).some(([rr,cc])=>rr===tr&&cc===tc);
+  if(!ok) return false;
+  _premoveQueue.push({fr,fc,tr,tc});
+  _highlightPremove();
+  return true;
+}
+
+function _highlightPremove(){
+  try{ document.querySelectorAll('.cell.premove').forEach(c=>c.classList.remove('premove')); }catch(e){}
+  if(!_premoveQueue.length) return;
+  const sel=(r,c)=>document.querySelector('.cell[data-r="'+r+'"][data-c="'+c+'"]');
+  for(const m of _premoveQueue){
+    const a=sel(m.fr,m.fc), b=sel(m.tr,m.tc);
+    if(a) a.classList.add('premove'); if(b) b.classList.add('premove');
+  }
+}
+
+// Exécute le PREMIER pré-coup de la file (appelé quand le trait revient au joueur).
+// S'il est illégal → toute la file est abandonnée (elle n'a plus de sens).
+function tryExecutePremove(){
+  if(!premoveEnabled || !_premoveQueue.length) return;
+  const pm = _premoveQueue.shift();
+  _highlightPremove(); // réaffiche la file restante
+  if(gameMode==='ai' && turn!==playerColor){ return; }
+  const piece = board[pm.fr][pm.fc];
+  if(!piece || color(piece)!==turn){ clearPremove(); return; }
+  const legal = legalMoves(pm.fr, pm.fc).find(([rr,cc])=>rr===pm.tr&&cc===pm.tc);
+  if(legal){
+    setTimeout(()=>{ makeMove(pm.fr, pm.fc, pm.tr, pm.tc, legal[2]); }, 120);
+  } else {
+    clearPremove(); // pré-coup devenu illégal → on vide la file
+  }
 }
 let _evalMode = false;        // true quand Stockfish analyse pour la jauge (pas pour jouer)
 let _lastEvalCp = 0;          // dernier score en centipions, du point de vue des Blancs
@@ -3542,9 +3660,10 @@ function renderBoard(){
     const cell=cells[i];
     const r=+cell.dataset.r, c=+cell.dataset.c;
     // Classes d'état (on conserve light/dark + coords)
-    cell.classList.remove('last-move','selected','possible-move','possible-capture','in-check');
+    cell.classList.remove('last-move','selected','possible-move','possible-capture','in-check','premove');
     if(lastMove&&((lastMove[0]===r&&lastMove[1]===c)||(lastMove[2]===r&&lastMove[3]===c)))cell.classList.add('last-move');
     if(selected&&selected[0]===r&&selected[1]===c)cell.classList.add('selected');
+    if(_premoveQueue.length && _premoveQueue.some(m=>(m.fr===r&&m.fc===c)||(m.tr===r&&m.tc===c)))cell.classList.add('premove');
     const pm=possibleMoves.find(([pr,pc])=>pr===r&&pc===c);
     if(pm){if(board[r][c]&&color(board[r][c])!==turn)cell.classList.add('possible-capture');else cell.classList.add('possible-move');}
     if(isInCheck(board,turn)&&board[r][c]===turn+'K')cell.classList.add('in-check');
@@ -3630,22 +3749,26 @@ function _attachBoardPointer(boardEl){
     if(reviewIndex!==null){ return; }
     const hit = _cellFromPoint(ev.clientX, ev.clientY);
     if(!hit) return;
-    // Conditions de jeu (mêmes garde-fous que handleClick)
-    if(aiThinking) return;
-    if(gameMode==='ai' && turn!==playerColor) return;
-    if(gameMode==='online' && turn!==onlineColor) return;
-    const piece = board[hit.r][hit.c];
-    const isOwn = piece && color(piece)===turn;
+    if(aiThinking && !premoveEnabled) return;
+    // Détermine si on est en phase de PRÉ-COUP (tour adverse, option active)
+    const oppTurn = (gameMode==='ai' && turn!==playerColor) || (gameMode==='online' && turn!==onlineColor);
+    const premovePhase = premoveEnabled && oppTurn;
+    if(oppTurn && !premovePhase) return; // pas de pré-coups → on ne joue pas hors de son tour
+    const myColor = (gameMode==='online') ? onlineColor : playerColor;
+    const selBoard = premovePhase ? _projectedBoard() : board;
+    const piece = selBoard[hit.r][hit.c];
+    const isOwn = premovePhase ? (piece && color(piece)===myColor) : (piece && color(piece)===turn);
     _dragState = {
       startR:hit.r, startC:hit.c, startX:ev.clientX, startY:ev.clientY,
-      moved:false, dragging:false, ghost:null, fromOwn:isOwn, pointerId:ev.pointerId
+      moved:false, dragging:false, ghost:null, fromOwn:isOwn, pointerId:ev.pointerId,
+      premove:premovePhase
     };
     // Si on appuie sur une pièce à soi → on prépare un drag et on la sélectionne
     if(isOwn){
       ev.preventDefault();   // empêche le drag d'image natif (souris/PC)
-      selected=[hit.r,hit.c]; possibleMoves=legalMoves(hit.r,hit.c); renderBoard();
-      // Pas de setPointerCapture : on suit le pointeur via des écouteurs sur document,
-      // ce qui laisse le clic droit / contextmenu fonctionner normalement sur PC.
+      selected=[hit.r,hit.c];
+      possibleMoves = premovePhase ? _pseudoTargets(hit.r,hit.c) : legalMoves(hit.r,hit.c);
+      renderBoard();
     }
   });
   // Bloque le glisser-déposer natif des images (sinon, sur PC, il avale nos pointermove)
@@ -3688,16 +3811,35 @@ function _attachBoardPointer(boardEl){
     if(st.srcPiece) st.srcPiece.style.opacity='';
 
     if(st.dragging){
-      // GLISSER-DÉPOSER : on joue si la case d'arrivée est un coup légal
+      // GLISSER-DÉPOSER
       const drop=_cellFromPoint(ev.clientX, ev.clientY);
       if(drop){
+        if(st.premove){
+          // Enregistre un PRÉ-COUP (exécuté quand le trait reviendra)
+          if(setPremove(st.startR, st.startC, drop.r, drop.c)){ selected=null; possibleMoves=[]; renderBoard(); _highlightPremove(); }
+          else { selected=null; possibleMoves=[]; renderBoard(); }
+          return;
+        }
         const mv=possibleMoves.find(([pr,pc])=>pr===drop.r&&pc===drop.c);
         if(mv){ makeMove(st.startR, st.startC, drop.r, drop.c, mv[2]); return; }
       }
-      // Drop hors d'une case valide → on garde la sélection (l'utilisateur peut taper la destination)
+      // Drop hors d'une case valide → on garde la sélection
       return;
     }
-    // Pas de glissé → c'était un TAP : comportement clic classique
+    // Pas de glissé → c'était un TAP
+    if(st.premove){
+      const myColor = (gameMode==='online') ? onlineColor : playerColor;
+      // Si une pièce est déjà sélectionnée, ce tap fixe la destination du pré-coup
+      if(selected && (selected[0]!==st.startR || selected[1]!==st.startC)){
+        if(setPremove(selected[0], selected[1], st.startR, st.startC)){ selected=null; possibleMoves=[]; renderBoard(); _highlightPremove(); return; }
+      }
+      // Sinon, sélection d'une pièce à soi (sur le plateau projeté) pour préparer le pré-coup
+      const proj = _projectedBoard();
+      const pc = proj[st.startR][st.startC];
+      if(pc && color(pc)===myColor){ selected=[st.startR,st.startC]; possibleMoves=_pseudoTargets(st.startR,st.startC); renderBoard(); }
+      else { selected=null; possibleMoves=[]; renderBoard(); }
+      return;
+    }
     handleClick(st.startR, st.startC);
   };
   document.addEventListener('pointerup', endDrag);
@@ -3707,10 +3849,17 @@ function _attachBoardPointer(boardEl){
   // soit un 'pointerdown' (button 2), soit un 'mousedown' (button 2), soit 'contextmenu'.
   // On écoute les trois, en phase capture, pour couvrir tous les cas.
   function _rightCancel(ev){
-    if((_dragState || selected)){
-      ev.preventDefault();
-      ev.stopPropagation();
+    if(_dragState || selected){
+      ev.preventDefault(); ev.stopPropagation();
       _cancelDrag();
+      return;
+    }
+    if(_premoveQueue.length){
+      // Retire le DERNIER pré-coup de la file (annulation progressive)
+      ev.preventDefault(); ev.stopPropagation();
+      _premoveQueue.pop();
+      _highlightPremove();
+      renderBoard();
     }
   }
   document.addEventListener('pointerdown', (ev)=>{
@@ -4975,6 +5124,7 @@ function resetGame(){
   document.getElementById('aiSpinner').classList.remove('show');
   gameStartElo=userProfile.elo;
   initBoard();turn='w';selected=null;possibleMoves=[];history=[];moveHistoryUCI=[];undoStack=[];
+  try{ clearPremove(); }catch(e){}
   aiGen++; speechEpoch++; aiThinking=false; aiSpeaking=false; pendingSpeech=null;
   try{ if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e){}
   try{ if(stockfish) stockfish.postMessage('stop'); }catch(e){}
@@ -5000,7 +5150,7 @@ initBoard(); renderBoard();
 try{ onSplashEloSlide(document.getElementById('splashEloSlider')?.value || 800); }catch(e){} updateSidebar(); initStockfish(); updateEloUI(); applyLang(); try{ initTheme(); }catch(e){} try{ updateSpeakerBtn(); }catch(e){} try{ updateSplashAuth((window._auth&&window._auth.auth&&window._auth.auth.currentUser)||null); }catch(e){}
 try{ const _eg=document.getElementById('evalGauge'); if(_eg) _eg.style.display = evalEnabled ? 'flex' : 'none'; }catch(e){}
 try{ const _bb=document.getElementById('board'); if(_bb && blindfold) _bb.classList.add('blindfold'); }catch(e){}
-try{ const a=document.getElementById('evalToggleGame'); if(a) a.checked=evalEnabled; const b=document.getElementById('blindToggleGame'); if(b) b.checked=blindfold; }catch(e){}
+try{ const a=document.getElementById('evalToggleGame'); if(a) a.checked=evalEnabled; const b=document.getElementById('blindToggleGame'); if(b) b.checked=blindfold; const p=document.getElementById('premoveToggleGame'); if(p) p.checked=premoveEnabled; }catch(e){}
 try{ updateColorButtons(); }catch(e){} // Reconnaissance vocale démarrée manuellement via le bouton
 const hasProfile = loadProfile();
 if (!hasProfile) { setTimeout(showProfile, 600); }
