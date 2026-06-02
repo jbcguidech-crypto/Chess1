@@ -2744,7 +2744,7 @@ function askStockfish(){
     dbg.style.display='block';
     dbg.textContent='🤖 ELO '+currentElo+' · profondeur '+sfDepth+' · skill '+skill+' · '+moveTime+'ms';
   }
-  // Timeout de sécurité: si pas de réponse en 6s, reset
+  // Timeout de sécurité : la réflexion est plafonnée à 2 s, on laisse une marge
   setTimeout(()=>{
     if(aiThinking){
       aiThinking=false;
@@ -2752,7 +2752,7 @@ function askStockfish(){
       document.getElementById('voiceBtn').disabled=false;
       setStatus(currentLang==='fr'?'IA timeout — réessayez':'AI timeout — retry','error');
     }
-  }, 15000);
+  }, 5000);
 }
 
 function applyStockfishMove(uciMove){
@@ -4550,18 +4550,17 @@ function updateEloUI(){
   sfDepth=eloToDepth(currentElo);
 }
 function eloToTime(elo){
-  // Bas/moyen ELO : réponses rapides. Haut ELO : on laisse le moteur RÉFLÉCHIR
-  // davantage → bien plus fort (le temps est le principal levier en mono-thread).
+  // Réactif aux niveaux intermédiaires, puissance maximale (3 s) au niveau le plus élevé.
   if(elo <= 400)  return 50;
   if(elo <= 800)  return 120;
   if(elo <= 1200) return 250;
   if(elo <= 1500) return 400;
-  if(elo <= 1800) return 600;
+  if(elo <= 1800) return 650;
   if(elo <= 2000) return 900;
-  if(elo <= 2200) return 1400;
-  if(elo <= 2500) return 2200;
-  if(elo <= 2800) return 3500;
-  return 5000; // Mode Magnus 😈 — 5s de réflexion, pleine puissance NNUE
+  if(elo <= 2200) return 1200;
+  if(elo <= 2500) return 1800;
+  if(elo <= 2800) return 2400;
+  return 3000; // niveau max : 3 s, pleine puissance NNUE
 }
 
 function configureStockfishStrength(){
