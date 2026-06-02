@@ -2889,10 +2889,11 @@ function legalMoves(r,c){
 function updateCastlingRights(fr,fc,piece){if(type(piece)==='K'){if(piece==='wK'){castling.wK=false;castling.wR_k=false;castling.wR_q=false;}else{castling.bK=false;castling.bR_k=false;castling.bR_q=false;}}if(piece==='wR'){if(fr===7&&fc===7)castling.wR_k=false;if(fr===7&&fc===0)castling.wR_q=false;}if(piece==='bR'){if(fr===0&&fc===7)castling.bR_k=false;if(fr===0&&fc===0)castling.bR_q=false;}}
 
 function undoMove(){
-  // Verrou anti-rebond : empêche deux annulations quasi simultanées
-  // (commande vocale en écoute continue, double-tap, etc.)
+  // Si on est en train de revisualiser, on revient d'abord au direct
+  if(typeof reviewIndex!=='undefined' && reviewIndex!==null){ exitReview(); }
+  // Verrou anti-rebond léger : empêche deux annulations quasi simultanées
   const _now = Date.now();
-  if(window._lastUndoAt && (_now - window._lastUndoAt) < 800){ return; }
+  if(window._lastUndoAt && (_now - window._lastUndoAt) < 350){ return; }
   window._lastUndoAt = _now;
   if(!undoStack.length){ setStatus(currentLang==='fr'?'Aucun coup à annuler':'No move to undo','error'); return; }
   // Coupe immédiatement la parole de l'IA
@@ -3692,7 +3693,7 @@ function handleClick(r,c){
 
 function updateSidebar(){
   const _undo=document.getElementById('gcUndo');
-  if(_undo) _undo.disabled = (typeof undoStack==='undefined' || !undoStack || !undoStack.length || aiThinking);
+  if(_undo) _undo.disabled = (typeof undoStack==='undefined' || !undoStack || !undoStack.length);
   try{ _updateReviewUI(); }catch(e){}
   const dot=document.getElementById('turnGem'),txt=document.getElementById('turnText');
   dot.className='turn-gem '+(turn==='w'?'white':'black');
