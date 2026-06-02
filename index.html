@@ -1272,9 +1272,9 @@ canvas#eloChart { width:100%!important;height:90px!important; }
       <div class="settings-section">
         <button class="glossary-toggle" id="glossaryToggle" onclick="toggleGlossary()">
           <span class="settings-section-title" style="margin:0;">🎙 Commandes vocales</span>
-          <span class="glossary-chevron" id="glossaryChevron">▾</span>
+          <span class="glossary-chevron open" id="glossaryChevron">▾</span>
         </button>
-        <div class="glossary-body" id="glossaryBody" style="display:none;">
+        <div class="glossary-body" id="glossaryBody" style="display:flex;">
           <div class="gloss-group">
             <div class="gloss-head">♟ Jouer un coup</div>
             <div class="gloss-row"><span class="gloss-ex">« e4 »</span><span class="gloss-desc">avancer un pion</span></div>
@@ -1290,7 +1290,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
           </div>
           <div class="gloss-group">
             <div class="gloss-head">🎮 Contrôler la partie</div>
-            <div class="gloss-row"><span class="gloss-ex">« annule »</span><span class="gloss-desc">revenir en arrière</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« annule » / « non » / « c'est faux »</span><span class="gloss-desc">revenir en arrière si mal compris</span></div>
             <div class="gloss-row"><span class="gloss-ex">« indice »</span><span class="gloss-desc">le moteur suggère un coup</span></div>
             <div class="gloss-row"><span class="gloss-ex">« abandonne »</span><span class="gloss-desc">abandonner la partie</span></div>
             <div class="gloss-row"><span class="gloss-ex">« nouvelle partie » / « contre 1500 »</span><span class="gloss-desc">recommencer (niveau au choix)</span></div>
