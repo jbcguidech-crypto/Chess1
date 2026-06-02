@@ -652,6 +652,9 @@ body {
   aspect-ratio:1;
   border-radius:8px;overflow:hidden;
   border:1px solid var(--border);
+  touch-action:none;
+  -webkit-user-select:none;user-select:none;
+  -webkit-touch-callout:none;
 }
 .cell {
   aspect-ratio:1;
@@ -3388,11 +3391,11 @@ function renderBoard(){
       cell.dataset.r=r;cell.dataset.c=c;
       if(ci===0){const _sn=document.createElement('span');_sn.className='sq-coord sq-rank';_sn.textContent=(8-r);cell.appendChild(_sn);}
       if(ri===7){const _sf=document.createElement('span');_sf.className='sq-coord sq-file';_sf.textContent='abcdefgh'[c];cell.appendChild(_sf);}
-      cell.addEventListener('click',()=>handleClick(+cell.dataset.r,+cell.dataset.c));
       el.appendChild(cell);
     }
     // Thème appliqué uniquement à la (re)construction de la grille
     if(typeof applyBoardTheme==='function') applyBoardTheme();
+    _attachBoardPointer(el);
   }
   // Mise à jour en place de chaque case
   const cells=el.children;
@@ -3449,6 +3452,98 @@ function renderBoard(){
   // Bandeaux joueur + pièces capturées (style mobile)
   try{ updatePlayerBars(); updateCapturedDisplay(); }catch(e){}
   // Les numéros sont gérés par buildCoords - ne pas reconstruire ici
+}
+
+// Gestion unifiée TAP + GLISSER-DÉPOSER (souris + tactile) sur l'échiquier
+let _dragState = null;
+function _cellFromPoint(x, y){
+  const el = document.elementFromPoint(x, y);
+  if(!el) return null;
+  const cell = el.closest ? el.closest('.cell') : null;
+  if(!cell) return null;
+  return { r:+cell.dataset.r, c:+cell.dataset.c, cell };
+}
+function _attachBoardPointer(boardEl){
+  if(boardEl._pointerBound) return; // une seule fois
+  boardEl._pointerBound = true;
+
+  boardEl.addEventListener('pointerdown', (ev)=>{
+    if(ev.button && ev.button!==0) return; // clic droit ignoré
+    const hit = _cellFromPoint(ev.clientX, ev.clientY);
+    if(!hit) return;
+    // Conditions de jeu (mêmes garde-fous que handleClick)
+    if(reviewIndex!==null){ exitReview(); return; }
+    if(aiThinking) return;
+    if(gameMode==='ai' && turn!==playerColor) return;
+    if(gameMode==='online' && turn!==onlineColor) return;
+    const piece = board[hit.r][hit.c];
+    const isOwn = piece && color(piece)===turn;
+    _dragState = {
+      startR:hit.r, startC:hit.c, startX:ev.clientX, startY:ev.clientY,
+      moved:false, dragging:false, ghost:null, fromOwn:isOwn
+    };
+    // Si on appuie sur une pièce à soi → on prépare un drag et on la sélectionne
+    if(isOwn){
+      selected=[hit.r,hit.c]; possibleMoves=legalMoves(hit.r,hit.c); renderBoard();
+      try{ boardEl.setPointerCapture(ev.pointerId); }catch(e){}
+    }
+  });
+
+  boardEl.addEventListener('pointermove', (ev)=>{
+    if(!_dragState) return;
+    const dx=ev.clientX-_dragState.startX, dy=ev.clientY-_dragState.startY;
+    if(!_dragState.dragging && (Math.abs(dx)>6 || Math.abs(dy)>6) && _dragState.fromOwn){
+      // Démarre le glissé : crée une image fantôme qui suit le doigt
+      _dragState.dragging=true; _dragState.moved=true;
+      const code=board[_dragState.startR][_dragState.startC];
+      if(code){
+        const g=document.createElement('img');
+        g.src=pieceImgURL(code);
+        const sz=Math.max(40, boardEl.clientWidth/8);
+        g.style.cssText='position:fixed;z-index:999;width:'+sz+'px;height:'+sz+'px;object-fit:contain;pointer-events:none;transform:translate(-50%,-50%);filter:drop-shadow(0 4px 8px rgba(0,0,0,.5));';
+        document.body.appendChild(g);
+        _dragState.ghost=g;
+        // Cache la pièce d'origine pendant le glissé
+        const src=boardEl.querySelector('.cell[data-r="'+_dragState.startR+'"][data-c="'+_dragState.startC+'"] .board-piece');
+        if(src){ src.style.opacity='0.25'; _dragState.srcPiece=src; }
+      }
+    }
+    if(_dragState.dragging && _dragState.ghost){
+      _dragState.ghost.style.left=ev.clientX+'px';
+      _dragState.ghost.style.top=ev.clientY+'px';
+      ev.preventDefault();
+    }
+  }, {passive:false});
+
+  const endDrag = (ev)=>{
+    if(!_dragState) return;
+    const st=_dragState; _dragState=null;
+    // Nettoie le fantôme
+    if(st.ghost && st.ghost.parentNode) st.ghost.parentNode.removeChild(st.ghost);
+    if(st.srcPiece) st.srcPiece.style.opacity='';
+    try{ boardEl.releasePointerCapture(ev.pointerId); }catch(e){}
+
+    if(st.dragging){
+      // GLISSER-DÉPOSER : on joue si la case d'arrivée est un coup légal
+      const drop=_cellFromPoint(ev.clientX, ev.clientY);
+      if(drop){
+        const mv=possibleMoves.find(([pr,pc])=>pr===drop.r&&pc===drop.c);
+        if(mv){ makeMove(st.startR, st.startC, drop.r, drop.c, mv[2]); return; }
+      }
+      // Drop hors d'une case valide → on garde la sélection (l'utilisateur peut taper la destination)
+      return;
+    }
+    // Pas de glissé → c'était un TAP : comportement clic classique
+    handleClick(st.startR, st.startC);
+  };
+  boardEl.addEventListener('pointerup', endDrag);
+  boardEl.addEventListener('pointercancel', (ev)=>{
+    if(_dragState){
+      if(_dragState.ghost && _dragState.ghost.parentNode) _dragState.ghost.parentNode.removeChild(_dragState.ghost);
+      if(_dragState.srcPiece) _dragState.srcPiece.style.opacity='';
+      _dragState=null;
+    }
+  });
 }
 
 function handleClick(r,c){
