@@ -1755,9 +1755,12 @@ function updateColorButtons(){
         '<img src="'+pieceImgURL('bK')+'" width="40" height="40" draggable="false" style="position:absolute;inset:0;width:40px;height:40px;object-fit:contain;clip-path:inset(0 0 0 50%);filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))">'+
       '</span>';
   }
-  // Réinitialise le label aléatoire (au cas où il afficherait "Blancs !"/"Noirs !")
+  // Réinitialise le label aléatoire (au cas où il afficherait "Blancs !"/"Noirs !"), icône comprise
   const rl = document.querySelector('.splash-random .btn-lbl');
-  if(rl) rl.textContent = currentLang==='fr' ? 'Aléatoire' : 'Random';
+  if(rl){
+    const _vico = '<svg class="voice-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4c1.6 1.8 2.5 4.2 2.5 8s-.9 6.2-2.5 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M9.5 6c1 1.3 1.6 2.8 1.6 6s-.6 4.7-1.6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5.5 8.5c.6.8 1 1.7 1 3.5s-.4 2.7-1 3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+    rl.innerHTML = _vico + (currentLang==='fr' ? 'Aléatoire' : 'Random');
+  }
 }
 
 function buildPieceSetSelector(){
