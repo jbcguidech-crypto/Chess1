@@ -632,15 +632,16 @@ html[data-theme="dark"] .settings-preview img {
   border:3px solid rgba(255,255,255,.92);color:#fff;
   box-shadow:0 6px 24px rgba(0,0,0,.45), 0 0 0 0 rgba(91,141,239,.5);
   -webkit-tap-highlight-color:transparent;
-  /* Pulsation légère permanente en bleu (au repos) */
-  animation:micRestPulse 2.2s ease-in-out infinite;
+  /* Pulsation bleue bien visible (au repos) : anneau qui s'étend + léger battement */
+  animation:micRestPulse 1.8s ease-in-out infinite;
 }
 .splash-mic-center svg { width:32px;height:32px; }
 @keyframes micRestPulse {
-  0%,100%{ box-shadow:0 6px 24px rgba(0,0,0,.45), 0 0 0 0 rgba(110,160,255,.45); }
-  50%{ box-shadow:0 6px 24px rgba(0,0,0,.45), 0 0 0 10px rgba(110,160,255,0); }
+  0%   { box-shadow:0 6px 24px rgba(0,0,0,.45), 0 0 0 0 rgba(110,160,255,.7);   transform:translate(-50%,-50%) scale(1); }
+  50%  { box-shadow:0 6px 28px rgba(0,0,0,.45), 0 0 0 22px rgba(110,160,255,0); transform:translate(-50%,-50%) scale(1.08); }
+  100% { box-shadow:0 6px 24px rgba(0,0,0,.45), 0 0 0 0 rgba(110,160,255,0);    transform:translate(-50%,-50%) scale(1); }
 }
-.splash-mic-center:hover { transform:translate(-50%,-50%) scale(1.06); }
+.splash-mic-center:hover { transform:translate(-50%,-50%) scale(1.1); }
 .splash-mic-center:active { transform:translate(-50%,-50%) scale(.95); }
 /* Activé → rouge, pulsation plus marquée */
 .splash-mic-center.listening {
@@ -1377,7 +1378,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     <div class="pb-left">
       <span class="pb-dot b" id="topDot"></span>
       <div class="pb-ava" id="topAva">♚</div>
-      <div class="pb-meta"><div class="pb-name" id="topName">Ordinateur</div><div class="pb-elo" id="topElo">800</div></div>
+      <div class="pb-meta"><div class="pb-name" id="topName">DYSC-AI</div><div class="pb-elo" id="topElo">800</div></div>
     </div>
     <div class="pb-captured" id="topCaptured"></div>
   </div>
@@ -1397,7 +1398,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     <div class="pb-left">
       <span class="pb-dot w" id="botDot"></span>
       <div class="pb-ava" id="botAva">♔</div>
-      <div class="pb-meta"><div class="pb-name" id="botName">Vous</div><div class="pb-elo" id="botElo">800</div></div>
+      <div class="pb-meta"><div class="pb-name" id="botName">Vous</div><div class="pb-elo" id="botElo"></div></div>
     </div>
     <div class="pb-captured" id="botCaptured"></div>
   </div>
@@ -3909,14 +3910,14 @@ function updatePlayerBars(){
     const KING = (col)=> col==='w' ? '♔' : '♚';
     // Bas = toi
     const botName=document.getElementById('botName'), botElo=document.getElementById('botElo'), botAva=document.getElementById('botAva');
-    if(botName) botName.textContent = userProfile.name || 'Vous';
-    if(botElo) botElo.textContent = (userProfile.elo!=null ? userProfile.elo : '') + '';
+    if(botName) botName.textContent = (userProfile.name && userProfile.name!=='Invité') ? userProfile.name : 'Vous';
+    if(botElo) botElo.textContent = ''; // pas d'Elo affiché pour le joueur
     if(botAva) botAva.innerHTML = KING(youColor);
     // Haut = adversaire
     const topName=document.getElementById('topName'), topElo=document.getElementById('topElo'), topAva=document.getElementById('topAva');
     if(gameMode==='ai'){
-      if(topName) topName.textContent = 'Ordinateur';
-      if(topElo) topElo.textContent = currentElo + '';
+      if(topName) topName.textContent = 'DYSC-AI';
+      if(topElo) topElo.textContent = currentElo + ''; // Elo de l'IA à titre indicatif
       if(topAva) topAva.innerHTML = KING(oppColor);
     } else {
       if(topName) topName.textContent = 'Joueur 2';
