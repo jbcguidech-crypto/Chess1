@@ -3244,7 +3244,7 @@ function requestEvalUpdate(){
     _evalMode = true;
     if(_multipvCount !== 1){ stockfish.postMessage('setoption name MultiPV value 1'); _multipvCount = 1; }
     stockfish.postMessage('position fen ' + boardToFen());
-    stockfish.postMessage('go depth 10');
+    stockfish.postMessage('go depth 16');
   }catch(e){ _evalMode=false; }
 }
 
