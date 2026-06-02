@@ -229,6 +229,16 @@ body {
 .settings-switch:checked + .settings-switch-ui { background:var(--gold); }
 .settings-switch:checked + .settings-switch-ui::after { transform:translateX(18px); }
 .settings-toggle-hint { font-size:.72rem;color:var(--text-muted);margin-top:6px;line-height:1.4; }
+/* Glossaire des commandes vocales */
+.glossary-toggle { width:100%;display:flex;align-items:center;justify-content:space-between;background:transparent;border:none;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent; }
+.glossary-chevron { color:var(--gold-light);font-size:1rem;transition:transform .2s; }
+.glossary-chevron.open { transform:rotate(180deg); }
+.glossary-body { margin-top:12px;display:flex;flex-direction:column;gap:14px;animation:fadeUp .2s ease; }
+.gloss-group { display:flex;flex-direction:column;gap:5px; }
+.gloss-head { font-family:'Manrope',system-ui,sans-serif;font-weight:700;font-size:.78rem;color:var(--gold-light);margin-bottom:2px; }
+.gloss-row { display:flex;flex-direction:column;gap:1px;padding:5px 8px;border-radius:8px;background:rgba(255,255,255,.04); }
+.gloss-ex { font-family:'JetBrains Mono',monospace;font-size:.74rem;color:var(--text-light);font-weight:600; }
+.gloss-desc { font-size:.7rem;color:var(--text-muted); }
 .settings-preview {
   display:flex;flex-direction:column;align-items:center;gap:8px;
   padding:14px;border-radius:14px;
@@ -1209,6 +1219,58 @@ canvas#eloChart { width:100%!important;height:90px!important; }
         </label>
         <div class="settings-toggle-hint">Cache les pièces sur l'échiquier. Jouez de mémoire, à la voix ou en cliquant les cases.</div>
       </div>
+      <!-- Glossaire des commandes vocales -->
+      <div class="settings-section">
+        <button class="glossary-toggle" id="glossaryToggle" onclick="toggleGlossary()">
+          <span class="settings-section-title" style="margin:0;">🎙 Commandes vocales</span>
+          <span class="glossary-chevron" id="glossaryChevron">▾</span>
+        </button>
+        <div class="glossary-body" id="glossaryBody" style="display:none;">
+          <div class="gloss-group">
+            <div class="gloss-head">♟ Jouer un coup</div>
+            <div class="gloss-row"><span class="gloss-ex">« e4 »</span><span class="gloss-desc">avancer un pion</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« cavalier f3 »</span><span class="gloss-desc">déplacer une pièce</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« cavalier g f3 »</span><span class="gloss-desc">préciser la colonne de départ</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« dame prend dame »</span><span class="gloss-desc">capture par type de pièce</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« petit roque » / « grand roque »</span><span class="gloss-desc">roquer</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« promotion tour »</span><span class="gloss-desc">choisir la promotion</span></div>
+          </div>
+          <div class="gloss-group">
+            <div class="gloss-head">↔ Si un coup est ambigu</div>
+            <div class="gloss-row"><span class="gloss-ex">« g » / « g1 » / « le premier »</span><span class="gloss-desc">choisir quelle pièce après la question</span></div>
+          </div>
+          <div class="gloss-group">
+            <div class="gloss-head">🎮 Contrôler la partie</div>
+            <div class="gloss-row"><span class="gloss-ex">« annule »</span><span class="gloss-desc">revenir en arrière</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« indice »</span><span class="gloss-desc">le moteur suggère un coup</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« abandonne »</span><span class="gloss-desc">abandonner la partie</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« nouvelle partie » / « contre 1500 »</span><span class="gloss-desc">recommencer (niveau au choix)</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« menu »</span><span class="gloss-desc">retour à l'accueil</span></div>
+          </div>
+          <div class="gloss-group">
+            <div class="gloss-head">❓ Demander l'état du jeu</div>
+            <div class="gloss-row"><span class="gloss-ex">« suis-je en échec ? »</span><span class="gloss-desc">savoir si vous êtes en échec</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« dernier coup »</span><span class="gloss-desc">répète le coup de l'adversaire</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« à qui le tour ? »</span><span class="gloss-desc">savoir qui doit jouer</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« répète la position »</span><span class="gloss-desc">énumère toutes les pièces</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« aide »</span><span class="gloss-desc">liste les commandes</span></div>
+          </div>
+          <div class="gloss-group">
+            <div class="gloss-head">⏪ Revoir / affichage</div>
+            <div class="gloss-row"><span class="gloss-ex">« coup précédent » / « coup suivant »</span><span class="gloss-desc">naviguer dans la partie</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« début » / « en direct »</span><span class="gloss-desc">aller au début / revenir au présent</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« analyse » / « mode aveugle »</span><span class="gloss-desc">activer ces options</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« coupe le son » / « active le son »</span><span class="gloss-desc">voix de l'IA</span></div>
+          </div>
+          <div class="gloss-group">
+            <div class="gloss-head">🏠 Depuis le menu d'accueil</div>
+            <div class="gloss-row"><span class="gloss-ex">« jouer avec les blancs / noirs »</span><span class="gloss-desc">démarrer une partie</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« niveau 1500 »</span><span class="gloss-desc">régler la difficulté</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« jouer en ligne » / « créer une partie »</span><span class="gloss-desc">multijoueur</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« personnaliser » / « mode sombre »</span><span class="gloss-desc">réglages et thème</span></div>
+          </div>
+        </div>
+      </div>
     </div>
     <button class="settings-done" onclick="closeSettings()">C'est parfait !</button>
   </div>
@@ -1828,6 +1890,15 @@ function openSettings(){
 function closeSettings(){
   const m = document.getElementById('settingsModal');
   if(m) m.classList.remove('show');
+}
+
+function toggleGlossary(){
+  const body = document.getElementById('glossaryBody');
+  const chev = document.getElementById('glossaryChevron');
+  if(!body) return;
+  const open = body.style.display === 'none';
+  body.style.display = open ? 'flex' : 'none';
+  if(chev) chev.classList.toggle('open', open);
 }
 
 // Aperçu en haut du menu : 'pieces' montre toutes les pièces du set, 'board' montre le fond
