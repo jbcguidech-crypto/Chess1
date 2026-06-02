@@ -3240,7 +3240,7 @@ function askPromotion(colorLetter, cb){
   ov.classList.add('show');
 }
 
-function makeMove(fr,fc,tr,tc,castleType,promo){
+function makeMove(fr,fc,tr,tc,castleType,promo,byVoice){
   if(!gameActive) return; // aucun coup hors d'une partie en cours
   // En ligne : on ne peut jouer QUE sa propre couleur, et seulement à son tour
   if(gameMode==='online' && !onlineApplying){
@@ -3281,10 +3281,13 @@ function makeMove(fr,fc,tr,tc,castleType,promo){
   try{ if(st.over) playSound('end'); else if(st.check) playSound('check'); else if(castleType) playSound('castle'); else if(_isCap) playSound('capture'); else playSound('move'); }catch(e){}
   // Annonce : le coup D'ABORD, puis « échec » si échec simple
   let say = humanSpoken;
-  if(st.check && !st.over) say = (humanSpoken||'') + (currentLang==='fr'?', échec':', check');
+  // Coup joué À LA VOIX → confirmation explicite de ce qui a été compris (annulable par « annule »/« non »)
+  if(byVoice && humanSpoken){
+    say = (currentLang==='fr'?'Vous jouez ':'You play ') + humanSpoken;
+  }
+  if(st.check && !st.over) say = (say||'') + (currentLang==='fr'?', échec':', check');
   if(st.over){
     if(say) speak(say, ()=>{ if(st.msg) speak(st.msg); });   // coup PUIS message de fin
-    else if(st.msg) speak(st.msg);
   } else if(gameMode==='ai' && turn!==playerColor){
     speak(say, ()=>askStockfish());                          // coup (+échec) PUIS l'IA joue
   } else {
@@ -4791,7 +4794,7 @@ function _parseStrict(text){
   // Annulation du dernier coup
   {
     const _u = ' '+text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')+' ';
-    if(/\b(annule|annuler|annulation|retour arriere|reviens|retour|undo|defaire|defait|reprendre|reprends)\b/.test(_u)) return {kind:'undo'};
+    if(/\b(annule|annuler|annulation|retour arriere|reviens|retour|undo|defaire|defait|reprendre|reprends|non|faux|erreur|mauvais|corrige|corriger)\b/.test(_u)) return {kind:'undo'};
   }
   const _cs = detectCastle(text);
   if(_cs) return {kind:'castle', side:_cs};
@@ -4978,7 +4981,7 @@ function executeVoiceAction(act, verbose){
       return true;
     case 'move':
       if(verbose) setStatus((currentLang==='fr'?'✓ Joué en ':'✓ Played to ')+String.fromCharCode(97+act.tc)+(8-act.tr),'success');
-      makeMove(act.fr,act.fc,act.tr,act.tc,null,act.promo);
+      makeMove(act.fr,act.fc,act.tr,act.tc,null,act.promo,true); // true = coup vocal → confirmation parlée
       return true;
     case 'ambiguous': {
       // Mémorise les candidats pour permettre une désambiguïsation PARLÉE au tour suivant
