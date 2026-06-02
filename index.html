@@ -3558,13 +3558,14 @@ function _attachBoardPointer(boardEl){
     const isOwn = piece && color(piece)===turn;
     _dragState = {
       startR:hit.r, startC:hit.c, startX:ev.clientX, startY:ev.clientY,
-      moved:false, dragging:false, ghost:null, fromOwn:isOwn
+      moved:false, dragging:false, ghost:null, fromOwn:isOwn, pointerId:ev.pointerId
     };
     // Si on appuie sur une pièce à soi → on prépare un drag et on la sélectionne
     if(isOwn){
       ev.preventDefault();   // empêche le drag d'image natif (souris/PC)
       selected=[hit.r,hit.c]; possibleMoves=legalMoves(hit.r,hit.c); renderBoard();
-      try{ boardEl.setPointerCapture(ev.pointerId); }catch(e){}
+      // Pas de setPointerCapture : on suit le pointeur via des écouteurs sur document,
+      // ce qui laisse le clic droit / contextmenu fonctionner normalement sur PC.
     }
   });
   // Bloque le glisser-déposer natif des images (sinon, sur PC, il avale nos pointermove)
@@ -3572,7 +3573,7 @@ function _attachBoardPointer(boardEl){
   // Bloque le menu contextuel sur l'échiquier (le clic droit sert à annuler)
   boardEl.addEventListener('contextmenu', (ev)=>{ ev.preventDefault(); });
 
-  boardEl.addEventListener('pointermove', (ev)=>{
+  document.addEventListener('pointermove', (ev)=>{
     if(!_dragState) return;
     const dx=ev.clientX-_dragState.startX, dy=ev.clientY-_dragState.startY;
     if(!_dragState.dragging && (Math.abs(dx)>6 || Math.abs(dy)>6) && _dragState.fromOwn){
@@ -3600,11 +3601,11 @@ function _attachBoardPointer(boardEl){
 
   const endDrag = (ev)=>{
     if(!_dragState) return;
+    if(ev.button===2) return; // le clic droit est géré par contextmenu (annulation)
     const st=_dragState; _dragState=null;
     // Nettoie le fantôme
     if(st.ghost && st.ghost.parentNode) st.ghost.parentNode.removeChild(st.ghost);
     if(st.srcPiece) st.srcPiece.style.opacity='';
-    try{ boardEl.releasePointerCapture(ev.pointerId); }catch(e){}
 
     if(st.dragging){
       // GLISSER-DÉPOSER : on joue si la case d'arrivée est un coup légal
@@ -3619,15 +3620,21 @@ function _attachBoardPointer(boardEl){
     // Pas de glissé → c'était un TAP : comportement clic classique
     handleClick(st.startR, st.startC);
   };
-  boardEl.addEventListener('pointerup', endDrag);
-  boardEl.addEventListener('pointercancel', ()=>{ _cancelDrag(); });
-  // Filet de sécurité : clic droit n'importe où pendant un glissement → annule
-  document.addEventListener('mousedown', (ev)=>{
-    if(ev.button===2 && _dragState){ ev.preventDefault(); _cancelDrag(); }
-  });
+  document.addEventListener('pointerup', endDrag);
+  document.addEventListener('pointercancel', ()=>{ _cancelDrag(); });
+  // Clic droit pendant un glissement/sélection → annule (contextmenu est l'événement
+  // le plus fiable au clic droit). Phase capture pour l'attraper en premier.
   document.addEventListener('contextmenu', (ev)=>{
-    if(_dragState){ ev.preventDefault(); }
-  });
+    if(_dragState || selected){
+      ev.preventDefault();
+      ev.stopPropagation();
+      _cancelDrag();
+    }
+  }, true);
+  // Filet supplémentaire : bouton droit enfoncé pendant un glissement
+  document.addEventListener('mousedown', (ev)=>{
+    if(ev.button===2 && (_dragState || selected)){ ev.preventDefault(); _cancelDrag(); }
+  }, true);
 }
 
 function handleClick(r,c){
