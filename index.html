@@ -678,26 +678,11 @@ body {
   object-fit:contain;
   filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));
 }
-/* Pièces NOIRES : contour clair marqué pour bien les détacher sur fond/échiquier sombre */
+/* Pièces NOIRES sur l'échiquier : contour discret, sans halo lumineux */
 .board-piece[data-code^="b"] {
   filter:
-    drop-shadow(0 0 1px rgba(255,255,255,1))
-    drop-shadow(0 0 1px rgba(255,255,255,1))
-    drop-shadow(0 0 2px rgba(255,255,255,.95))
-    drop-shadow(0 0 2px rgba(255,255,255,.9))
-    drop-shadow(0 0 5px rgba(255,255,255,.55))
-    drop-shadow(0 2px 3px rgba(0,0,0,.6));
-}
-/* En thème sombre : on éclaircit légèrement le corps des pièces noires (gris foncé plutôt que noir pur) pour qu'elles ne soient pas un "trou noir" */
-html[data-theme="dark"] img.board-piece[data-code^="b"] {
-  filter:
-    brightness(1.45) contrast(.92)
-    drop-shadow(0 0 1px rgba(255,255,255,1))
-    drop-shadow(0 0 1px rgba(255,255,255,1))
-    drop-shadow(0 0 2px rgba(255,255,255,.95))
-    drop-shadow(0 0 3px rgba(255,255,255,.85))
-    drop-shadow(0 0 6px rgba(255,255,255,.5))
-    drop-shadow(0 2px 3px rgba(0,0,0,.6));
+    drop-shadow(0 0 1px rgba(255,255,255,.6))
+    drop-shadow(0 2px 3px rgba(0,0,0,.5));
 }
 /* Pièces BLANCHES : léger contour foncé pour rester nettes partout */
 .board-piece[data-code^="w"] {
@@ -1585,9 +1570,14 @@ function buildSplash() {
     sp.innerHTML = ''; // reset pour éviter les doublons
     [['wK','♔'],['wQ','♕'],['bN','♞'],['bQ','♛'],['wR','♖'],['bP','♟']].forEach(([code,glyph],i) => {
       const isW = code[0]==='w';
+      const isDark = document.documentElement.getAttribute('data-theme')==='dark';
+      // Halo clair pour les pièces noires en thème sombre (meilleur contraste sur fond foncé)
+      const haloFilter = (!isW && isDark)
+        ? 'drop-shadow(0 0 2px rgba(255,255,255,.95)) drop-shadow(0 0 4px rgba(255,255,255,.8)) drop-shadow(0 0 8px rgba(255,255,255,.5)) drop-shadow(0 5px 12px rgba(0,0,0,.6))'
+        : 'drop-shadow(0 5px 12px rgba(0,0,0,.6))';
       // Conteneur animé
       const wrap = document.createElement('div');
-      wrap.style.cssText = 'cursor:pointer;transition:transform .2s;animation:piece-float 2.5s ease infinite;animation-delay:'+(i*.2)+'s;filter:drop-shadow(0 5px 12px rgba(0,0,0,.6));width:46px;height:46px;display:flex;align-items:center;justify-content:center;';
+      wrap.style.cssText = 'cursor:pointer;transition:transform .2s;animation:piece-float 2.5s ease infinite;animation-delay:'+(i*.2)+'s;filter:'+haloFilter+';width:46px;height:46px;display:flex;align-items:center;justify-content:center;';
       // Image de la pièce dans le set choisi
       const img = document.createElement('img');
       img.src = pieceImgURL(code);
@@ -3765,6 +3755,8 @@ function applyTheme(t) {
     btn.textContent = (t === 'light') ? '🌙' : '☀️';
     btn.setAttribute('aria-label', (t === 'light') ? 'Mode sombre' : 'Mode clair');
   }
+  // Régénère le bandeau du splash pour appliquer/retirer le halo des pièces noires
+  try{ if(typeof buildSplash==='function') buildSplash(); }catch(e){}
 }
 function toggleTheme() {
   const cur = document.documentElement.getAttribute('data-theme') || 'dark';
