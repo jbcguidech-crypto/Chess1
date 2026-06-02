@@ -529,8 +529,7 @@ html[data-theme="dark"] .settings-preview img {
 .gc-btn.gc-primary:hover { background:var(--gold-light);border-color:var(--gold-light); }
 
 /* ── BARRE DE REVUE ── */
-.review-bar {
-  display:flex;align-items:center;justify-content:center;gap:6px;
+.review-bar {  display:flex;align-items:center;justify-content:center;gap:6px;
   width:100%;max-width:420px;margin:0 auto 6px;box-sizing:border-box;
 }
 .rv-btn {
@@ -543,6 +542,28 @@ html[data-theme="dark"] .settings-preview img {
 .rv-label {
   min-width:74px;text-align:center;font-size:.78rem;font-weight:700;
   font-family:'JetBrains Mono',monospace;color:var(--gold-light);
+}
+
+/* ── INTERRUPTEURS EN JEU (analyse / aveugle) ── */
+.ingame-toggles {
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;max-width:420px;margin:0 auto 8px;box-sizing:border-box;
+}
+.igt-pill {
+  display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;
+  padding:7px 14px;border-radius:50px;
+  background:var(--surface-hi);border:1px solid var(--border);
+  font-family:'Manrope',system-ui,sans-serif;font-weight:700;font-size:.8rem;color:var(--text-muted);
+  transition:all .15s;-webkit-tap-highlight-color:transparent;
+}
+.igt-pill:hover { border-color:var(--border-hi); }
+.igt-pill input { position:absolute;opacity:0;width:0;height:0; }
+.igt-pill span { display:flex;align-items:center;gap:5px; }
+/* État actif : pilule mise en évidence quand cochée */
+.igt-pill:has(input:checked) {
+  background:rgba(91,141,239,.18);
+  border-color:var(--border-gold);
+  color:var(--gold-light);
 }
 
 /* ── JOUER EN LIGNE ── */
@@ -1245,6 +1266,18 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     <span class="rv-label" id="reviewLabel">En direct</span>
     <button class="rv-btn" onclick="reviewGo(1)" title="Coup suivant">▶</button>
     <button class="rv-btn" id="reviewLive" onclick="reviewEnd()" title="Revenir au direct">⏭</button>
+  </div>
+
+  <!-- INTERRUPTEURS EN JEU : jauge d'analyse + mode aveugle -->
+  <div class="ingame-toggles">
+    <label class="igt-pill">
+      <input type="checkbox" id="evalToggleGame" onchange="setEvalEnabled(this.checked)">
+      <span>📊 Analyse</span>
+    </label>
+    <label class="igt-pill">
+      <input type="checkbox" id="blindToggleGame" onchange="setBlindfold(this.checked)">
+      <span>🙈 Aveugle</span>
+    </label>
   </div>
 
   <!-- COLONNE LATÉRALE : micro + historique -->
@@ -3158,6 +3191,9 @@ function setBlindfold(on){
   try{ localStorage.setItem('dysc_blind', on?'1':'0'); }catch(e){}
   const b=document.getElementById('board');
   if(b) b.classList.toggle('blindfold', blindfold);
+  // Synchronise les deux interrupteurs (réglages + en jeu)
+  const t1=document.getElementById('blindToggle'); if(t1) t1.checked = blindfold;
+  const t2=document.getElementById('blindToggleGame'); if(t2) t2.checked = blindfold;
 }
 let _evalMode = false;        // true quand Stockfish analyse pour la jauge (pas pour jouer)
 let _lastEvalCp = 0;          // dernier score en centipions, du point de vue des Blancs
@@ -3217,6 +3253,9 @@ function setEvalEnabled(on){
   try{ localStorage.setItem('dysc_eval', on?'1':'0'); }catch(e){}
   const wrap = document.getElementById('evalGauge');
   if(wrap) wrap.style.display = on ? 'flex' : 'none';
+  // Synchronise les deux interrupteurs (réglages + en jeu)
+  const t1=document.getElementById('evalToggle'); if(t1) t1.checked = evalEnabled;
+  const t2=document.getElementById('evalToggleGame'); if(t2) t2.checked = evalEnabled;
   if(on) requestEvalUpdate();
 }
 
@@ -4961,6 +5000,7 @@ initBoard(); renderBoard();
 try{ onSplashEloSlide(document.getElementById('splashEloSlider')?.value || 800); }catch(e){} updateSidebar(); initStockfish(); updateEloUI(); applyLang(); try{ initTheme(); }catch(e){} try{ updateSpeakerBtn(); }catch(e){} try{ updateSplashAuth((window._auth&&window._auth.auth&&window._auth.auth.currentUser)||null); }catch(e){}
 try{ const _eg=document.getElementById('evalGauge'); if(_eg) _eg.style.display = evalEnabled ? 'flex' : 'none'; }catch(e){}
 try{ const _bb=document.getElementById('board'); if(_bb && blindfold) _bb.classList.add('blindfold'); }catch(e){}
+try{ const a=document.getElementById('evalToggleGame'); if(a) a.checked=evalEnabled; const b=document.getElementById('blindToggleGame'); if(b) b.checked=blindfold; }catch(e){}
 try{ updateColorButtons(); }catch(e){} // Reconnaissance vocale démarrée manuellement via le bouton
 const hasProfile = loadProfile();
 if (!hasProfile) { setTimeout(showProfile, 600); }
