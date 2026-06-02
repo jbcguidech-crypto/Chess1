@@ -1350,7 +1350,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="nav-right">
         <button id="langBtn" onclick="toggleLang()">🇫🇷 FR</button>
     <div class="nav-user" onclick="showProfile()">
-      <div class="nav-username" id="navUsername">Invité</div>
+      <div class="nav-username" id="navUsername">Vous</div>
     </div>
   </div>
 </nav>
@@ -2288,7 +2288,9 @@ function saveProfileData() {
 
 function updateNavUser() {
   const av=document.getElementById('navAvatar'); if(av) av.textContent = userProfile.avatar;
-  const un=document.getElementById('navUsername'); if(un) un.textContent = userProfile.name;
+  // Le compte ne sert qu'au jeu en ligne : si non connecté à Google, on affiche « Vous »
+  const loggedIn = (typeof fbGetUid==='function' && fbGetUid());
+  const un=document.getElementById('navUsername'); if(un) un.textContent = loggedIn ? userProfile.name : 'Vous';
 }
 
 function showProfile() {
@@ -3895,7 +3897,7 @@ function updatePlayerBars(){
     const KING = (col)=> col==='w' ? '♔' : '♚';
     // Bas = toi
     const botName=document.getElementById('botName'), botElo=document.getElementById('botElo'), botAva=document.getElementById('botAva');
-    if(botName) botName.textContent = (userProfile.name && userProfile.name!=='Invité') ? userProfile.name : 'Vous';
+    if(botName) botName.textContent = (gameMode==='online' && userProfile.name && userProfile.name!=='Invité') ? userProfile.name : 'Vous';
     if(botElo) botElo.textContent = ''; // pas d'Elo affiché pour le joueur
     if(botAva) botAva.innerHTML = KING(youColor);
     // Haut = adversaire
