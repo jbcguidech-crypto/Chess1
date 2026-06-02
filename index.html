@@ -585,6 +585,34 @@ html[data-theme="dark"] .settings-preview img {
 }
 .splash-online-btn:hover { background:rgba(91,141,239,.26);transform:translateY(-2px); }
 .splash-online-btn:active { transform:translateY(1px); }
+/* Fenêtre d'accueil : activation vocale */
+#voiceWelcome {
+  position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;
+  background:rgba(8,14,10,.78);backdrop-filter:blur(6px);padding:24px;
+}
+#voiceWelcome.hidden { display:none; }
+.vw-box {
+  background:linear-gradient(160deg,#16241c,#1e2f24);border:2px solid var(--gold);
+  border-radius:22px;padding:30px 26px;max-width:380px;width:100%;text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,.55);animation:fadeUp .3s ease;
+}
+.vw-icon { font-size:3rem;margin-bottom:8px;animation:splashMicPulse 1.6s ease-in-out infinite;display:inline-block;border-radius:50%; }
+.vw-title { font-family:'Manrope',system-ui,sans-serif;font-weight:800;font-size:1.4rem;color:var(--gold-light);margin-bottom:10px; }
+.vw-text { font-size:.9rem;color:var(--text-muted);line-height:1.5;margin:0 0 22px; }
+.vw-activate {
+  width:100%;padding:15px;border-radius:14px;cursor:pointer;margin-bottom:12px;
+  font-family:'Manrope',system-ui,sans-serif;font-weight:800;font-size:1rem;
+  background:linear-gradient(180deg,#3fb568,#2e9952);color:#fff;border:none;
+  box-shadow:0 4px 0 #237a40;transition:all .12s;-webkit-tap-highlight-color:transparent;
+}
+.vw-activate:active { transform:translateY(3px);box-shadow:0 1px 0 #237a40; }
+.vw-skip {
+  width:100%;padding:10px;border-radius:10px;cursor:pointer;
+  font-family:'Manrope',system-ui,sans-serif;font-weight:600;font-size:.82rem;
+  background:transparent;color:var(--text-muted);border:1px solid var(--border);
+  transition:all .15s;-webkit-tap-highlight-color:transparent;
+}
+.vw-skip:hover { color:var(--text-light);border-color:var(--border-hi); }
 /* Bouton commande vocale du splash */
 .splash-mic-round {
   position:absolute;top:68px;right:18px;z-index:20;
@@ -1113,6 +1141,17 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 </style>
 </head>
 <body onclick="userInteracted=true;" ontouchstart="userInteracted=true;">
+
+<!-- ══ FENÊTRE D'ACCUEIL : activation du pilotage vocal ══ -->
+<div id="voiceWelcome">
+  <div class="vw-box">
+    <div class="vw-icon">🎙</div>
+    <div class="vw-title">Pilotage vocal</div>
+    <p class="vw-text">Jouez aux échecs sans toucher l'écran. Activez la commande vocale, puis dites par exemple « jouer avec les blancs ».</p>
+    <button class="vw-activate" onclick="activateVoiceFromWelcome()">🎙 Activer le pilotage vocal</button>
+    <button class="vw-skip" onclick="dismissVoiceWelcome()">Non merci, je préfère toucher l'écran</button>
+  </div>
+</div>
 
 <!-- ══ SPLASH ══════════════════════════════════════ -->
 <div id="splash">
@@ -2001,6 +2040,17 @@ function _splashStatus(msg){ const el=document.getElementById('splashVoiceStatus
 function toggleSplashVoice(){
   if(_splashListening){ _splashVoiceWanted = false; stopSplashVoice(); }
   else startSplashListening();
+}
+
+// Fenêtre d'accueil : le tap débloque le micro (exigence navigateur) puis lance l'écoute
+function activateVoiceFromWelcome(){
+  userInteracted = true;                 // le tap autorise la synthèse + le micro
+  dismissVoiceWelcome();
+  try{ startSplashListening(); }catch(e){}
+}
+function dismissVoiceWelcome(){
+  const w=document.getElementById('voiceWelcome'); if(w) w.classList.add('hidden');
+  try{ localStorage.setItem('dysc_voice_welcome','off'); }catch(e){}
 }
 
 function stopSplashVoice(){
@@ -5623,6 +5673,17 @@ try{ const a=document.getElementById('evalToggleGame'); if(a) a.checked=evalEnab
 try{ updateColorButtons(); }catch(e){} // Reconnaissance vocale démarrée manuellement via le bouton
 const hasProfile = loadProfile();
 if (!hasProfile) { setTimeout(showProfile, 600); }
+// Fenêtre d'accueil du pilotage vocal : affichée sauf si l'utilisateur l'a refusée,
+// et seulement quand aucune fenêtre de profil ne s'affiche (pour ne pas se chevaucher).
+try{
+  let voiceWelcomeOff = false;
+  try{ voiceWelcomeOff = localStorage.getItem('dysc_voice_welcome')==='off'; }catch(e){}
+  const vw = document.getElementById('voiceWelcome');
+  if(vw){
+    if(voiceWelcomeOff || !hasProfile){ vw.classList.add('hidden'); }
+    // sinon : elle reste visible au lancement
+  }
+}catch(e){}
 initFirebase();
 </script>
 <script>
