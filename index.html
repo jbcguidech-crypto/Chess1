@@ -3151,7 +3151,7 @@ function applyStockfishMove(uciMove){
   const aiColorName = currentLang==='fr'
     ? (aiColor==='w' ? 'Les blancs jouent' : 'Les noirs jouent')
     : (aiColor==='w' ? 'White plays' : 'Black plays');
-  let aiMsg = aiColorName+' '+spokenMove;
+  let aiMsg = aiColorName+' : '+spokenMove;
   if(st.check && !st.over) aiMsg += (currentLang==='fr'?', échec':', check');  // coup PUIS échec
   setStatus('🔊 '+aiMsg,'ai');
   if(st.over){
@@ -3456,7 +3456,7 @@ function toSpeech(fr,fc,tr,tc,piece,captured,castleType){
   const t=type(piece);
   const isFR = currentLang==='fr';
   const names = isFR
-    ? {K:'le Roi',Q:'la Dame',R:'la Tour',B:'le Fou',N:'le Cavalier',P:'le pion'}
+    ? {K:'Roi',Q:'Dame',R:'Tour',B:'Fou',N:'Cavalier',P:'Pion'}
     : {K:'King',Q:'Queen',R:'Rook',B:'Bishop',N:'Knight',P:'pawn'};
   const dest = f[tc]+(8-tr);
 
@@ -3467,15 +3467,15 @@ function toSpeech(fr,fc,tr,tc,piece,captured,castleType){
   // Capture
   if(captured){
     const victims = isFR
-      ? {K:'le Roi',Q:'la Dame',R:'la Tour',B:'le Fou',N:'le Cavalier',P:'le pion'}
+      ? {K:'Roi',Q:'Dame',R:'Tour',B:'Fou',N:'Cavalier',P:'Pion'}
       : {K:'King',Q:'Queen',R:'Rook',B:'Bishop',N:'Knight',P:'pawn'};
     const vname = victims[type(captured)]||'';
-    if(isFR) return (names[t]||'le pion')+' prend '+vname+' en '+dest;
+    if(isFR) return (names[t]||'Pion')+' prend '+vname+' '+dest;
     return (names[t]||'pawn')+' takes '+vname+' on '+dest;
   }
 
   // Mouvement normal
-  if(isFR) return (names[t]||'le pion')+' en '+dest;
+  if(isFR) return (names[t]||'Pion')+' '+dest;
   return (names[t]||'pawn')+' to '+dest;
 }
 
