@@ -1312,7 +1312,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
             <div class="gloss-head">⏪ Revoir / affichage</div>
             <div class="gloss-row"><span class="gloss-ex">« coup précédent » / « coup suivant »</span><span class="gloss-desc">naviguer dans la partie</span></div>
             <div class="gloss-row"><span class="gloss-ex">« début » / « en direct »</span><span class="gloss-desc">aller au début / revenir au présent</span></div>
-            <div class="gloss-row"><span class="gloss-ex">« analyse » / « mode aveugle »</span><span class="gloss-desc">activer ces options</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« mode aveugle »</span><span class="gloss-desc">cacher / montrer les pièces</span></div>
             <div class="gloss-row"><span class="gloss-ex">« coupe le son » / « active le son »</span><span class="gloss-desc">voix de l'IA</span></div>
           </div>
           <div class="gloss-group">
@@ -1373,7 +1373,6 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <!-- BOARD -->
   <div class="board-container">
     <div class="board-mid">
-      <div class="eval-gauge" id="evalGauge"><div class="eval-fill" id="evalFill"></div><span class="eval-label" id="evalLabel">0.0</span></div>
       <div class="coord-col" id="coordCol"></div>
       <div id="board"></div>
     </div>
@@ -1411,12 +1410,8 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     <button class="rv-btn" id="reviewLive" onclick="reviewEnd()" title="Revenir au direct">⏭</button>
   </div>
 
-  <!-- INTERRUPTEURS EN JEU : jauge d'analyse + mode aveugle + pré-coups -->
+  <!-- INTERRUPTEURS EN JEU : mode aveugle + pré-coups -->
   <div class="ingame-toggles">
-    <label class="igt-pill">
-      <input type="checkbox" id="evalToggleGame" onchange="setEvalEnabled(this.checked)">
-      <span>📊 Analyse</span>
-    </label>
     <label class="igt-pill">
       <input type="checkbox" id="blindToggleGame" onchange="setBlindfold(this.checked)">
       <span>🙈 Aveugle</span>
@@ -3160,7 +3155,7 @@ function applyStockfishMove(uciMove){
     clearPremove();
   } else {
     speak(aiMsg);   // la reprise du micro est gérée par speak() après un délai de sécurité
-    setTimeout(requestEvalUpdate, 200);  // met à jour la jauge (c'est ton tour)
+
     tryExecutePremove();                 // exécute le pré-coup en attente, si légal
   }
 }
@@ -3355,7 +3350,8 @@ function makeMove(fr,fc,tr,tc,castleType,promo,byVoice){
   if(type(piece)==='P' && (tr===0||tr===7)){ board[tr][tc]=color(piece)+(promo||'Q'); }
   lastMove=[fr,fc,tr,tc];history.push({move:moveStr,color:turn});
   { const _pr=(type(piece)==='P'&&(tr===0||tr===7))?((promo||'Q').toLowerCase()):null; moveHistoryUCI.push(toUCI(fr,fc,tr,tc,_pr)); }
-  const humanSpoken = toSpeech(fr,fc,tr,tc,piece,captured,castleType);
+  const humanSpoken = toSpeech(fr,fc,tr,tc,piece,captured,castleType);          // version complète (historique)
+  const humanSpokenShort = toSpeech(fr,fc,tr,tc,piece,captured,castleType,true); // version courte (annonce du joueur)
   if(history.length){ history[history.length-1].spoken = humanSpoken; history[history.length-1].from=[fr,fc]; history[history.length-1].ptype=type(piece); }
   turn=turn==='w'?'b':'w';selected=null;possibleMoves=[];
   if(type(piece)==='P' || captured) halfmoveClock=0; else halfmoveClock++;
@@ -3365,8 +3361,8 @@ function makeMove(fr,fc,tr,tc,castleType,promo,byVoice){
   renderBoard();updateSidebar();
   const st=checkGameState();
   try{ if(st.over) playSound('end'); else if(st.check) playSound('check'); else if(castleType) playSound('castle'); else if(_isCap) playSound('capture'); else playSound('move'); }catch(e){}
-  // Annonce : le coup joué (sans « Vous jouez » : redondant, le joueur sait ce qu'il vient de dire)
-  let say = humanSpoken;
+  // Annonce du coup du joueur : version courte « Pion d4 » (validation rapide)
+  let say = humanSpokenShort;
   if(st.check && !st.over) say = (say||'') + (currentLang==='fr'?', échec':', check');
   if(st.over){
     if(say) speak(say, ()=>{ if(st.msg) speak(st.msg); });   // coup PUIS message de fin
@@ -3381,7 +3377,7 @@ function makeMove(fr,fc,tr,tc,castleType,promo,byVoice){
     _updateOnlineStatus();
   }
   // Met à jour la jauge d'évaluation (si activée et pas au tour de l'IA)
-  if(!st.over) setTimeout(requestEvalUpdate, 150);
+
 }
 
 function toAlg(fr,fc,tr,tc,piece,captured,promo){
@@ -3452,14 +3448,18 @@ function _checkSuffix(fr,fc,tr,tc,piece,promo){
   return hasMove ? '+' : '#';
 }
 
-function toSpeech(fr,fc,tr,tc,piece,captured,castleType){
+function toSpeech(fr,fc,tr,tc,piece,captured,castleType,short){
   const f='abcdefgh';
   const t=type(piece);
   const isFR = currentLang==='fr';
+  // Version COURTE (coup du joueur) : pièce + case, sans article ni « en »
+  // Version COMPLÈTE (coup de l'IA) : « le Pion en d4 »
   const names = isFR
-    ? {K:'Roi',Q:'Dame',R:'Tour',B:'Fou',N:'Cavalier',P:'Pion'}
+    ? (short ? {K:'Roi',Q:'Dame',R:'Tour',B:'Fou',N:'Cavalier',P:'Pion'}
+             : {K:'le Roi',Q:'la Dame',R:'la Tour',B:'le Fou',N:'le Cavalier',P:'le Pion'})
     : {K:'King',Q:'Queen',R:'Rook',B:'Bishop',N:'Knight',P:'pawn'};
   const dest = f[tc]+(8-tr);
+  const sep = short ? ' ' : (isFR ? ' en ' : ' to ');
 
   // Roque
   if(castleType==='castle-k') return isFR?'Petit roque':'Kingside castle';
@@ -3468,15 +3468,16 @@ function toSpeech(fr,fc,tr,tc,piece,captured,castleType){
   // Capture
   if(captured){
     const victims = isFR
-      ? {K:'Roi',Q:'Dame',R:'Tour',B:'Fou',N:'Cavalier',P:'Pion'}
+      ? (short ? {K:'Roi',Q:'Dame',R:'Tour',B:'Fou',N:'Cavalier',P:'Pion'}
+               : {K:'le Roi',Q:'la Dame',R:'la Tour',B:'le Fou',N:'le Cavalier',P:'le Pion'})
       : {K:'King',Q:'Queen',R:'Rook',B:'Bishop',N:'Knight',P:'pawn'};
     const vname = victims[type(captured)]||'';
-    if(isFR) return (names[t]||'Pion')+' prend '+vname+' '+dest;
+    if(isFR) return (names[t]||(short?'Pion':'le Pion'))+' prend '+vname+sep+dest;
     return (names[t]||'pawn')+' takes '+vname+' on '+dest;
   }
 
   // Mouvement normal
-  if(isFR) return (names[t]||'Pion')+' '+dest;
+  if(isFR) return (names[t]||(short?'Pion':'le Pion'))+sep+dest;
   return (names[t]||'pawn')+' to '+dest;
 }
 
@@ -4879,8 +4880,6 @@ function _parseStrict(text){
   if(/\b(debut|au debut|premier coup|start|beginning)\b/.test(_n)) return {kind:'review', dir:'start'};
   if(/\b(en direct|reviens au direct|position actuelle|live|maintenant)\b/.test(_n)) return {kind:'review', dir:'live'};
   // Bascules d'affichage
-  if(/\b(active l analyse|montre l analyse|affiche la jauge|jauge|analyse)\b/.test(_n) && !/dernier|position/.test(_n)) return {kind:'toggle', which:'eval', on:true};
-  if(/\b(cache l analyse|enleve la jauge|masque l analyse)\b/.test(_n)) return {kind:'toggle', which:'eval', on:false};
   if(/\b(mode aveugle|cache les pieces|aveugle|blindfold)\b/.test(_n)) return {kind:'toggle', which:'blind', on:true};
   if(/\b(montre les pieces|affiche les pieces|desactive l aveugle|enleve l aveugle)\b/.test(_n)) return {kind:'toggle', which:'blind', on:false};
   if(/\b(desactive|enleve|cache|retire)\b.*\bpre[\s-]?coups?\b/.test(_n)) return {kind:'toggle', which:'premove', on:false};
@@ -5301,7 +5300,9 @@ function speak(text, onEnd){
   window.speechSynthesis.cancel();
   setTimeout(()=>{
     if(myEpoch !== speechEpoch){ aiSpeaking=false; return; } // parole annulée (ex: retour au menu)
-    const u = new SpeechSynthesisUtterance(text);
+    // Petit « tampon » en tête : sur Android, le moteur TTS avale souvent le tout
+    // début du son. Une courte pause silencieuse évite que « Pion » devienne « ion ».
+    const u = new SpeechSynthesisUtterance('… ' + text);
     u.lang = currentLang==='fr' ? 'fr-FR' : 'en-US';
     const chosen = getSelectedVoice();
     if(chosen) u.voice = chosen;
@@ -5321,7 +5322,7 @@ function speak(text, onEnd){
       if(voiceContinuous && !listening && !aiThinking) setTimeout(()=>{ if(!aiSpeaking) startListening(); }, 800);
     };
     window.speechSynthesis.speak(u);
-  }, 200);
+  }, 250);
 }
 
 // Première interaction → joue parole en attente
