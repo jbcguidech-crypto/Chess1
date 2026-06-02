@@ -358,6 +358,24 @@ body {
 .pieceset-opt.active { border-color:var(--gold);background:rgba(91,141,239,.2); }
 .pieceset-opt img { width:36px;height:36px;object-fit:contain;display:block;margin:0 auto; }
 .pieceset-opt span { font-size:.55rem;color:var(--text-dark);font-weight:700;display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+/* En thème sombre : vignettes d'aperçu sur fond foncé + halo clair sur les pièces (cohérent avec le splash) */
+html[data-theme="dark"] .pieceset-opt { background:rgba(255,255,255,.06); }
+html[data-theme="dark"] .pieceset-opt:hover { background:rgba(255,255,255,.12); }
+html[data-theme="dark"] .pieceset-opt.active { background:rgba(91,141,239,.25); }
+html[data-theme="dark"] .pieceset-opt span { color:var(--text-light); }
+html[data-theme="dark"] .pieceset-opt img {
+  filter:
+    drop-shadow(0 0 2px rgba(255,255,255,.9))
+    drop-shadow(0 0 4px rgba(255,255,255,.7))
+    drop-shadow(0 0 7px rgba(255,255,255,.45));
+}
+/* Aperçu en direct des pièces (fond sombre) : halo clair en thème sombre */
+html[data-theme="dark"] .settings-preview img {
+  filter:
+    drop-shadow(0 0 2px rgba(255,255,255,.85))
+    drop-shadow(0 0 4px rgba(255,255,255,.6))
+    drop-shadow(0 0 7px rgba(255,255,255,.4)) !important;
+}
 .boardtheme-opt {
   flex:0 0 auto;width:52px;cursor:pointer;scroll-snap-align:start;
   border:2px solid transparent;border-radius:10px;padding:4px;
@@ -671,6 +689,8 @@ body {
 .cell.possible-move::after { content:'';position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(20,30,25,.22);pointer-events:none;z-index:1;animation:dot-pop .18s cubic-bezier(.34,1.56,.64,1); }
 .cell.possible-capture::after { content:'';position:absolute;inset:0;box-shadow:inset 0 0 0 4px rgba(20,30,25,.26);pointer-events:none;z-index:1; }
 @keyframes dot-pop{from{transform:scale(0)}to{transform:scale(1)}}
+/* Mode aveugle : pièces cachées (l'échiquier et les surbrillances restent visibles) */
+#board.blindfold .board-piece { opacity:0 !important; visibility:hidden; }
 @keyframes shake-chk{0%,100%{transform:none}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
 
 .board-piece {
@@ -1133,6 +1153,15 @@ canvas#eloChart { width:100%!important;height:90px!important; }
           <span class="settings-switch-ui"></span>
         </label>
         <div class="settings-toggle-hint">Affiche une barre indiquant qui a l'avantage pendant la partie.</div>
+      </div>
+      <!-- Mode aveugle (blindfold) -->
+      <div class="settings-section">
+        <label class="settings-toggle-row">
+          <span class="settings-section-title" style="margin:0;">🙈 Mode aveugle</span>
+          <input type="checkbox" id="blindToggle" class="settings-switch" onchange="setBlindfold(this.checked)">
+          <span class="settings-switch-ui"></span>
+        </label>
+        <div class="settings-toggle-hint">Cache les pièces sur l'échiquier. Jouez de mémoire, à la voix ou en cliquant les cases.</div>
       </div>
     </div>
     <button class="settings-done" onclick="closeSettings()">C'est parfait !</button>
@@ -1724,6 +1753,7 @@ function openSettings(){
   if(typeof buildBoardThemeSelector==='function') buildBoardThemeSelector();
   if(typeof renderSettingsPreview==='function') renderSettingsPreview('pieces');
   const et=document.getElementById('evalToggle'); if(et) et.checked = evalEnabled;
+  const bt=document.getElementById('blindToggle'); if(bt) bt.checked = blindfold;
 }
 function closeSettings(){
   const m = document.getElementById('settingsModal');
@@ -3120,6 +3150,16 @@ function insufficientMaterial(){
 // ===== JAUGE D'ÉVALUATION =====
 let evalEnabled = false;
 try{ evalEnabled = localStorage.getItem('dysc_eval')==='1'; }catch(e){}
+
+// ===== MODE AVEUGLE (blindfold) =====
+let blindfold = false;
+try{ blindfold = localStorage.getItem('dysc_blind')==='1'; }catch(e){}
+function setBlindfold(on){
+  blindfold = !!on;
+  try{ localStorage.setItem('dysc_blind', on?'1':'0'); }catch(e){}
+  const b=document.getElementById('board');
+  if(b) b.classList.toggle('blindfold', blindfold);
+}
 let _evalMode = false;        // true quand Stockfish analyse pour la jauge (pas pour jouer)
 let _lastEvalCp = 0;          // dernier score en centipions, du point de vue des Blancs
 
@@ -3547,10 +3587,12 @@ function _attachBoardPointer(boardEl){
       return;
     }
     if(ev.button && ev.button!==0) return; // autres boutons ignorés
+    // EN REVUE : visualisation seule. Aucun glissement/coup possible.
+    // Un simple clic revient au direct, mais on ne prépare jamais de drag.
+    if(reviewIndex!==null){ return; }
     const hit = _cellFromPoint(ev.clientX, ev.clientY);
     if(!hit) return;
     // Conditions de jeu (mêmes garde-fous que handleClick)
-    if(reviewIndex!==null){ exitReview(); return; }
     if(aiThinking) return;
     if(gameMode==='ai' && turn!==playerColor) return;
     if(gameMode==='online' && turn!==onlineColor) return;
@@ -4919,6 +4961,7 @@ function resetGame(){
 initBoard(); renderBoard();
 try{ onSplashEloSlide(document.getElementById('splashEloSlider')?.value || 800); }catch(e){} updateSidebar(); initStockfish(); updateEloUI(); applyLang(); try{ initTheme(); }catch(e){} try{ updateSpeakerBtn(); }catch(e){} try{ updateSplashAuth((window._auth&&window._auth.auth&&window._auth.auth.currentUser)||null); }catch(e){}
 try{ const _eg=document.getElementById('evalGauge'); if(_eg) _eg.style.display = evalEnabled ? 'flex' : 'none'; }catch(e){}
+try{ const _bb=document.getElementById('board'); if(_bb && blindfold) _bb.classList.add('blindfold'); }catch(e){}
 try{ updateColorButtons(); }catch(e){} // Reconnaissance vocale démarrée manuellement via le bouton
 const hasProfile = loadProfile();
 if (!hasProfile) { setTimeout(showProfile, 600); }
