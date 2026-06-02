@@ -3151,10 +3151,10 @@ function applyStockfishMove(uciMove){
   if(st.check && !st.over) aiMsg += (currentLang==='fr'?', échec':', check');  // coup PUIS échec
   setStatus('🔊 '+aiMsg,'ai');
   if(st.over){
-    speak(aiMsg, ()=>{ if(st.msg) speak(st.msg); });   // coup IA PUIS message de fin
+    speak(aiMsg, ()=>{ if(st.msg) speak(st.msg, null, 'ai'); }, 'ai');   // coup IA PUIS message de fin
     clearPremove();
   } else {
-    speak(aiMsg);   // la reprise du micro est gérée par speak() après un délai de sécurité
+    speak(aiMsg, null, 'ai');   // la reprise du micro est gérée par speak() après un délai de sécurité
 
     tryExecutePremove();                 // exécute le pré-coup en attente, si légal
   }
@@ -3365,11 +3365,11 @@ function makeMove(fr,fc,tr,tc,castleType,promo,byVoice){
   let say = humanSpokenShort;
   if(st.check && !st.over) say = (say||'') + (currentLang==='fr'?', échec':', check');
   if(st.over){
-    if(say) speak(say, ()=>{ if(st.msg) speak(st.msg); });   // coup PUIS message de fin
+    if(say) speak(say, ()=>{ if(st.msg) speak(st.msg, null, 'me'); }, 'me');   // coup PUIS message de fin
   } else if(gameMode==='ai' && turn!==playerColor){
-    speak(say, ()=>askStockfish());                          // coup (+échec) PUIS l'IA joue
+    speak(say, ()=>askStockfish(), 'me');                    // coup (+échec) PUIS l'IA joue
   } else {
-    if(say) speak(say);
+    if(say) speak(say, null, 'me');
   }
   // En ligne : si c'est MON coup (pas l'application d'un coup distant), je l'envoie
   if(gameMode==='online' && !onlineApplying){
@@ -5219,6 +5219,25 @@ function getVoicesForLang(){
   return matching.length ? matching : availableVoices;
 }
 
+// Choisit une voix selon QUI parle : 'me' (le joueur) ou 'ai' (l'adversaire).
+// Le joueur garde la voix choisie/par défaut ; l'IA prend une AUTRE voix de la
+// même langue, pour qu'on distingue à l'oreille qui vient de jouer.
+function getVoiceFor(who){
+  if(!availableVoices.length) return null;
+  const list = getVoicesForLang();
+  if(!list.length) return null;
+  // Voix du joueur = celle choisie dans les réglages, sinon la 1re
+  let myVoice = null;
+  if(selectedVoiceURI) myVoice = availableVoices.find(v => v.voiceURI === selectedVoiceURI) || null;
+  if(!myVoice) myVoice = list[0];
+  if(who==='ai'){
+    // Une voix différente de celle du joueur (la suivante dans la liste)
+    const other = list.find(v => v.voiceURI !== myVoice.voiceURI);
+    return other || myVoice; // s'il n'y a qu'une seule voix dispo, on réutilise la même
+  }
+  return myVoice;
+}
+
 function getSelectedVoice(){
   if(!availableVoices.length) return null;
   if(selectedVoiceURI){
@@ -5283,7 +5302,7 @@ function toggleVoiceMute(){
   if(typeof showToast==='function') showToast(voiceMuted ? '🔇 Son coupé' : '🔊 Son activé', 'success');
 }
 
-function speak(text, onEnd){
+function speak(text, onEnd, who){
   if(!window.speechSynthesis || !text) return;
   if(!gameActive){ if(onEnd) setTimeout(onEnd,50); return; } // pas de voix hors partie (ex: splash)
   if(voiceMuted){ if(onEnd) setTimeout(onEnd, 50); return; } // voix coupée : on n'annonce pas mais la partie continue
@@ -5304,8 +5323,10 @@ function speak(text, onEnd){
     // début du son. Une courte pause silencieuse évite que « Pion » devienne « ion ».
     const u = new SpeechSynthesisUtterance('… ' + text);
     u.lang = currentLang==='fr' ? 'fr-FR' : 'en-US';
-    const chosen = getSelectedVoice();
+    const chosen = getVoiceFor(who || 'me');
     if(chosen) u.voice = chosen;
+    // Légère différence de hauteur pour mieux distinguer les deux voix
+    u.pitch = (who==='ai') ? 0.9 : 1.08;
     u.rate = 1;
     u.volume = 1;
     u.onend = ()=>{
