@@ -365,16 +365,14 @@ html[data-theme="dark"] .pieceset-opt.active { background:rgba(91,141,239,.25); 
 html[data-theme="dark"] .pieceset-opt span { color:var(--text-light); }
 html[data-theme="dark"] .pieceset-opt img {
   filter:
-    drop-shadow(0 0 2px rgba(255,255,255,.9))
-    drop-shadow(0 0 4px rgba(255,255,255,.7))
-    drop-shadow(0 0 7px rgba(255,255,255,.45));
+    drop-shadow(0 0 1px rgba(255,255,255,.55))
+    drop-shadow(0 1px 2px rgba(0,0,0,.4));
 }
-/* Aperçu en direct des pièces (fond sombre) : halo clair en thème sombre */
+/* Aperçu en direct des pièces (fond sombre) : contour clair discret en thème sombre */
 html[data-theme="dark"] .settings-preview img {
   filter:
-    drop-shadow(0 0 2px rgba(255,255,255,.85))
-    drop-shadow(0 0 4px rgba(255,255,255,.6))
-    drop-shadow(0 0 7px rgba(255,255,255,.4)) !important;
+    drop-shadow(0 0 1px rgba(255,255,255,.5))
+    drop-shadow(0 1px 2px rgba(0,0,0,.4)) !important;
 }
 .boardtheme-opt {
   flex:0 0 auto;width:52px;cursor:pointer;scroll-snap-align:start;
@@ -1606,7 +1604,7 @@ function buildSplash() {
       const isDark = document.documentElement.getAttribute('data-theme')==='dark';
       // En thème sombre : halo clair autour de TOUTES les pièces du splash pour les détacher du fond foncé
       const haloFilter = isDark
-        ? 'drop-shadow(0 0 2px rgba(255,255,255,.95)) drop-shadow(0 0 4px rgba(255,255,255,.8)) drop-shadow(0 0 8px rgba(255,255,255,.5)) drop-shadow(0 5px 12px rgba(0,0,0,.6))'
+        ? 'drop-shadow(0 0 1px rgba(255,255,255,.6)) drop-shadow(0 0 2px rgba(255,255,255,.4)) drop-shadow(0 5px 12px rgba(0,0,0,.6))'
         : 'drop-shadow(0 5px 12px rgba(0,0,0,.6))';
       // Conteneur animé
       const wrap = document.createElement('div');
