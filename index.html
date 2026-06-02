@@ -907,6 +907,15 @@ input[type=range]::-webkit-slider-thumb {
 /* ── GAME OVER ───────────────────────────────── */
 /* Fin de partie : bannière compacte en bas, l'échiquier reste visible */
 #gameOver { display:none;position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:200;width:calc(100% - 28px);max-width:380px; }
+/* Choix de promotion */
+#promoOverlay { display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);align-items:center;justify-content:center; }
+#promoOverlay.show { display:flex;animation:fadeUp .2s ease; }
+.promo-box { background:linear-gradient(160deg,var(--green-dark,#1a2e22),var(--green-mid,#22382a));border:2px solid var(--gold);border-radius:18px;padding:18px 20px;text-align:center;box-shadow:0 16px 48px rgba(0,0,0,.5); }
+.promo-title { font-family:'Manrope',system-ui,sans-serif;font-weight:800;color:var(--gold-light);font-size:1rem;margin-bottom:14px; }
+.promo-choices { display:flex;gap:10px;justify-content:center; }
+.promo-piece { width:60px;height:60px;border-radius:12px;cursor:pointer;background:rgba(255,255,255,.06);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;transition:all .12s;-webkit-tap-highlight-color:transparent; }
+.promo-piece:hover { background:rgba(91,141,239,.2);border-color:var(--gold);transform:translateY(-3px); }
+.promo-piece img { width:46px;height:46px;object-fit:contain; }
 #gameOver.show { display:block;animation:fadeUp .4s cubic-bezier(.34,1.56,.64,1); }
 .go-banner {
   background:linear-gradient(160deg,var(--green-dark),var(--green-mid));
@@ -1377,6 +1386,14 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   </div>
   </div>
 </div>
+</div>
+
+<!-- ══ CHOIX DE PROMOTION ═════════════════════════════ -->
+<div id="promoOverlay">
+  <div class="promo-box">
+    <div class="promo-title">Promotion</div>
+    <div class="promo-choices" id="promoChoices"></div>
+  </div>
 </div>
 
 <!-- ══ GAME OVER ══════════════════════════════════════ -->
@@ -3005,6 +3022,33 @@ function undoMove(){
   speak(msg, ()=>{ if(typeof voiceContinuous!=='undefined' && voiceContinuous && !listening) startListening(); });
 }
 
+// Détecte si un coup (fr,fc → tr,tc) est une promotion de pion
+function _isPromotion(fr,fc,tr,tc){
+  const p = board[fr][fc];
+  return p && type(p)==='P' && (tr===0 || tr===7);
+}
+
+// Affiche le choix de promotion puis appelle cb(pieceLetter) : 'Q','R','B','N'
+function askPromotion(colorLetter, cb){
+  const ov = document.getElementById('promoOverlay');
+  const wrap = document.getElementById('promoChoices');
+  if(!ov || !wrap){ cb('Q'); return; }
+  wrap.innerHTML = '';
+  const order = ['Q','R','B','N']; // dame, tour, fou, cavalier
+  order.forEach(letter=>{
+    const code = colorLetter + letter;
+    const d = document.createElement('div');
+    d.className = 'promo-piece';
+    const img = document.createElement('img');
+    img.src = pieceImgURL(code);
+    img.alt = letter; img.draggable = false;
+    d.appendChild(img);
+    d.onclick = ()=>{ ov.classList.remove('show'); cb(letter); };
+    wrap.appendChild(d);
+  });
+  ov.classList.add('show');
+}
+
 function makeMove(fr,fc,tr,tc,castleType,promo){
   if(!gameActive) return; // aucun coup hors d'une partie en cours
   // En ligne : on ne peut jouer QUE sa propre couleur, et seulement à son tour
@@ -3030,7 +3074,8 @@ function makeMove(fr,fc,tr,tc,castleType,promo){
   if(type(piece)==='P'&&fc!==tc&&!captured)board[fr][tc]=null;
   if(castleType==='castle-k'){board[fr][5]=board[fr][7];board[fr][7]=null;}
   if(castleType==='castle-q'){board[fr][3]=board[fr][0];board[fr][0]=null;}
-  if(promo && type(piece)==='P' && (tr===0||tr===7)) board[tr][tc]=color(piece)+promo;
+  // Promotion : si un pion atteint la dernière rangée, on promeut (défaut = dame)
+  if(type(piece)==='P' && (tr===0||tr===7)){ board[tr][tc]=color(piece)+(promo||'Q'); }
   lastMove=[fr,fc,tr,tc];history.push({move:moveStr,color:turn});
   { const _pr=(type(piece)==='P'&&(tr===0||tr===7))?((promo||'Q').toLowerCase()):null; moveHistoryUCI.push(toUCI(fr,fc,tr,tc,_pr)); }
   const humanSpoken = toSpeech(fr,fc,tr,tc,piece,captured,castleType);
@@ -3821,7 +3866,15 @@ function _attachBoardPointer(boardEl){
           return;
         }
         const mv=possibleMoves.find(([pr,pc])=>pr===drop.r&&pc===drop.c);
-        if(mv){ makeMove(st.startR, st.startC, drop.r, drop.c, mv[2]); return; }
+        if(mv){
+          if(_isPromotion(st.startR, st.startC, drop.r, drop.c)){
+            const fr=st.startR,fc=st.startC,tr=drop.r,tc=drop.c; const col=color(board[fr][fc]);
+            selected=null;possibleMoves=[];renderBoard();
+            askPromotion(col, (letter)=>makeMove(fr,fc,tr,tc,mv[2],letter));
+            return;
+          }
+          makeMove(st.startR, st.startC, drop.r, drop.c, mv[2]); return;
+        }
       }
       // Drop hors d'une case valide → on garde la sélection
       return;
@@ -3874,7 +3927,14 @@ function _attachBoardPointer(boardEl){
 function handleClick(r,c){
   if(reviewIndex!==null){ exitReview(); return; } // en revue : un tap revient au direct
   if(aiThinking)return;if(gameMode==='ai'&&turn!==playerColor)return;
-  if(selected){const mv=possibleMoves.find(([pr,pc])=>pr===r&&pc===c);if(mv){makeMove(selected[0],selected[1],r,c,mv[2]);return;}}
+  if(selected){const mv=possibleMoves.find(([pr,pc])=>pr===r&&pc===c);if(mv){
+    if(_isPromotion(selected[0],selected[1],r,c)){
+      const fr=selected[0],fc=selected[1]; const col=color(board[fr][fc]);
+      selected=null;possibleMoves=[];renderBoard();
+      askPromotion(col, (letter)=>makeMove(fr,fc,r,c,mv[2],letter));
+      return;
+    }
+    makeMove(selected[0],selected[1],r,c,mv[2]);return;}}
   if(board[r][c]&&color(board[r][c])===turn){selected=[r,c];possibleMoves=legalMoves(r,c);renderBoard();}
   else{selected=null;possibleMoves=[];renderBoard();}
 }
@@ -5122,6 +5182,7 @@ function setMode(m){
 function resetGame(){
   document.getElementById('gameOver').classList.remove('show');
   document.getElementById('aiSpinner').classList.remove('show');
+  { const _po=document.getElementById('promoOverlay'); if(_po) _po.classList.remove('show'); }
   gameStartElo=userProfile.elo;
   initBoard();turn='w';selected=null;possibleMoves=[];history=[];moveHistoryUCI=[];undoStack=[];
   try{ clearPremove(); }catch(e){}
