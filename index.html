@@ -1159,8 +1159,8 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <button class="splash-auth" id="splashAuthBtn" onclick="loginGoogle()" title="Se connecter ou créer un compte">🔑 Connexion / Inscription</button>
   <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Mode clair" title="Mode clair / sombre">☀️</button>
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
-  <div class="splash-title">Jarvis<br><span>Chess</span></div>
-  <p class="splash-sub">♟ Do You Speak Chess?</p>
+  <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
+  <p class="splash-sub">♟ Jouez avec votre voix</p>
   <!-- Échiquier d'aperçu avec micro central pour activer la commande vocale -->
   <div class="splash-board-wrap">
     <div class="splash-mini-board" id="splashBoard"></div>
@@ -1311,8 +1311,8 @@ canvas#eloChart { width:100%!important;height:90px!important; }
           </div>
           <div class="gloss-group">
             <div class="gloss-head">🏠 Depuis le menu d'accueil</div>
-            <div class="gloss-row"><span class="gloss-ex">« jouer avec les blancs / noirs »</span><span class="gloss-desc">démarrer avec une couleur précise</span></div>
-            <div class="gloss-row"><span class="gloss-ex">« jouer aléatoire » / « au hasard » / « jouer »</span><span class="gloss-desc">démarrer avec une couleur tirée au sort</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« blanc » / « noir »</span><span class="gloss-desc">démarrer avec une couleur précise</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« aléatoire » / « au hasard »</span><span class="gloss-desc">démarrer avec une couleur tirée au sort</span></div>
             <div class="gloss-row"><span class="gloss-ex">« niveau 1500 »</span><span class="gloss-desc">régler la difficulté</span></div>
             <div class="gloss-row"><span class="gloss-ex">« jouer en ligne » / « créer une partie »</span><span class="gloss-desc">multijoueur</span></div>
             <div class="gloss-row"><span class="gloss-ex">« personnaliser » / « mode sombre »</span><span class="gloss-desc">réglages et thème</span></div>
@@ -2073,7 +2073,7 @@ function startSplashListening(){
 
   _splashRecog.onstart = ()=>{
     const b=document.getElementById('splashVoiceBtn'); if(b){ b.classList.add('listening'); }
-    _splashStatus(currentLang==='fr'?'🎙 Dites : « jouer avec les blancs », « niveau 1500 », « jouer en ligne »…':'🎙 Say: "play white", "level 1500", "play online"…');
+    _splashStatus(currentLang==='fr'?'🎙 Dites : « blanc », « noir », « aléatoire », « niveau 1500 », « jouer en ligne »…':'🎙 Say: "white", "black", "random", "level 1500", "play online"…');
   };
   _splashRecog.onerror = (e)=>{
     if(e.error==='not-allowed') _splashStatus(currentLang==='fr'?'⚠️ Autorisez le micro':'⚠️ Allow the mic');
@@ -2112,12 +2112,10 @@ function parseSplashCommand(text){
   const codeMatch = t.match(/\brejoindre\s+([a-z]{4})\b/) || t.match(/\bcode\s+([a-z]{4})\b/);
   if(codeMatch){ stopSplashVoice(); if(typeof openOnlineModal==='function') openOnlineModal(); const code=codeMatch[1].toUpperCase(); setTimeout(()=>{ if(typeof joinOnlineGame==='function') joinOnlineGame(code); },300); return true; }
   if(/\b(jouer en ligne|en ligne|partie en ligne|online|avec un ami)\b/.test(t)){ stopSplashVoice(); if(typeof openOnlineModal==='function') openOnlineModal(); return true; }
-  // Choix de couleur → lance la partie
-  if(/\b(blanc|blancs|white|avec les blancs)\b/.test(t)){ stopSplashVoice(); splashChooseColor('w'); return true; }
-  if(/\b(noir|noirs|black|avec les noirs)\b/.test(t)){ stopSplashVoice(); splashChooseColor('b'); return true; }
-  if(/\b(aleatoire|hasard|au hasard|random|peu importe)\b/.test(t)){ stopSplashVoice(); splashChooseColor('r'); return true; }
-  // "jouer" / "commencer" / "nouvelle partie" sans couleur précisée → tirage au sort
-  if(/\b(jouer|commencer|demarrer|nouvelle partie|c est parti|go|play|start)\b/.test(t)){ stopSplashVoice(); splashChooseColor('r'); return true; }
+  // Choix de couleur → lance la partie. Dites simplement « blanc », « noir » ou « aléatoire ».
+  if(/\b(blanc|blancs|blanche|blanches|white|whites)\b/.test(t)){ stopSplashVoice(); splashChooseColor('w'); return true; }
+  if(/\b(noir|noirs|noire|noires|black|blacks)\b/.test(t)){ stopSplashVoice(); splashChooseColor('b'); return true; }
+  if(/\b(aleatoire|aleatoires|hasard|au hasard|random|peu importe|n importe)\b/.test(t)){ stopSplashVoice(); splashChooseColor('r'); return true; }
   if(levelSet) return true; // le niveau a été réglé, on attend la couleur
   return false;
 }
