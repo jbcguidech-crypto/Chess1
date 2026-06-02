@@ -3101,6 +3101,7 @@ let positionHistory=[];   // clés de position pour la triple répétition
 let aiGen=0, aiReqGen=-1; // génération : invalide un coup d'IA si on annule entre-temps
 let moveJustPlayed=false;
 let undoLock=false; // empêche l'annulation vocale de se répéter sur plusieurs résultats
+let _cmdLock=false; // empêche une commande vocale (toggle, état…) de se redéclencher via l'écho de l'app
 let listening=false,recognition=null;
 let aiSpeaking=false; // vrai pendant que l'IA parle (pour autoriser "annuler" sans déclencher de coup)
 let speechEpoch=0; // incrémenté pour invalider toute parole programmée (ex: retour au menu)
@@ -4261,6 +4262,9 @@ function startListening(){
         }
         // Commandes informatives / de contrôle autorisées même quand l'IA réfléchit
         if(a && (a.kind==='state' || a.kind==='resign' || a.kind==='newgame' || a.kind==='mute' || a.kind==='menu' || a.kind==='review' || a.kind==='toggle' || a.kind==='hint')){
+          if(_cmdLock) return;
+          _cmdLock = true;
+          setTimeout(()=>{ _cmdLock=false; }, 2500);
           executeVoiceAction(a, true);
           return;
         }
@@ -4278,6 +4282,13 @@ function startListening(){
       // On ne JOUE un coup que sur un résultat FINAL (quand l'utilisateur a fini de parler).
       // Les résultats intermédiaires ne servent qu'à l'affichage → évite les coups parasites.
       if(anyFinal && act && (act.kind==='move' || act.kind==='castle' || act.kind==='reset' || act.kind==='resign' || act.kind==='newgame' || act.kind==='state' || act.kind==='hint' || act.kind==='mute' || act.kind==='menu' || act.kind==='review' || act.kind==='toggle')){
+        // Verrou anti-répétition pour les commandes NON-coup : empêche que l'app
+        // s'entende confirmer et re-déclenche la même commande en boucle.
+        if(act.kind!=='move' && act.kind!=='castle'){
+          if(_cmdLock) return;
+          _cmdLock = true;
+          setTimeout(()=>{ _cmdLock=false; }, 2500);
+        }
         if(act.kind==='move'||act.kind==='castle'||act.kind==='reset'){ moveJustPlayed = true; setTimeout(()=>{ moveJustPlayed = false; }, 1200); }
         _pendingAmbiguous = null; // un nouveau coup annule l'ambiguïté précédente
         executeVoiceAction(act, true);
@@ -5016,6 +5027,9 @@ function executeVoiceAction(act, verbose){
 // Énonce un texte à la voix (réutilise speak si dispo)
 function _voiceSay(txt){
   try{ setStatus('🔊 '+txt, 'ai'); }catch(e){}
+  // Coupe le micro IMMÉDIATEMENT (avant même le délai interne de speak) pour
+  // empêcher l'app de s'entendre confirmer et de re-déclencher la commande.
+  try{ aiSpeaking = true; if(recognition && listening){ recognition.abort(); } listening = false; }catch(e){}
   try{ if(typeof speak==='function') speak(txt); }catch(e){}
 }
 
