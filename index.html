@@ -240,6 +240,21 @@ body {
 .settings-switch:checked + .settings-switch-ui { background:var(--gold); }
 .settings-switch:checked + .settings-switch-ui::after { transform:translateX(18px); }
 .settings-toggle-hint { font-size:.72rem;color:var(--text-muted);margin-top:6px;line-height:1.4; }
+.voice-pick-row { display:flex;align-items:center;gap:8px;margin-bottom:8px; }
+.voice-pick-lbl { font-family:'Manrope',system-ui,sans-serif;font-weight:700;font-size:.8rem;color:var(--text-muted);min-width:78px; }
+.voice-select {
+  flex:1;min-width:0;padding:8px 10px;border-radius:8px;
+  background:rgba(0,0,0,.2);border:1px solid var(--border-gold);
+  color:var(--cream);font-family:'Manrope',system-ui,sans-serif;font-size:.8rem;cursor:pointer;
+}
+.voice-test-btn {
+  width:34px;height:34px;flex-shrink:0;border-radius:50%;
+  border:1px solid var(--border-gold);background:rgba(91,141,239,.12);
+  color:var(--gold-light);cursor:pointer;font-size:.75rem;transition:all .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+.voice-test-btn:hover { background:rgba(91,141,239,.25); }
+.voice-test-btn:active { transform:scale(.92); }
 /* Glossaire des commandes vocales */
 .glossary-toggle { width:100%;display:flex;align-items:center;justify-content:space-between;background:transparent;border:none;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent; }
 .glossary-chevron { color:var(--gold-light);font-size:1rem;transition:transform .2s; }
@@ -1272,6 +1287,21 @@ canvas#eloChart { width:100%!important;height:90px!important; }
         <div class="settings-section-title">▦ Style de l'échiquier</div>
         <div class="pieceset-grid" id="boardThemeGrid"></div>
       </div>
+      <!-- Voix : une pour le joueur, une pour l'IA -->
+      <div class="settings-section">
+        <div class="settings-section-title">🔊 Voix des annonces</div>
+        <div class="voice-pick-row">
+          <label class="voice-pick-lbl">🧑 Vous</label>
+          <select id="voiceSelectMe" class="voice-select" onchange="setVoiceMe(this.value)"></select>
+          <button class="voice-test-btn" onclick="testVoice('me')" title="Écouter">▶</button>
+        </div>
+        <div class="voice-pick-row">
+          <label class="voice-pick-lbl">🤖 DYSC-AI</label>
+          <select id="voiceSelectAi" class="voice-select" onchange="setVoiceAi(this.value)"></select>
+          <button class="voice-test-btn" onclick="testVoice('ai')" title="Écouter">▶</button>
+        </div>
+        <div class="settings-toggle-hint">Choisissez une voix différente pour vos coups et ceux de l'IA (par exemple une voix d'homme et une de femme). Les voix proposées dépendent de celles installées sur votre appareil.</div>
+      </div>
       <!-- Glossaire des commandes vocales -->
       <div class="settings-section">
         <button class="glossary-toggle" id="glossaryToggle" onclick="toggleGlossary()">
@@ -1935,6 +1965,7 @@ function openSettings(){
   // (Re)remplit les sélecteurs
   if(typeof buildPieceSetSelector==='function') buildPieceSetSelector();
   if(typeof buildBoardThemeSelector==='function') buildBoardThemeSelector();
+  if(typeof buildVoiceSelector==='function') buildVoiceSelector();
   if(typeof renderSettingsPreview==='function') renderSettingsPreview('pieces');
   const et=document.getElementById('evalToggle'); if(et) et.checked = evalEnabled;
   const bt=document.getElementById('blindToggle'); if(bt) bt.checked = blindfold;
@@ -3141,13 +3172,12 @@ function applyStockfishMove(uciMove){
   document.getElementById('voiceBtn').disabled=false;
   const st=checkGameState();
   try{ if(st.over) playSound('end'); else if(st.check) playSound('check'); else if(_isCastle) playSound('castle'); else if(_isCap) playSound('capture'); else playSound('move'); }catch(e){}
-  const spokenMove = toSpeech(fr,fc,tr,tc,piece,captured,null);
+  const spokenMove = toSpeech(fr,fc,tr,tc,piece,captured,null);            // version complète (historique)
+  const spokenMoveShort = toSpeech(fr,fc,tr,tc,piece,captured,null,true);  // version courte (annonce)
   if(history.length){ history[history.length-1].spoken = spokenMove; history[history.length-1].from=[fr,fc]; history[history.length-1].ptype=type(piece); }
-  const aiColor = playerColor==='w' ? 'b' : 'w';
-  const aiColorName = currentLang==='fr'
-    ? (aiColor==='w' ? 'Les blancs jouent' : 'Les noirs jouent')
-    : (aiColor==='w' ? 'White plays' : 'Black plays');
-  let aiMsg = aiColorName+' : '+spokenMove;
+  // Plus de « Les blancs/noirs jouent » : les deux voix étant différentes,
+  // on distingue déjà à l'oreille. On annonce juste la pièce + la case/action.
+  let aiMsg = spokenMoveShort;
   if(st.check && !st.over) aiMsg += (currentLang==='fr'?', échec':', check');  // coup PUIS échec
   setStatus('🔊 '+aiMsg,'ai');
   if(st.over){
@@ -5200,8 +5230,12 @@ let pendingSpeech = null;
 
 // ── GESTION DES VOIX ──────────────────────────
 let availableVoices = [];
-let selectedVoiceURI = '';
+let selectedVoiceURI = '';   // (ancienne préférence, conservée pour compat)
+let voiceMeURI = '';         // voix du joueur
+let voiceAiURI = '';         // voix de l'IA
 try { selectedVoiceURI = localStorage.getItem('dysc_voice') || ''; } catch(e){}
+try { voiceMeURI = localStorage.getItem('dysc_voice_me') || selectedVoiceURI || ''; } catch(e){}
+try { voiceAiURI = localStorage.getItem('dysc_voice_ai') || ''; } catch(e){}
 
 function loadVoices(){
   if(!window.speechSynthesis) return;
@@ -5220,22 +5254,24 @@ function getVoicesForLang(){
 }
 
 // Choisit une voix selon QUI parle : 'me' (le joueur) ou 'ai' (l'adversaire).
-// Le joueur garde la voix choisie/par défaut ; l'IA prend une AUTRE voix de la
-// même langue, pour qu'on distingue à l'oreille qui vient de jouer.
+// Chaque rôle a sa propre voix réglable dans les préférences. À défaut de
+// réglage, on prend deux voix différentes de la langue pour les distinguer.
 function getVoiceFor(who){
   if(!availableVoices.length) return null;
   const list = getVoicesForLang();
   if(!list.length) return null;
-  // Voix du joueur = celle choisie dans les réglages, sinon la 1re
-  let myVoice = null;
-  if(selectedVoiceURI) myVoice = availableVoices.find(v => v.voiceURI === selectedVoiceURI) || null;
-  if(!myVoice) myVoice = list[0];
+  const byURI = (uri)=> uri ? availableVoices.find(v => v.voiceURI === uri) : null;
   if(who==='ai'){
-    // Une voix différente de celle du joueur (la suivante dans la liste)
-    const other = list.find(v => v.voiceURI !== myVoice.voiceURI);
-    return other || myVoice; // s'il n'y a qu'une seule voix dispo, on réutilise la même
+    let v = byURI(voiceAiURI);
+    if(v) return v;
+    // pas de réglage IA → une voix différente de celle du joueur
+    const mine = byURI(voiceMeURI) || list[0];
+    return list.find(x => x.voiceURI !== mine.voiceURI) || mine;
   }
-  return myVoice;
+  // joueur
+  let v = byURI(voiceMeURI);
+  if(v) return v;
+  return list[0];
 }
 
 function getSelectedVoice(){
@@ -5249,15 +5285,18 @@ function getSelectedVoice(){
   return list[0] || null;
 }
 
-function setVoice(uri){
-  selectedVoiceURI = uri;
-  try { localStorage.setItem('dysc_voice', uri); } catch(e){}
+function setVoiceMe(uri){
+  voiceMeURI = uri;
+  try { localStorage.setItem('dysc_voice_me', uri); } catch(e){}
+}
+function setVoiceAi(uri){
+  voiceAiURI = uri;
+  try { localStorage.setItem('dysc_voice_ai', uri); } catch(e){}
 }
 
-function buildVoiceSelector(){
-  const sel = document.getElementById('voiceSelect');
-  if(!sel) return;
-  const list = getVoicesForLang();
+// Construit la liste d'options (max 5 voix FR) pour un <select> donné
+function _fillVoiceOptions(sel, currentURI, autoFallback){
+  const list = getVoicesForLang().slice(0, 5); // on propose jusqu'à 5 voix
   sel.innerHTML = '';
   if(!list.length){
     const o = document.createElement('option');
@@ -5265,23 +5304,41 @@ function buildVoiceSelector(){
     sel.appendChild(o);
     return;
   }
+  if(autoFallback){
+    const o = document.createElement('option');
+    o.value = '';
+    o.textContent = 'Automatique (voix différente)';
+    if(!currentURI) o.selected = true;
+    sel.appendChild(o);
+  }
   list.forEach(v => {
     const o = document.createElement('option');
     o.value = v.voiceURI;
-    // Nom lisible : "Google français" → garde tel quel, ajoute drapeau
     o.textContent = v.name + (v.localService===false ? ' ☁️' : '');
-    if(v.voiceURI === selectedVoiceURI) o.selected = true;
+    if(v.voiceURI === currentURI) o.selected = true;
     sel.appendChild(o);
   });
 }
 
-function testVoice(){
+function buildVoiceSelector(){
+  const selMe = document.getElementById('voiceSelectMe');
+  if(selMe) _fillVoiceOptions(selMe, voiceMeURI, false);
+  const selAi = document.getElementById('voiceSelectAi');
+  if(selAi) _fillVoiceOptions(selAi, voiceAiURI, true);
+  // compat : ancien sélecteur unique s'il existe encore
+  const selOld = document.getElementById('voiceSelect');
+  if(selOld) _fillVoiceOptions(selOld, voiceMeURI, false);
+}
+
+function testVoice(who){
   const phrases = currentLang==='fr'
-    ? ['Cavalier f3. À vous de jouer !', 'Échec au roi !', 'Le fou prend en c4.', 'Bien joué, partie serrée.']
-    : ['Knight f3. Your move!', 'Check!', 'Bishop takes c4.', 'Well played, close game.'];
+    ? ['Cavalier f3', 'Échec au roi', 'Fou prend c4', 'Dame e5', 'Petit roque']
+    : ['Knight f3', 'Check', 'Bishop takes c4', 'Queen e5', 'Kingside castle'];
   const t = phrases[Math.floor(Math.random()*phrases.length)];
   userInteracted = true; // l'utilisateur vient de cliquer
-  speak(t);
+  // On force gameActive le temps du test (speak l'exige), puis on restaure
+  const _wasActive = gameActive; gameActive = true;
+  speak(t, ()=>{ gameActive = _wasActive; }, who||'me');
 }
 
 function updateSpeakerBtn(){
