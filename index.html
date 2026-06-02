@@ -3362,12 +3362,8 @@ function makeMove(fr,fc,tr,tc,castleType,promo,byVoice){
   renderBoard();updateSidebar();
   const st=checkGameState();
   try{ if(st.over) playSound('end'); else if(st.check) playSound('check'); else if(castleType) playSound('castle'); else if(_isCap) playSound('capture'); else playSound('move'); }catch(e){}
-  // Annonce : le coup D'ABORD, puis « échec » si échec simple
+  // Annonce : le coup joué (sans « Vous jouez » : redondant, le joueur sait ce qu'il vient de dire)
   let say = humanSpoken;
-  // Coup joué À LA VOIX → confirmation explicite de ce qui a été compris (annulable par « annule »/« non »)
-  if(byVoice && humanSpoken){
-    say = (currentLang==='fr'?'Vous jouez ':'You play ') + humanSpoken;
-  }
   if(st.check && !st.over) say = (say||'') + (currentLang==='fr'?', échec':', check');
   if(st.over){
     if(say) speak(say, ()=>{ if(st.msg) speak(st.msg); });   // coup PUIS message de fin
