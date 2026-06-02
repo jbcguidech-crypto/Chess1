@@ -2734,6 +2734,23 @@ function initStockfish(){
         if(line.startsWith('bestmove')){
           // Si c'était une analyse pour la jauge, ne pas jouer le coup
           if(_evalMode){ _evalMode=false; return; }
+          // Si c'était un indice : on annonce le coup, on ne le joue pas
+          if(_hintMode){
+            _hintMode=false;
+            const mv = line.split(' ')[1];
+            if(mv && mv.length>=4){
+              const f='abcdefgh';
+              const fr=8-parseInt(mv[1]),fc=f.indexOf(mv[0]),tr=8-parseInt(mv[3]),tc=f.indexOf(mv[2]);
+              try{
+                const pc=board[fr][fc];
+                const spoken = (typeof toSpeech==='function' && pc) ? toSpeech(fr,fc,tr,tc,pc,board[tr][tc],null) : (mv.slice(0,2)+' '+mv.slice(2,4));
+                _voiceSay((currentLang==='fr'?'Suggestion : ':'Suggestion: ')+spoken);
+                // surbrillance visuelle de la pièce conseillée
+                selected=[fr,fc]; possibleMoves=legalMoves(fr,fc); renderBoard();
+              }catch(e){ _voiceSay((currentLang==='fr'?'Suggestion : ':'Suggestion: ')+mv); }
+            }
+            return;
+          }
           let mv = line.split(' ')[1];
           // Choix pondéré parmi les candidats (variété + naturel selon l'Elo)
           const chosen = _pickHumanMove();
@@ -3359,6 +3376,8 @@ function tryExecutePremove(){
   }
 }
 let _evalMode = false;        // true quand Stockfish analyse pour la jauge (pas pour jouer)
+let _hintMode = false;        // true quand Stockfish calcule un indice (à annoncer, pas à jouer)
+let _pendingAmbiguous = null; // coup ambigu en attente de désambiguïsation parlée
 let _lastEvalCp = 0;          // dernier score en centipions, du point de vue des Blancs
 
 // Parse une ligne "info ... score cp X" ou "score mate Y" (du point de vue du trait)
@@ -4050,6 +4069,7 @@ function startListening(){
     // Si l'IA parle, on IGNORE TOUT (le micro pourrait capter sa voix → faux coup)
     if(aiSpeaking){ return; }
     // Pendant le tour de l'IA ou juste après un coup : on N'ÉCOUTE QUE l'annulation
+    // et les commandes informatives/de contrôle (état, indice, abandon, aide…).
     const aiBusy = (gameMode==='ai' && turn!==playerColor);
     if(aiBusy || moveJustPlayed){
       for(const raw of candidates){
@@ -4062,19 +4082,28 @@ function startListening(){
           executeVoiceAction(a, true);
           return;
         }
+        // Commandes informatives / de contrôle autorisées même quand l'IA réfléchit
+        if(a && (a.kind==='state' || a.kind==='resign' || a.kind==='newgame')){
+          executeVoiceAction(a, true);
+          return;
+        }
       }
       return;
     }
     for(const raw of candidates){
       const cleaned = raw.replace(WAKE,'').trim() || raw;
+      // Désambiguïsation parlée : si un coup ambigu attend, on tente de le résoudre
+      if(anyFinal && _pendingAmbiguous && _tryResolveAmbiguous(cleaned)){
+        moveJustPlayed = true; setTimeout(()=>{ moveJustPlayed=false; }, 1200);
+        return;
+      }
       const act = parseVoiceToAction(cleaned);
       // On ne JOUE un coup que sur un résultat FINAL (quand l'utilisateur a fini de parler).
       // Les résultats intermédiaires ne servent qu'à l'affichage → évite les coups parasites.
-      if(anyFinal && act && (act.kind==='move' || act.kind==='castle' || act.kind==='reset')){
-        moveJustPlayed = true;
+      if(anyFinal && act && (act.kind==='move' || act.kind==='castle' || act.kind==='reset' || act.kind==='resign' || act.kind==='newgame' || act.kind==='state' || act.kind==='hint')){
+        if(act.kind==='move'||act.kind==='castle'||act.kind==='reset'){ moveJustPlayed = true; setTimeout(()=>{ moveJustPlayed = false; }, 1200); }
+        _pendingAmbiguous = null; // un nouveau coup annule l'ambiguïté précédente
         executeVoiceAction(act, true);
-        // Réautorise après un court instant (le temps que l'IA réponde / nouvelle phrase)
-        setTimeout(()=>{ moveJustPlayed = false; }, 1200);
         return;
       }
     }
@@ -4530,10 +4559,11 @@ function parseVoiceToAction(text){
   // 1) Strict sur le texte CORRIGÉ phonétiquement (canonise les noms de pièce : caval→cavalier…)
   const phon = phoneticNormalize(text);
   let act = _parseStrict(phon);
-  if(act.kind==='move' || act.kind==='castle' || act.kind==='reset' || act.kind==='undo') return act;
+  const CMD = (k)=> ['move','castle','reset','undo','resign','newgame','state','hint'].includes(k);
+  if(CMD(act.kind)) return act;
   // 2) Strict sur le texte brut (au cas où la normalisation aurait trop simplifié)
   const actRaw = _parseStrict(text);
-  if(actRaw.kind==='move' || actRaw.kind==='castle' || actRaw.kind==='reset' || actRaw.kind==='undo') return actRaw;
+  if(CMD(actRaw.kind)) return actRaw;
   if(act.kind==='none' && actRaw.kind!=='none') act = actRaw;
   // 3) Appariement flou contre les coups légaux (adjacence + nom de pièce)
   const fz = fuzzyMatchMove(text);
@@ -4544,6 +4574,28 @@ function parseVoiceToAction(text){
 function _parseStrict(text){
   // PARSEUR PUR — renvoie une action sans aucun effet de bord (pour tester en silence)
   if(!text) return {kind:'none'};
+  const _n = ' '+text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')+' ';
+  // ── COMMANDES VOCALES GÉNÉRALES (pilotage mains-libres) ──
+  // Abandonner
+  if(/\b(abandonne|abandonner|abandon|je perds|je me rends|i resign|resign|give up)\b/.test(_n)) return {kind:'resign'};
+  // Nouvelle partie (avec niveau éventuel : "nouvelle partie contre 1500")
+  if(/\b(nouvelle partie|recommence|recommencer|rejouer|rejoue|new game|restart|reset)\b/.test(_n)){
+    const lvl = _n.match(/\b(\d{3,4})\b/);
+    return {kind:'newgame', elo: lvl ? parseInt(lvl[1]) : null};
+  }
+  // Répéter / décrire la position
+  if(/\b(repete|repeter|repete la position|la position|ou en est|ou en sommes|etat|situation|describe|repeat|position)\b/.test(_n)) return {kind:'state', what:'position'};
+  // Suis-je en échec ?
+  if(/\b(echec|en echec|suis je en echec|am i in check|in check)\b/.test(_n) && !/echec et mat|mat/.test(_n)) return {kind:'state', what:'check'};
+  // Quel est le dernier coup ?
+  if(/\b(dernier coup|qu a joue|qu as tu joue|qu a t il joue|last move|what did|adversaire a joue)\b/.test(_n)) return {kind:'state', what:'last'};
+  // À qui le tour ?
+  if(/\b(a qui le tour|a qui de jouer|c est a qui|whose turn|my turn)\b/.test(_n)) return {kind:'state', what:'turn'};
+  // Aide vocale
+  if(/\b(aide|aidez moi|que puis je dire|commandes|help|what can i say)\b/.test(_n)) return {kind:'state', what:'help'};
+  // Indice / suggestion
+  if(/\b(indice|conseil|suggestion|quel coup|aide moi a jouer|hint|suggest)\b/.test(_n)) return {kind:'hint'};
+
   if(text.includes(L().new_game)||text.includes(L().resign)) return {kind:'reset'};
   // Annulation du dernier coup
   {
@@ -4659,33 +4711,82 @@ function processVoice(text){
 
 // Exécute une action de parseVoiceToAction. verbose=true → messages d'état.
 // Renvoie true si un coup/roque/reset a été joué.
+// Tente de résoudre un coup ambigu en attente avec une réponse courte du joueur
+// (ex: "g", "g1", "celui en g", "le 4", "premier")
+function _tryResolveAmbiguous(rawText){
+  if(!_pendingAmbiguous || !_pendingAmbiguous.candidates) return false;
+  const t = ' '+rawText.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')+' ';
+  const cands = _pendingAmbiguous.candidates;
+  const files={a:0,b:1,c:2,d:3,e:4,f:5,g:6,h:7};
+  let match = null;
+  // 1) Case complète de départ mentionnée ("g1")
+  const sq = t.match(/\b([a-h])\s*([1-8])\b/);
+  if(sq){ const fc=files[sq[1]], fr=8-parseInt(sq[2]); match = cands.find(c=>c.fr===fr&&c.fc===fc); }
+  // 2) Colonne seule ("g", "en g", "colonne g")
+  if(!match){
+    const col = t.match(/\b(?:colonne\s+|en\s+|le\s+|celui\s+(?:en|de)\s+)?([a-h])\b/);
+    if(col){ const fc=files[col[1]]; const m=cands.filter(c=>c.fc===fc); if(m.length===1) match=m[0]; }
+  }
+  // 3) Rangée seule ("le 1", "rangée 1", "celui en 1") — utile si même colonne
+  if(!match){
+    const row = t.match(/\b(?:rangee\s+|ligne\s+|le\s+|celui\s+(?:en|de)\s+)?([1-8])\b/);
+    if(row){ const fr=8-parseInt(row[1]); const m=cands.filter(c=>c.fr===fr); if(m.length===1) match=m[0]; }
+  }
+  // 4) "premier" / "deuxième"
+  if(!match){
+    if(/\bpremier\b/.test(t) && cands[0]) match=cands[0];
+    else if(/\b(deuxieme|second)\b/.test(t) && cands[1]) match=cands[1];
+  }
+  if(match){
+    const pm = _pendingAmbiguous; _pendingAmbiguous=null;
+    makeMove(match.fr, match.fc, match.tr, match.tc, null, (match.mv&&match.mv[2])||null);
+    return true;
+  }
+  return false;
+}
+
 function executeVoiceAction(act, verbose){
   if(!act) return false;
   switch(act.kind){
     case 'reset': resetGame(); return true;
     case 'undo': undoMove(); return true;
     case 'castle': trycastling(act.side); return true;
+    case 'resign':
+      if(typeof confirmQuit==='function'){ /* abandon direct */ }
+      _voiceSay(currentLang==='fr'?'Vous abandonnez. Nouvelle partie ?':'You resign. New game?');
+      try{ gameActive=false; }catch(e){}
+      if(typeof showSplash==='function') setTimeout(showSplash, 1800);
+      return true;
+    case 'newgame': {
+      if(act.elo){ try{ currentElo=Math.max(400,Math.min(3000,act.elo)); userProfile.elo=currentElo; }catch(e){} }
+      resetGame();
+      _voiceSay(currentLang==='fr'
+        ? ('Nouvelle partie'+(act.elo?(' contre niveau '+act.elo):'')+'. À vous de jouer.')
+        : ('New game'+(act.elo?(' versus '+act.elo):'')+'. Your move.'));
+      return true;
+    }
+    case 'hint': _voiceHint(); return true;
+    case 'state': _voiceState(act.what); return true;
     case 'move':
       if(verbose) setStatus((currentLang==='fr'?'✓ Joué en ':'✓ Played to ')+String.fromCharCode(97+act.tc)+(8-act.tr),'success');
       makeMove(act.fr,act.fc,act.tr,act.tc,null,act.promo);
       return true;
     case 'ambiguous': {
-      if(verbose){
-        const names = {K:currentLang==='fr'?'Roi':'King',Q:currentLang==='fr'?'Dame':'Queen',R:currentLang==='fr'?'Tour':'Rook',B:currentLang==='fr'?'Fou':'Bishop',N:currentLang==='fr'?'Cavalier':'Knight',P:currentLang==='fr'?'Pion':'Pawn'};
-        const pieceName = names[act.pieceType];
-        const sq = String.fromCharCode(97+act.tc)+(8-act.tr);
-        // Si toutes les pièces sont sur la même colonne, désambiguïser par la rangée (chiffre)
-        const fcs = act.candidates.map(c=>c.fc);
-        const sameCol = fcs.every(f=>f===fcs[0]);
-        const ex = act.candidates[0];
-        const hint = sameCol ? (8-ex.fr) : String.fromCharCode(97+ex.fc);
-        const list = sameCol
-          ? act.candidates.map(c=>String.fromCharCode(97+c.fc)+(8-c.fr)).join(', ')
-          : act.candidates.map(c=>String.fromCharCode(97+c.fc)).join(', ');
-        setStatus((currentLang==='fr'
-          ? 'Ambiguïté ('+list+') — dites par ex. « '+pieceName+' '+hint+' '+sq+' »'
-          : 'Ambiguous ('+list+') — say e.g. "'+pieceName+' '+hint+' '+sq+'"'),'error');
-      }
+      // Mémorise les candidats pour permettre une désambiguïsation PARLÉE au tour suivant
+      _pendingAmbiguous = act;
+      const names = {K:currentLang==='fr'?'Roi':'King',Q:currentLang==='fr'?'Dame':'Queen',R:currentLang==='fr'?'Tour':'Rook',B:currentLang==='fr'?'Fou':'Bishop',N:currentLang==='fr'?'Cavalier':'Knight',P:currentLang==='fr'?'Pion':'Pawn'};
+      const pieceName = names[act.pieceType];
+      const sq = String.fromCharCode(97+act.tc)+(8-act.tr);
+      const fcs = act.candidates.map(c=>c.fc);
+      const sameCol = fcs.every(f=>f===fcs[0]);
+      const list = sameCol
+        ? act.candidates.map(c=>(8-c.fr)).join(' ou ')
+        : act.candidates.map(c=>String.fromCharCode(97+c.fc)).join(' ou ');
+      const q = currentLang==='fr'
+        ? ('Quel '+pieceName.toLowerCase()+' vers '+sq+' ? Celui en '+list+' ?')
+        : ('Which '+pieceName.toLowerCase()+' to '+sq+'? The one on '+list+'?');
+      if(verbose) setStatus(q,'error');
+      _voiceSay(q);
       return false;
     }
     case 'nopiece':
@@ -4698,6 +4799,77 @@ function executeVoiceAction(act, verbose){
       if(verbose) setStatus((currentLang==='fr'?'Pas compris — essayez "e4" ou "cavalier f3"':'Not understood — try "e4" or "knight f3"'),'error');
       return false;
   }
+}
+
+// Énonce un texte à la voix (réutilise speak si dispo)
+function _voiceSay(txt){
+  try{ setStatus('🔊 '+txt, 'ai'); }catch(e){}
+  try{ if(typeof speak==='function') speak(txt); }catch(e){}
+}
+
+// Décrit l'état du jeu à la voix (mains-libres)
+function _voiceState(what){
+  const colName = (turn==='w') ? (currentLang==='fr'?'aux blancs':'White') : (currentLang==='fr'?'aux noirs':'Black');
+  if(what==='turn'){
+    _voiceSay(currentLang==='fr'?('C\'est '+colName+' de jouer.'):('It is '+colName+' to move.'));
+    return;
+  }
+  if(what==='check'){
+    const inCk = isInCheck(board, turn);
+    _voiceSay(inCk ? (currentLang==='fr'?'Oui, vous êtes en échec.':'Yes, you are in check.')
+                   : (currentLang==='fr'?'Non, pas d\'échec.':'No, no check.'));
+    return;
+  }
+  if(what==='last'){
+    const last = history.length ? history[history.length-1] : null;
+    if(last && last.spoken) _voiceSay((currentLang==='fr'?'Dernier coup : ':'Last move: ')+last.spoken);
+    else if(last) _voiceSay((currentLang==='fr'?'Dernier coup : ':'Last move: ')+last.move);
+    else _voiceSay(currentLang==='fr'?'Aucun coup joué.':'No move played yet.');
+    return;
+  }
+  if(what==='help'){
+    _voiceSay(currentLang==='fr'
+      ? 'Dites un coup comme « e4 » ou « cavalier f3 ». Vous pouvez dire : annule, indice, abandonne, nouvelle partie, suis-je en échec, dernier coup, ou répète la position.'
+      : 'Say a move like "e4" or "knight f3". You can also say: undo, hint, resign, new game, am I in check, last move, or repeat the position.');
+    return;
+  }
+  // what==='position' → décrit la position pièce par pièce (résumé)
+  _voiceDescribePosition();
+}
+
+// Décrit la position : compte et localise les pièces de chaque camp (résumé parlé)
+function _voiceDescribePosition(){
+  const names={K:'roi',Q:'dame',R:'tour',B:'fou',N:'cavalier',P:'pion'};
+  const namesEn={K:'king',Q:'queen',R:'rook',B:'bishop',N:'knight',P:'pawn'};
+  function describe(col){
+    const groups={};
+    for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+      const p=board[r][c]; if(p&&color(p)===col){ const t=type(p); (groups[t]=groups[t]||[]).push(String.fromCharCode(97+c)+(8-r)); }
+    }
+    const order=['K','Q','R','B','N','P']; const parts=[];
+    for(const t of order){ if(groups[t]&&groups[t].length){
+      const nm=(currentLang==='fr'?names:namesEn)[t];
+      parts.push(groups[t].length+' '+nm+(groups[t].length>1?(currentLang==='fr'?'s':'s'):'')+' en '+groups[t].join(', '));
+    }}
+    return parts.join(' ; ');
+  }
+  const meCol = (gameMode==='online') ? onlineColor : (gameMode==='ai' ? playerColor : turn);
+  const oppCol = meCol==='w'?'b':'w';
+  const txt = (currentLang==='fr'
+    ? ('Vos pièces : '+describe(meCol)+'. Adversaire : '+describe(oppCol)+'.')
+    : ('Your pieces: '+describe(meCol)+'. Opponent: '+describe(oppCol)+'.'));
+  _voiceSay(txt);
+}
+
+// Donne un indice via Stockfish (le meilleur coup), annoncé à la voix
+function _voiceHint(){
+  if(!stockfish || !sfReady){ _voiceSay(currentLang==='fr'?'Moteur non prêt.':'Engine not ready.'); return; }
+  if(gameMode==='ai' && turn!==playerColor){ _voiceSay(currentLang==='fr'?'Patientez, ce n\'est pas votre tour.':'Wait, not your turn.'); return; }
+  _hintMode = true;
+  try{
+    stockfish.postMessage('position fen ' + boardToFen());
+    stockfish.postMessage('go depth 12');
+  }catch(e){ _hintMode=false; }
 }
 function trycastling(side){const row=turn==='w'?7:0,tc=side==='k'?6:2;const piece=board[row][4];if(!piece||type(piece)!=='K'||color(piece)!==turn){setStatus(L().castling_fail,'error');return;}const mv=legalMoves(row,4).find(([mr,mc])=>mr===row&&mc===tc);if(!mv){setStatus(L().castling_fail,'error');return;}setStatus(L().castling_ok,'success');makeMove(row,4,row,tc,mv[2]);}
 function setStatus(msg,cls){const el=document.getElementById('status');el.textContent=msg;el.className=cls||'';}
