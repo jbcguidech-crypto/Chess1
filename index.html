@@ -2410,6 +2410,44 @@ function showToast(msg, type) {
 
 // ===== STOCKFISH =====
 let stockfish=null, sfDepth=10, gameMode='ai', aiThinking=false;
+// MultiPV : coups candidats collectés pendant la réflexion (index 1 = meilleur)
+let _pvCandidates = {};
+let _multipvCount = 1;
+
+// Combien de coups candidats demander selon l'Elo (plus bas = plus de variété/erreurs)
+function _multipvForElo(elo){
+  if(elo <= 800)  return 4;
+  if(elo <= 1500) return 3;
+  if(elo <= 2000) return 2;
+  return 1; // haut niveau : on veut le meilleur coup
+}
+
+// Choisit un coup parmi les candidats avec un hasard pondéré dépendant de l'Elo.
+// Haut Elo → quasi toujours le meilleur. Bas Elo → variété + erreurs réalistes.
+function _pickHumanMove(){
+  const ranks = Object.keys(_pvCandidates).map(Number).sort((a,b)=>a-b);
+  if(!ranks.length) return null;
+  const cands = ranks.map(r=>_pvCandidates[r]).filter(Boolean);
+  if(cands.length<=1) return cands[0] ? cands[0].move : null;
+  const elo = currentElo;
+  // "Température" (centipions) : plus l'Elo est bas, plus on tolère des coups sous-optimaux
+  let tau;
+  if(elo <= 800)       tau = 120;
+  else if(elo <= 1200) tau = 80;
+  else if(elo <= 1600) tau = 50;
+  else if(elo <= 2000) tau = 30;
+  else                 tau = 12;
+  const best = cands[0].cp;
+  // Poids = exp(-perte/tau) : le meilleur coup a poids 1, les autres décroissent
+  const weights = cands.map(c => Math.exp(-Math.max(0, best - c.cp)/tau));
+  const total = weights.reduce((a,b)=>a+b,0);
+  let rnd = Math.random()*total;
+  for(let i=0;i<cands.length;i++){
+    rnd -= weights[i];
+    if(rnd <= 0) return cands[i].move;
+  }
+  return cands[0].move;
+}
 
 let sfReady = false;
 
@@ -2585,7 +2623,7 @@ function initStockfish(){
           loaded = true; sfReady = true; clearTimeout(timer);
           stockfish = worker;
           // Optimisations vitesse
-          worker.postMessage('setoption name Hash value 128');
+          worker.postMessage('setoption name Hash value 256');
           if(isolated){
             const nThreads = Math.max(1, Math.min(4, (navigator.hardwareConcurrency||2)-1));
             worker.postMessage('setoption name Threads value '+nThreads);
@@ -2597,11 +2635,25 @@ function initStockfish(){
         // Capte le score d'évaluation (pour la jauge) — lignes "info ... score cp/mate ..."
         if(line.startsWith('info') && line.includes('score')){
           _parseEvalLine(line);
+          // Collecte les coups candidats (MultiPV) — sauf en mode analyse de jauge
+          if(!_evalMode && line.includes('multipv') && line.includes(' pv ')){
+            const mpv = line.match(/multipv (\d+)/);
+            const sc  = line.match(/score (cp|mate) (-?\d+)/);
+            const pv  = line.match(/ pv ([a-h][1-8][a-h][1-8][qrbn]?)/);
+            if(mpv && sc && pv){
+              const rank = parseInt(mpv[1]);
+              let cp = (sc[1]==='mate') ? (parseInt(sc[2])>0 ? 100000 - parseInt(sc[2]) : -100000 - parseInt(sc[2])) : parseInt(sc[2]);
+              _pvCandidates[rank] = { move: pv[1], cp: cp };
+            }
+          }
         }
         if(line.startsWith('bestmove')){
           // Si c'était une analyse pour la jauge, ne pas jouer le coup
           if(_evalMode){ _evalMode=false; return; }
-          const mv = line.split(' ')[1];
+          let mv = line.split(' ')[1];
+          // Choix pondéré parmi les candidats (variété + naturel selon l'Elo)
+          const chosen = _pickHumanMove();
+          if(chosen) mv = chosen;
           if(mv && mv!=='(none)' && mv.length>=4) applyStockfishMove(mv);
           aiThinking = false;
           document.getElementById('aiSpinner').classList.remove('show');
@@ -2673,6 +2725,13 @@ function askStockfish(){
   document.getElementById('aiSpinner').classList.add('show');
   document.getElementById('voiceBtn').disabled=true;
   configureStockfishStrength();
+  // MultiPV : on demande plusieurs coups candidats pour varier le jeu (anti-répétition)
+  _pvCandidates = {};
+  const wantPV = _multipvForElo(currentElo);
+  if(wantPV !== _multipvCount){
+    stockfish.postMessage('setoption name MultiPV value '+wantPV);
+    _multipvCount = wantPV;
+  }
   stockfish.postMessage('position fen '+boardToFen());
   const moveTime = eloToTime(currentElo);
   // Jeu rapide : on limite UNIQUEMENT par le temps (pas la profondeur)
@@ -3108,6 +3167,7 @@ function requestEvalUpdate(){
   if(gameMode==='ai' && turn!==playerColor) return; // c'est à l'IA, son analyse servira
   try{
     _evalMode = true;
+    if(_multipvCount !== 1){ stockfish.postMessage('setoption name MultiPV value 1'); _multipvCount = 1; }
     stockfish.postMessage('position fen ' + boardToFen());
     stockfish.postMessage('go depth 10');
   }catch(e){ _evalMode=false; }
