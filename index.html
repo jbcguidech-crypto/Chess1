@@ -3528,8 +3528,25 @@ function _attachBoardPointer(boardEl){
   if(boardEl._pointerBound) return; // une seule fois
   boardEl._pointerBound = true;
 
+  // Annule un glissement/sélection en cours et remet la pièce à sa place
+  function _cancelDrag(){
+    if(_dragState){
+      if(_dragState.ghost && _dragState.ghost.parentNode) _dragState.ghost.parentNode.removeChild(_dragState.ghost);
+      if(_dragState.srcPiece) _dragState.srcPiece.style.opacity='';
+      _dragState=null;
+    }
+    selected=null; possibleMoves=[];
+    renderBoard();
+  }
+
   boardEl.addEventListener('pointerdown', (ev)=>{
-    if(ev.button && ev.button!==0) return; // clic droit ignoré
+    // Clic droit (ou bouton du milieu) → annule le coup en préparation
+    if(ev.button===2 || ev.button===1){
+      ev.preventDefault();
+      _cancelDrag();
+      return;
+    }
+    if(ev.button && ev.button!==0) return; // autres boutons ignorés
     const hit = _cellFromPoint(ev.clientX, ev.clientY);
     if(!hit) return;
     // Conditions de jeu (mêmes garde-fous que handleClick)
@@ -3552,6 +3569,8 @@ function _attachBoardPointer(boardEl){
   });
   // Bloque le glisser-déposer natif des images (sinon, sur PC, il avale nos pointermove)
   boardEl.addEventListener('dragstart', (ev)=>{ ev.preventDefault(); });
+  // Bloque le menu contextuel sur l'échiquier (le clic droit sert à annuler)
+  boardEl.addEventListener('contextmenu', (ev)=>{ ev.preventDefault(); });
 
   boardEl.addEventListener('pointermove', (ev)=>{
     if(!_dragState) return;
@@ -3601,12 +3620,13 @@ function _attachBoardPointer(boardEl){
     handleClick(st.startR, st.startC);
   };
   boardEl.addEventListener('pointerup', endDrag);
-  boardEl.addEventListener('pointercancel', (ev)=>{
-    if(_dragState){
-      if(_dragState.ghost && _dragState.ghost.parentNode) _dragState.ghost.parentNode.removeChild(_dragState.ghost);
-      if(_dragState.srcPiece) _dragState.srcPiece.style.opacity='';
-      _dragState=null;
-    }
+  boardEl.addEventListener('pointercancel', ()=>{ _cancelDrag(); });
+  // Filet de sécurité : clic droit n'importe où pendant un glissement → annule
+  document.addEventListener('mousedown', (ev)=>{
+    if(ev.button===2 && _dragState){ ev.preventDefault(); _cancelDrag(); }
+  });
+  document.addEventListener('contextmenu', (ev)=>{
+    if(_dragState){ ev.preventDefault(); }
   });
 }
 
