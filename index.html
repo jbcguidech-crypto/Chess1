@@ -2645,8 +2645,11 @@ function updateSplashAuth(user) {
       ? `<span class="sa-ava"><img src="${user.photoURL}" alt=""></span>`
       : `<span class="sa-ava">👤</span>`;
     el.innerHTML = ava + `<span class="sa-txt">${name}</span>`;
-    el.title = 'Voir mon profil';
-    el.onclick = function(){ try { showProfile(); } catch(e){} };
+    el.title = 'Appuyer pour se déconnecter';
+    el.onclick = function(){
+      const ok = confirm('Se déconnecter de ce compte ?');
+      if(ok){ try { logoutGoogle(); } catch(e){} }
+    };
   } else {
     el.innerHTML = '🔑 Connexion / Inscription';
     el.title = 'Se connecter ou créer un compte';
@@ -4620,7 +4623,7 @@ const _PHON_FILES = {
   a:['a','ah','as','ha','at','â','ace'],
   b:['b','be','bee','bay','bi','bé','bébé','bébère','baie','bay'],
   c:['c','ce','ces','se','say','cee','ci','cé','c\'est','ces','sait','sais','session'],
-  d:['d','de','des','dey','di','dé','dés','dais','dée'],
+  d:['d','de','des','dey','di','dé','dés','dais','dée','der','dee','the','der','day','dette','daie','d\'','dei','dez','dais','dé2','t','té','tee','thé'],
   e:['e','eu','heu','euh','eux','é','ai','et','est','euuh'],
   f:['f','ef','eff','effe','aef','aiffe','effet','fe'],
   g:['g','ge','je','jee','gee','ze','gé','j','j\'ai','geai','jet']
@@ -4628,7 +4631,7 @@ const _PHON_FILES = {
 };
 const _PHON_RANKS = {
   '1':['1','un','une','hun','in','1er','premier','ain'],
-  '2':['2','deux','deu','do','d2','de'],
+  '2':['2','deux','deu','do','d2'],
   '3':['3','trois','troi','troie','troy','toi','troit'],
   '4':['4','quatre','quat','catre','quattro','cat','car','quatres','quart'],
   '5':['5','cinq','sink','sain','sin','saint','sinq','sank'],
@@ -4670,6 +4673,23 @@ function _phonTokens(text){
     .replace(/\bbebe\b/g,'b e')          // "bébé" → b + e? souvent "b6"; on laisse e mais souvent capté seul
     .replace(/\bcedez?\b/g,'c d')        // "cédez" → c d
     .replace(/\bachete\b/g,'h')          // "acheté" parfois pour "h"
+    // ── Cases en D : Chrome rend souvent "d + chiffre" comme un MOT entier ──
+    .replace(/\bdebat\b/g,'d 4')         // "débat" → d4
+    .replace(/\bdebats\b/g,'d 4')
+    .replace(/\bdetroit\b/g,'d 3')       // "détroit" → d3
+    .replace(/\bdecide\b/g,'d 6')        // "décide" → d6 (approx fréquent)
+    .replace(/\bdesse\b/g,'d 6')
+    .replace(/\bdes as\b/g,'d 1')        // "des as" → d1
+    .replace(/\bde un\b/g,'d 1')
+    .replace(/\bde deux\b/g,'d 2')
+    .replace(/\bde trois\b/g,'d 3')
+    .replace(/\bde quatre\b/g,'d 4')
+    .replace(/\bde cinq\b/g,'d 5')
+    .replace(/\bde six\b/g,'d 6')
+    .replace(/\bde sept\b/g,'d 7')
+    .replace(/\bde huit\b/g,'d 8')
+    .replace(/\bde\s+([1-8])\b/g,'d $1')  // "de 4" → d4 (le "de" suivi d'un chiffre = colonne D)
+    .replace(/\bthe\s+([1-8])\b/g,'d $1') // "the 4" (mauvaise capture) → d4
     .replace(/([a-z])\s*-\s*([0-9])/g,'$1 $2'); // "e-4" → "e 4"
   const words = raw.replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(Boolean);
   const out=[];
