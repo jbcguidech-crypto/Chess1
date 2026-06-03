@@ -1188,14 +1188,24 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 <body onclick="userInteracted=true;" ontouchstart="userInteracted=true;">
 
 <!-- Capteur d'erreur : affiche tout plantage JS au démarrage au lieu d'un écran vide -->
-<div id="__errbox" style="display:none;position:fixed;inset:0;z-index:999999;background:#1a1a1a;color:#ff6b6b;font:14px/1.5 monospace;padding:20px;overflow:auto;white-space:pre-wrap;"></div>
+<div id="__errbox" style="display:none;position:fixed;inset:0;z-index:999999;background:#1a1a1a;color:#ff6b6b;font:13px/1.5 monospace;padding:18px;overflow:auto;white-space:pre-wrap;"></div>
 <script>
-window.addEventListener('error', function(ev){
-  try{
-    var b=document.getElementById('__errbox');
-    if(b){ b.style.display='block'; b.textContent='⚠️ ERREUR JS :\n\n'+(ev.message||ev.error&&ev.error.message||'?')+'\n\nFichier : '+(ev.filename||'?')+'\nLigne : '+(ev.lineno||'?')+' col '+(ev.colno||'?')+'\n\n'+(ev.error&&ev.error.stack?ev.error.stack:''); }
-  }catch(e){}
-});
+(function(){
+  function showErr(title, msg, extra){
+    try{
+      var b=document.getElementById('__errbox');
+      if(b){ b.style.display='block'; b.textContent='⚠️ '+title+'\n\n'+(msg||'?')+'\n\n'+(extra||''); }
+    }catch(e){}
+  }
+  window.addEventListener('error', function(ev){
+    showErr('ERREUR JS', (ev.message||(ev.error&&ev.error.message)||'?'),
+      'Fichier : '+(ev.filename||'?')+'\nLigne : '+(ev.lineno||'?')+' col '+(ev.colno||'?')+'\n\n'+((ev.error&&ev.error.stack)||''));
+  });
+  window.addEventListener('unhandledrejection', function(ev){
+    var r=ev.reason;
+    showErr('PROMESSE REJETÉE', (r&&r.message)||String(r), (r&&r.stack)||'');
+  });
+})();
 </script>
 
 <!-- ══ FENÊTRE D'ACCUEIL : activation du pilotage vocal ══ -->
@@ -5564,6 +5574,7 @@ function setPlayerColor(color){
   // Choisir une couleur ici = jouer contre l'IA → on quitte tout mode en ligne
   if(gameMode==='online'){ try{ leaveOnlineGame(); }catch(e){} }
   gameMode='ai';
+  const _byId = (id)=>document.getElementById(id);
   if(color==='r'){
     // Aléatoire — tirage au sort
     const chosen = (Math.random() < 0.5) ? 'w' : 'b';
@@ -5571,25 +5582,23 @@ function setPlayerColor(color){
     const msg = chosen==='w'
       ? (currentLang==='fr'?'🎲 Vous jouez les Blancs !':'🎲 You play White!')
       : (currentLang==='fr'?'🎲 Vous jouez les Noirs !':'🎲 You play Black!');
-    // Flash animation sur le bouton aléatoire
-    const btn = document.getElementById('btnRandom');
-    btn.textContent = chosen==='w'?'🎲 ♙':'🎲 ♟';
-    setTimeout(()=>btn.textContent='🎲 Aléa', 2000);
-    document.getElementById('btnWhite').classList.toggle('active', chosen==='w');
-    document.getElementById('btnBlack').classList.toggle('active', chosen==='b');
-    document.getElementById('btnRandom').classList.add('active');
+    const btn = _byId('btnRandom');
+    if(btn){ btn.textContent = chosen==='w'?'🎲 ♙':'🎲 ♟'; setTimeout(()=>{ const b2=_byId('btnRandom'); if(b2) b2.textContent='🎲 Aléa'; }, 2000); }
+    _byId('btnWhite')?.classList.toggle('active', chosen==='w');
+    _byId('btnBlack')?.classList.toggle('active', chosen==='b');
+    _byId('btnRandom')?.classList.add('active');
     resetGame();
     setStatus(msg, 'success');
-    speak(msg);
+    speak(msg, null, 'me');
     if(gameMode==='ai' && chosen==='b') setTimeout(()=>askStockfish(), 600);
     enableMicAuto();
     return;
   }
   playerColor = color;
-  document.getElementById('btnWhite').classList.toggle('active', color==='w');
-  document.getElementById('btnBlack').classList.toggle('active', color==='b');
-  document.getElementById('btnRandom').classList.remove('active');
-  document.getElementById('btnRandom').textContent='🎲 Aléa';
+  _byId('btnWhite')?.classList.toggle('active', color==='w');
+  _byId('btnBlack')?.classList.toggle('active', color==='b');
+  _byId('btnRandom')?.classList.remove('active');
+  const br=_byId('btnRandom'); if(br) br.textContent='🎲 Aléa';
   resetGame();
   if(gameMode==='ai' && color==='b') setTimeout(()=>askStockfish(), 500);
   enableMicAuto();   // ← active le micro (démarre tout de suite si blanc, après le coup IA si noir)
