@@ -1276,7 +1276,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN16</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN17</div>
   <!-- Échiquier d'aperçu avec micro central pour activer la commande vocale -->
   <div class="splash-board-wrap">
     <div class="splash-mini-board" id="splashBoard"></div>
@@ -4405,8 +4405,6 @@ function startListening(){
     document.getElementById('voiceBtn').classList.add('listening');
     document.getElementById('voiceBtnText').textContent = voiceContinuous?'⏹ Stop':'🎙';
     setStatus(currentLang==='fr'?'🎙 Parlez maintenant…':'🎙 Speak now…', '');
-    const dbg=document.getElementById('debugVoice');
-    if(dbg){dbg.style.display='block';dbg.textContent='Lang: '+recognition.lang;}
   };
 
   recognition.onresult = (e) => {
