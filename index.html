@@ -2271,15 +2271,23 @@ function splashChooseColor(color) {
   playerColor = color;
   hideSplash();
   setTimeout(()=>{
-    // Sync with sidebar buttons
-    document.getElementById('btnWhite')?.classList.toggle('active', color==='w');
-    document.getElementById('btnBlack')?.classList.toggle('active', color==='b');
-    document.getElementById('btnRandom')?.classList.remove('active');
-    resetGame();          // ← NOUVELLE partie à chaque fois (plus de reprise de l'ancienne)
-    buildCoords();
-    renderBoard();
-    if(gameMode==='ai' && color==='b') setTimeout(()=>askStockfish(), 700);
-    enableMicAuto();
+    try{
+      // Sync with sidebar buttons
+      document.getElementById('btnWhite')?.classList.toggle('active', color==='w');
+      document.getElementById('btnBlack')?.classList.toggle('active', color==='b');
+      document.getElementById('btnRandom')?.classList.remove('active');
+      resetGame();          // ← NOUVELLE partie à chaque fois (plus de reprise de l'ancienne)
+      buildCoords();
+      renderBoard();
+      if(gameMode==='ai' && color==='b') setTimeout(()=>{ try{ askStockfish(); }catch(e){} }, 700);
+      enableMicAuto();
+    }catch(err){
+      // Affiche l'erreur au lieu d'un écran vide
+      try{
+        var b=document.getElementById('__errbox');
+        if(b){ b.style.display='block'; b.textContent='⚠️ ERREUR au démarrage de la partie :\n\n'+(err&&err.message||err)+'\n\n'+(err&&err.stack||''); }
+      }catch(e){}
+    }
   }, 700);
 }
 
@@ -5571,6 +5579,7 @@ function configureStockfishStrength(){
 }
 
 function setPlayerColor(color){
+ try{
   // Choisir une couleur ici = jouer contre l'IA → on quitte tout mode en ligne
   if(gameMode==='online'){ try{ leaveOnlineGame(); }catch(e){} }
   gameMode='ai';
@@ -5590,7 +5599,7 @@ function setPlayerColor(color){
     resetGame();
     setStatus(msg, 'success');
     speak(msg, null, 'me');
-    if(gameMode==='ai' && chosen==='b') setTimeout(()=>askStockfish(), 600);
+    if(gameMode==='ai' && chosen==='b') setTimeout(()=>{ try{ askStockfish(); }catch(e){} }, 600);
     enableMicAuto();
     return;
   }
@@ -5600,8 +5609,11 @@ function setPlayerColor(color){
   _byId('btnRandom')?.classList.remove('active');
   const br=_byId('btnRandom'); if(br) br.textContent='🎲 Aléa';
   resetGame();
-  if(gameMode==='ai' && color==='b') setTimeout(()=>askStockfish(), 500);
+  if(gameMode==='ai' && color==='b') setTimeout(()=>{ try{ askStockfish(); }catch(e){} }, 500);
   enableMicAuto();   // ← active le micro (démarre tout de suite si blanc, après le coup IA si noir)
+ }catch(err){
+  try{ var b=document.getElementById('__errbox'); if(b){ b.style.display='block'; b.textContent='⚠️ ERREUR setPlayerColor :\n\n'+(err&&err.message||err)+'\n\n'+(err&&err.stack||''); } }catch(e){}
+ }
 }
 
 function toggleModeCard(){
