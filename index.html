@@ -1217,7 +1217,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN3</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN5</div>
   <!-- Échiquier d'aperçu avec micro central pour activer la commande vocale -->
   <div class="splash-board-wrap">
     <div class="splash-mini-board" id="splashBoard"></div>
@@ -1311,50 +1311,26 @@ canvas#eloChart { width:100%!important;height:90px!important; }
             <div class="gloss-head">♟ Jouer un coup</div>
             <div class="gloss-row"><span class="gloss-ex">« e4 »</span><span class="gloss-desc">avancer un pion</span></div>
             <div class="gloss-row"><span class="gloss-ex">« cavalier f3 »</span><span class="gloss-desc">déplacer une pièce</span></div>
-            <div class="gloss-row"><span class="gloss-ex">« cavalier g f3 »</span><span class="gloss-desc">préciser la colonne de départ</span></div>
-            <div class="gloss-row"><span class="gloss-ex">« dame prend dame »</span><span class="gloss-desc">capture par type de pièce</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« dame prend dame »</span><span class="gloss-desc">capturer</span></div>
             <div class="gloss-row"><span class="gloss-ex">« petit roque » / « grand roque »</span><span class="gloss-desc">roquer</span></div>
-            <div class="gloss-row"><span class="gloss-ex">« promotion tour »</span><span class="gloss-desc">choisir la promotion</span></div>
           </div>
           <div class="gloss-group">
-            <div class="gloss-head">📻 Alphabet radio (pour les colonnes)</div>
-            <div class="gloss-row"><span class="gloss-ex">Alpha=a · Bravo=b · Charlie=c · Delta=d</span><span class="gloss-desc">dites « Delta 4 » pour d4</span></div>
-            <div class="gloss-row"><span class="gloss-ex">Echo=e · Foxtrot=f · Golf=g · Hotel=h</span><span class="gloss-desc">plus fiable que les lettres seules</span></div>
+            <div class="gloss-head">📻 Alphabet radio (colonnes a–h)</div>
+            <div class="gloss-row"><span class="gloss-ex">Alpha Bravo Charlie Delta</span><span class="gloss-desc">a · b · c · d</span></div>
+            <div class="gloss-row"><span class="gloss-ex">Echo Foxtrot Golf Hotel</span><span class="gloss-desc">e · f · g · h</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« Delta 4 » = d4</span><span class="gloss-desc">plus fiable que la lettre seule</span></div>
           </div>
           <div class="gloss-group">
-            <div class="gloss-head">↔ Si un coup est ambigu</div>
-            <div class="gloss-row"><span class="gloss-ex">« g » / « g1 » / « le premier »</span><span class="gloss-desc">choisir quelle pièce après la question</span></div>
+            <div class="gloss-head">🎮 Pendant la partie</div>
+            <div class="gloss-row"><span class="gloss-ex">« annule » / « non »</span><span class="gloss-desc">corriger si mal compris</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« indice »</span><span class="gloss-desc">suggestion de coup</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« dernier coup » / « à qui le tour ? »</span><span class="gloss-desc">infos sur la partie</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« nouvelle partie » / « menu »</span><span class="gloss-desc">recommencer / accueil</span></div>
           </div>
           <div class="gloss-group">
-            <div class="gloss-head">🎮 Contrôler la partie</div>
-            <div class="gloss-row"><span class="gloss-ex">« annule » / « non » / « c'est faux »</span><span class="gloss-desc">revenir en arrière si mal compris</span></div>
-            <div class="gloss-row"><span class="gloss-ex">« indice »</span><span class="gloss-desc">le moteur suggère un coup</span></div>
-            <div class="gloss-row"><span class="gloss-ex">« abandonne »</span><span class="gloss-desc">abandonner la partie</span></div>
-            <div class="gloss-row"><span class="gloss-ex">« nouvelle partie » / « ... aléatoire » / « contre 1500 »</span><span class="gloss-desc">recommencer (couleur au hasard, niveau au choix)</span></div>
-            <div class="gloss-row"><span class="gloss-ex">« menu »</span><span class="gloss-desc">retour à l'accueil</span></div>
-          </div>
-          <div class="gloss-group">
-            <div class="gloss-head">❓ Demander l'état du jeu</div>
-            <div class="gloss-row"><span class="gloss-ex">« suis-je en échec ? »</span><span class="gloss-desc">savoir si vous êtes en échec</span></div>
-            <div class="gloss-row"><span class="gloss-ex">« dernier coup »</span><span class="gloss-desc">répète le coup de l'adversaire</span></div>
-            <div class="gloss-row"><span class="gloss-ex">« à qui le tour ? »</span><span class="gloss-desc">savoir qui doit jouer</span></div>
-            <div class="gloss-row"><span class="gloss-ex">« répète la position »</span><span class="gloss-desc">énumère toutes les pièces</span></div>
-            <div class="gloss-row"><span class="gloss-ex">« aide »</span><span class="gloss-desc">liste les commandes</span></div>
-          </div>
-          <div class="gloss-group">
-            <div class="gloss-head">⏪ Revoir / affichage</div>
-            <div class="gloss-row"><span class="gloss-ex">« coup précédent » / « coup suivant »</span><span class="gloss-desc">naviguer dans la partie</span></div>
-            <div class="gloss-row"><span class="gloss-ex">« début » / « en direct »</span><span class="gloss-desc">aller au début / revenir au présent</span></div>
-            <div class="gloss-row"><span class="gloss-ex">« mode aveugle »</span><span class="gloss-desc">cacher / montrer les pièces</span></div>
-            <div class="gloss-row"><span class="gloss-ex">« coupe le son » / « active le son »</span><span class="gloss-desc">voix de l'IA</span></div>
-          </div>
-          <div class="gloss-group">
-            <div class="gloss-head">🏠 Depuis le menu d'accueil</div>
-            <div class="gloss-row"><span class="gloss-ex">« blanc » / « noir »</span><span class="gloss-desc">démarrer avec une couleur précise</span></div>
-            <div class="gloss-row"><span class="gloss-ex">« aléatoire » / « au hasard »</span><span class="gloss-desc">démarrer avec une couleur tirée au sort</span></div>
+            <div class="gloss-head">🏠 Depuis l'accueil</div>
+            <div class="gloss-row"><span class="gloss-ex">« blanc » / « noir » / « aléatoire »</span><span class="gloss-desc">démarrer une partie</span></div>
             <div class="gloss-row"><span class="gloss-ex">« niveau 1500 »</span><span class="gloss-desc">régler la difficulté</span></div>
-            <div class="gloss-row"><span class="gloss-ex">« jouer en ligne » / « créer une partie »</span><span class="gloss-desc">multijoueur</span></div>
-            <div class="gloss-row"><span class="gloss-ex">« personnaliser » / « mode sombre »</span><span class="gloss-desc">réglages et thème</span></div>
           </div>
         </div>
       </div>
@@ -1371,7 +1347,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     <div class="quit-text">Êtes-vous certain de vouloir abandonner la partie en cours et revenir à l'accueil ?</div>
     <div class="quit-btns">
       <button class="quit-btn quit-no" onclick="confirmQuit(false)">Continuer la partie</button>
-      <button class="quit-btn quit-yes" onclick="confirmQuit(true)">Abandonner</button>
+      <button class="quit-btn quit-yes" onclick="confirmQuit(true)">Quitter</button>
     </div>
   </div>
 </div>
@@ -4657,7 +4633,7 @@ const _PHON_FILES = {
   a:['a','ah','as','ha','at','â','ace','alpha','alfa'],
   b:['b','be','bee','bay','bi','bé','bébé','baie','bravo'],
   c:['c','ce','ces','se','say','cee','ci','cé','c\'est','sait','sais','charlie','charly'],
-  d:['d','de','des','dey','di','dé','dés','dais','dée','delta'],
+  d:['d','de','des','dey','di','dé','dés','dais','dée','delta','delkta','delta,','delto','deltat','dealta','daltas','delà','del'],
   e:['e','eu','heu','euh','eux','é','ai','et','est','echo','écho'],
   f:['f','ef','eff','effe','aef','effet','fe','foxtrot','fox'],
   g:['g','ge','je','jee','gee','ze','gé','j','geai','golf','golfe']
@@ -4668,7 +4644,7 @@ const _PHON_RANKS = {
   '2':['2','deux','deu','do'],
   '3':['3','trois','troi','troie','troy'],
   '4':['4','quatre','quat','catre','quattro'],
-  '5':['5','cinq','sink','sain','sin'],
+  '5':['5','cinq','sink','sain','sin','saint','sein','sank','sinq','cinque','sang','cinqu','5e'],
   '6':['6','six','sis','cisse','sisse'],
   '7':['7','sept','set','cet','cette'],
   '8':['8','huit','wit','uit','hui']
@@ -4703,6 +4679,9 @@ function _phonTokens(text){
   let raw = text.toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g,'');   // retire accents
   raw = raw
+    .replace(/\bdel\s+ta\b/g,'delta')      // "del ta" → delta (Chrome sépare parfois)
+    .replace(/\bfox\s+trot\b/g,'foxtrot')
+    .replace(/\bchar\s+lie\b/g,'charlie')
     .replace(/([a-z])\s*-\s*([0-9])/g,'$1 $2'); // "e-4" → "e 4"
   const words = raw.replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(Boolean);
   const out=[];
