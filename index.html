@@ -111,6 +111,12 @@ html[data-theme="light"] .nav-username { color:var(--text-muted); }
 .settings-toggle:hover { background:rgba(91,141,239,.2);transform:scale(1.08); }
 .settings-toggle:active { transform:scale(.94); }
 
+/* Dans la barre de nav de la page de jeu : alignement normal (pas absolu) + taille réduite */
+.nav-right .settings-toggle, .nav-right .theme-toggle {
+  position:static;top:auto;right:auto;
+  width:38px;height:38px;font-size:1.05rem;
+}
+
 /* Bouton connexion / inscription (sur le splash) */
 .splash-auth {
   position:absolute;top:20px;left:18px;z-index:20;
@@ -652,9 +658,11 @@ html[data-theme="dark"] .settings-preview img {
 }
 .smt-btn {
   flex:1;padding:9px;border-radius:50px;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:7px;
   font-family:'Manrope',system-ui,sans-serif;font-weight:700;font-size:.82rem;
   background:transparent;color:var(--text-muted);transition:all .15s;-webkit-tap-highlight-color:transparent;
 }
+.smt-ico { width:16px;height:16px;flex-shrink:0;opacity:.85; }
 .smt-btn.active { background:linear-gradient(180deg,#6ea0ff,#3a6fd8);color:#fff;box-shadow:0 2px 8px rgba(58,111,216,.4); }
 .splash-online-btn {
   margin-top:14px;width:100%;max-width:340px;padding:13px;border-radius:12px;cursor:pointer;
@@ -1269,7 +1277,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN8</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN10</div>
   <!-- Échiquier d'aperçu avec micro central pour activer la commande vocale -->
   <div class="splash-board-wrap">
     <div class="splash-mini-board" id="splashBoard"></div>
@@ -1293,8 +1301,8 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   </div>
   <!-- Choix du mode : vs IA ou 2 joueurs -->
   <div class="splash-mode-toggle" id="splashModeToggle">
-    <button class="smt-btn active" id="smtAI" onclick="setSplashMode('ai')">🤖 vs IA</button>
-    <button class="smt-btn" id="smt2P" onclick="setSplashMode('2p')">👥 2 joueurs</button>
+    <button class="smt-btn active" id="smtAI" onclick="setSplashMode('ai')"><svg class="smt-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="6" width="14" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h3M2 14h3M19 9h3M19 14h3"/><circle cx="10" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="14" cy="12" r="1.2" fill="currentColor" stroke="none"/></svg>vs IA</button>
+    <button class="smt-btn" id="smt2P" onclick="setSplashMode('2p')"><svg class="smt-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8.5" cy="8" r="2.6"/><circle cx="16" cy="9" r="2.2"/><path d="M3.5 19c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5M14 19c0-2 1-3.4 3-3.8"/></svg>2 joueurs</button>
   </div>
   <!-- Bouton configuration -->
   <div class="splash-btns" id="splashColorBtns">
@@ -1312,7 +1320,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     </button>
   </div>
   <!-- Bouton démarrer en mode 2 joueurs (caché par défaut) -->
-  <button class="splash-online-btn" id="splash2pStart" style="display:none;" onclick="splashStart2P()">👥 Commencer la partie à 2</button>
+  <button class="splash-online-btn" id="splash2pStart" style="display:none;" onclick="splashStart2P()">Commencer la partie à 2</button>
   <button class="splash-online-btn" onclick="openOnlineModal()">🌐 Jouer en ligne avec un ami</button>
   <div class="splash-voice-status" id="splashVoiceStatus"></div>
 </div>
@@ -1413,11 +1421,9 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 
 <nav class="nav">
   <div class="nav-logo nav-abandon" id="navLeft" onclick="goHome()" style="cursor:pointer;" title="Menu"><svg class="home-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-9"/></svg></div>
-  <div class="nav-center">
-    <button class="nav-tab active" onclick="showPage('game')">🎮 Jouer</button>
-  </div>
   <div class="nav-right">
-    <div class="settings-toggle" onclick="openSettings()" style="cursor:pointer;" title="Préférences">⚙️</div>
+    <button class="settings-toggle" onclick="openSettings()" aria-label="Préférences" title="Préférences">⚙️</button>
+    <button class="theme-toggle" id="themeToggleGame" onclick="toggleTheme()" aria-label="Mode clair / sombre" title="Mode clair / sombre">☀️</button>
   </div>
 </nav>
 
@@ -1523,13 +1529,6 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     <span id="turnText" style="display:none"></span>
   </div>
 
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <div style="display:flex;gap:8px;">
-    <button id="undoBtn" onclick="undoMove()" style="flex:1;">↩ Annuler</button>
-    <button id="resetBtn" onclick="resetGame()" style="flex:1;">↺ Nouvelle partie</button>
-  </div>
-  </div>
 </div>
 </div>
 
@@ -4623,16 +4622,16 @@ function toggleLang() {
   currentLang = 'fr';
 }
 
+
 function applyTheme(t) {
   if (t !== 'light' && t !== 'dark') t = 'dark';
   document.documentElement.setAttribute('data-theme', t);
   try { localStorage.setItem('dysc-theme', t); } catch(e) {}
-  const btn = document.getElementById('themeToggle');
-  if (btn) {
-    // ☀️ en mode sombre (= "passer au clair"), 🌙 en mode clair (= "passer au sombre")
+  // Met à jour TOUS les boutons thème (splash + page de jeu)
+  document.querySelectorAll('.theme-toggle').forEach(btn=>{
     btn.textContent = (t === 'light') ? '🌙' : '☀️';
     btn.setAttribute('aria-label', (t === 'light') ? 'Mode sombre' : 'Mode clair');
-  }
+  });
   // Régénère le bandeau du splash pour appliquer/retirer le halo des pièces noires
   try{ if(typeof buildSplash==='function') buildSplash(); }catch(e){}
 }
