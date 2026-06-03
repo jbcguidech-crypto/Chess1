@@ -5597,20 +5597,51 @@ function _diagGameStart(){
       var bd=document.getElementById('board');
       var sp=document.getElementById('splash');
       var pgVisible = pg && getComputedStyle(pg).display!=='none';
-      var ok = pgVisible && bd && bd.childElementCount>0;
+      var bdVisible = bd && getComputedStyle(bd).display!=='none';
+      var ok = pgVisible && bdVisible && bd && bd.childElementCount>0;
+      // N'affiche le diagnostic QUE si la partie ne s'est pas lancée correctement
       if(!ok){
-        var b=document.getElementById('__errbox');
-        if(b){ b.style.display='block'; b.textContent='⚠️ DIAGNOSTIC démarrage :\n\n'
+        var prev=document.getElementById('__diagbox');
+        if(prev) prev.remove();
+        var d=document.createElement('div');
+        d.id='__diagbox';
+        d.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#06140b;color:#46ff9e;font:14px/1.6 monospace;padding:20px;overflow:auto;white-space:pre-wrap;';
+        var cs = pg?getComputedStyle(pg):null;
+        var bcs = bd?getComputedStyle(bd):null;
+        d.textContent='🔍 DIAGNOSTIC DÉMARRAGE PARTIE\n'
+          +'(copie ou photographie cet écran)\n'
+          +'──────────────────────────\n'
           +'page-game existe : '+(!!pg)+'\n'
-          +'page-game display : '+(pg?getComputedStyle(pg).display:'?')+'\n'
+          +'page-game display : '+(cs?cs.display:'?')+'\n'
+          +'page-game visibility : '+(cs?cs.visibility:'?')+'\n'
+          +'page-game opacity : '+(cs?cs.opacity:'?')+'\n'
           +'page-game classes : '+(pg?pg.className:'?')+'\n'
+          +'──────────────────────────\n'
           +'board existe : '+(!!bd)+'\n'
+          +'board display : '+(bcs?bcs.display:'?')+'\n'
           +'board nb cases : '+(bd?bd.childElementCount:'?')+'\n'
-          +'splash display : '+(sp?sp.style.display:'?')+'\n'
-          +'playerColor : '+(typeof playerColor!=='undefined'?playerColor:'?'); }
+          +'──────────────────────────\n'
+          +'splash existe : '+(!!sp)+'\n'
+          +'splash display : '+(sp?(sp.style.display||getComputedStyle(sp).display):'?')+'\n'
+          +'playerColor : '+(typeof playerColor!=='undefined'?playerColor:'?')+'\n'
+          +'gameMode : '+(typeof gameMode!=='undefined'?gameMode:'?');
+        var close=document.createElement('button');
+        close.textContent='Fermer';
+        close.style.cssText='margin-top:16px;padding:10px 20px;background:#46ff9e;color:#000;border:none;border-radius:8px;font-weight:bold;';
+        close.onclick=function(){ d.remove(); };
+        d.appendChild(document.createElement('br'));
+        d.appendChild(close);
+        document.body.appendChild(d);
       }
-    }catch(e){}
-  }, 900);
+    }catch(e){
+      try{
+        var er=document.createElement('div');
+        er.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#1a0606;color:#ff6b6b;font:14px monospace;padding:20px;white-space:pre-wrap;';
+        er.textContent='ERREUR DANS LE DIAGNOSTIC :\n'+(e&&e.message||e)+'\n'+(e&&e.stack||'');
+        document.body.appendChild(er);
+      }catch(e2){}
+    }
+  }, 1000);
 }
 
 function setPlayerColor(color){
