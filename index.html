@@ -1217,7 +1217,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-B</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-DIAG-G</div>
   <!-- Échiquier d'aperçu avec micro central pour activer la commande vocale -->
   <div class="splash-board-wrap">
     <div class="splash-mini-board" id="splashBoard"></div>
@@ -2272,32 +2272,14 @@ function splashChooseColor(color) {
       renderBoard();
       if(gameMode==='ai' && color==='b') setTimeout(()=>{ try{ askStockfish(); }catch(e){} }, 700);
       enableMicAuto();
-      // DIAGNOSTIC : vérifie que la page de jeu est bien visible
-      setTimeout(()=>{
-        try{
-          var pg=document.getElementById('page-game');
-          var bd=document.getElementById('board');
-          var sp=document.getElementById('splash');
-          var pgVisible = pg && getComputedStyle(pg).display!=='none';
-          var ok = pgVisible && bd && bd.childElementCount>0;
-          if(!ok){
-            var b=document.getElementById('__errbox');
-            if(b){ b.style.display='block'; b.textContent='⚠️ DIAGNOSTIC démarrage :\n\n'
-              +'page-game existe : '+(!!pg)+'\n'
-              +'page-game display : '+(pg?getComputedStyle(pg).display:'?')+'\n'
-              +'page-game classes : '+(pg?pg.className:'?')+'\n'
-              +'board existe : '+(!!bd)+'\n'
-              +'board nb cases : '+(bd?bd.childElementCount:'?')+'\n'
-              +'splash display : '+(sp?sp.style.display:'?')+'\n'
-              +'playerColor : '+playerColor; }
-          }
-        }catch(e){}
-      }, 900);
+      _diagGameStart();
     }catch(err){
       // Affiche l'erreur au lieu d'un écran vide
       try{
-        var b=document.getElementById('__errbox');
-        if(b){ b.style.display='block'; b.textContent='⚠️ ERREUR au démarrage de la partie :\n\n'+(err&&err.message||err)+'\n\n'+(err&&err.stack||''); }
+        var eb=document.createElement('div');
+        eb.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#1a0606;color:#ff6b6b;font:14px monospace;padding:20px;white-space:pre-wrap;overflow:auto;';
+        eb.textContent='⚠️ ERREUR au démarrage de la partie :\n\n'+(err&&err.message||err)+'\n\n'+(err&&err.stack||'');
+        document.body.appendChild(eb);
       }catch(e){}
     }
   }, 700);
