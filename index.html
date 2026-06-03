@@ -288,7 +288,7 @@ body {
 
 .splash-pieces { display:flex;gap:14px;margin-bottom:4px;justify-content:space-between;width:100%;max-width:360px; }
 /* Bandeau de pièces réduit (sous le titre / en haut) */
-.splash-pieces-sm { gap:4px;margin-top:4px;margin-bottom:2px;justify-content:space-around;width:100%;max-width:340px; }
+.splash-pieces-sm { gap:4px;margin-top:22px;margin-bottom:2px;justify-content:space-around;width:100%;max-width:340px; }
 .splash-pieces-sm > div { width:30px !important;height:30px !important; }
 .splash-pieces-sm > div img { width:28px !important;height:28px !important; }
 .splash-piece {
@@ -1380,9 +1380,6 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     <button class="nav-tab active" onclick="showPage('game')">🎮 Jouer</button>
   </div>
   <div class="nav-right">
-    <div class="nav-user" onclick="showProfile()">
-      <div class="nav-username" id="navUsername">Vous</div>
-    </div>
   </div>
 </nav>
 
@@ -2669,11 +2666,11 @@ function updateAuthUI(user) {
     btn.style.color = 'var(--red)';
     btn.style.borderColor = 'var(--red)';
     if (user.photoURL) {
-      avatar.innerHTML = `<img src="${user.photoURL}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">`;
+      if(avatar) avatar.innerHTML = `<img src="${user.photoURL}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">`;
     } else {
-      avatar.textContent = (user.displayName||'?')[0].toUpperCase();
+      if(avatar) avatar.textContent = (user.displayName||'?')[0].toUpperCase();
     }
-    username.textContent = user.displayName?.split(' ')[0] || 'Joueur';
+    if(username) username.textContent = user.displayName?.split(' ')[0] || 'Joueur';
     document.getElementById('authStatus').innerHTML =
       `<span style="color:var(--green)">✓ Connecté : <b>${user.displayName}</b></span>`;
   } else {
@@ -2681,8 +2678,8 @@ function updateAuthUI(user) {
     btn.onclick = loginGoogle;
     btn.style.color = '';
     btn.style.borderColor = '';
-    avatar.textContent = userProfile.avatar || '♟';
-    username.textContent = userProfile.name;
+    if(avatar) avatar.textContent = userProfile.avatar || '♟';
+    if(username) username.textContent = userProfile.name;
     document.getElementById('authStatus').innerHTML =
       '<span style="color:#555">Non connecté — scores sauvegardés localement</span>';
   }
