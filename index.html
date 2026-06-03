@@ -494,6 +494,7 @@ html[data-theme="dark"] .settings-preview img {
 }
 .nav-logo.nav-abandon:hover { background:rgba(91,141,239,.2);transform:scale(1.08); }
 .nav-logo.nav-abandon:active { transform:scale(.94); }
+.home-ico { width:21px;height:21px;display:block; }
 .nav-center { display:flex;gap:4px; }
 .nav-tab {
   padding:7px 14px;border-radius:50px;border:none;
@@ -1374,7 +1375,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 </div>
 
 <nav class="nav">
-  <div class="nav-logo nav-abandon" id="navLeft" onclick="goHome()" style="cursor:pointer;" title="Menu">🏠</div>
+  <div class="nav-logo nav-abandon" id="navLeft" onclick="goHome()" style="cursor:pointer;" title="Menu"><svg class="home-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-9"/></svg></div>
   <div class="nav-center">
     <button class="nav-tab active" onclick="showPage('game')">🎮 Jouer</button>
   </div>
@@ -2060,13 +2061,8 @@ function goHome(){
 function updateNavLeft(){
   const el = document.getElementById('navLeft');
   if(!el) return;
-  if(gameActive){
-    el.innerHTML = '🏠';
-    el.classList.add('nav-abandon');
-  } else {
-    el.innerHTML = '🏠';
-    el.classList.add('nav-abandon');
-  }
+  el.innerHTML = '<svg class="home-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-9"/></svg>';
+  el.classList.add('nav-abandon');
 }
 
 // ═══ PILOTAGE VOCAL DU SPLASH (mains-libres dès l'accueil) ═══
