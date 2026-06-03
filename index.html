@@ -1277,7 +1277,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN10</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN11</div>
   <!-- Échiquier d'aperçu avec micro central pour activer la commande vocale -->
   <div class="splash-board-wrap">
     <div class="splash-mini-board" id="splashBoard"></div>
@@ -1376,7 +1376,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
         <div class="glossary-body" id="glossaryBody" style="display:flex;">
           <div class="gloss-group">
             <div class="gloss-head">♟ Jouer un coup</div>
-            <div class="gloss-row"><span class="gloss-ex">« e4 »</span><span class="gloss-desc">avancer un pion</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« pion e4 »</span><span class="gloss-desc">avancer un pion (dites toujours « pion »)</span></div>
             <div class="gloss-row"><span class="gloss-ex">« cavalier f3 »</span><span class="gloss-desc">déplacer une pièce</span></div>
             <div class="gloss-row"><span class="gloss-ex">« dame prend dame »</span><span class="gloss-desc">capturer</span></div>
             <div class="gloss-row"><span class="gloss-ex">« petit roque » / « grand roque »</span><span class="gloss-desc">roquer</span></div>
@@ -1979,58 +1979,41 @@ function renderSettingsPreview(mode){
   const box = document.getElementById('settingsPreview');
   if(!box) return;
   box.innerHTML = '';
-  if(mode === 'board'){
-    // Aperçu du fond d'échiquier : mini damier 4×4 avec le thème
-    const t = (typeof getBoardTheme==='function') ? getBoardTheme() : {type:'css',light:'#f0d9b5',dark:'#b58863'};
-    const grid = document.createElement('div');
-    grid.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);width:140px;height:140px;border-radius:10px;overflow:hidden;border:2px solid var(--gold);box-shadow:0 4px 16px rgba(0,0,0,.4);';
-    if(t.type==='img'){
-      grid.style.backgroundImage = 'url('+BOARD_CDN+t.id+'.jpg)';
-      grid.style.backgroundSize = '100% 100%';
-    }
-    for(let i=0;i<16;i++){
-      const r=Math.floor(i/4), c=i%4, light=(r+c)%2===0;
-      const cell=document.createElement('div');
-      let bg = t.type==='css' ? (light?t.light:t.dark) : (light?'transparent':'rgba(0,0,0,0.18)');
-      cell.style.cssText='background:'+bg+';';
-      grid.appendChild(cell);
-    }
-    const lbl=document.createElement('div');
-    lbl.className='preview-label';
-    lbl.textContent = t.name || 'Échiquier';
-    box.appendChild(grid);
-    box.appendChild(lbl);
-  } else {
-    // Aperçu des pièces : les 6 types, blanches + noires
-    const wrap = document.createElement('div');
-    wrap.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;justify-content:center;align-items:center;';
-    const order = ['K','Q','R','B','N','P'];
-    ['w','b'].forEach(col=>{
-      order.forEach(t=>{
-        const code = col+t;
-        const img = document.createElement('img');
-        img.src = pieceImgURL(code);
-        img.width = 36; img.height = 36;
-        img.style.cssText = 'width:36px;height:36px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));';
-        img.draggable = false;
-        const glyph = PIECE_GLYPHS[code];
-        const isW = col==='w';
-        img.onerror = function(){
-          const s=document.createElement('span');
-          s.textContent=glyph;
-          s.style.cssText='font-size:30px;line-height:1;color:'+(isW?'#fff':'#1a1a1a')+';';
-          if(img.parentNode) img.parentNode.replaceChild(s,img);
-        };
-        wrap.appendChild(img);
-      });
-    });
-    const setName = (PIECE_SETS.find(s=>s.id===pieceSet)||{}).name || pieceSet;
-    const lbl=document.createElement('div');
-    lbl.className='preview-label';
-    lbl.textContent = setName;
-    box.appendChild(wrap);
-    box.appendChild(lbl);
+  // Aperçu COMBINÉ : mini-échiquier avec le thème choisi + pièces du set choisi posées dessus,
+  // pour voir le rendu réel d'un coup d'œil (peu importe ce qu'on règle).
+  const t = (typeof getBoardTheme==='function') ? getBoardTheme() : {type:'css',light:'#f0d9b5',dark:'#b58863'};
+  const grid = document.createElement('div');
+  grid.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);width:168px;height:168px;border-radius:10px;overflow:hidden;border:2px solid var(--gold);box-shadow:0 4px 16px rgba(0,0,0,.4);';
+  if(t.type==='img'){
+    grid.style.backgroundImage = 'url('+BOARD_CDN+t.id+'.jpg)';
+    grid.style.backgroundSize = '100% 100%';
   }
+  // Petite position d'exemple sur 4×4 (cases indexées 0..15, r=ligne, c=col)
+  // On place quelques pièces blanches et noires représentatives.
+  const sample = { 0:'bR', 1:'bN', 2:'bB', 3:'bQ', 12:'wR', 13:'wN', 14:'wB', 15:'wQ', 6:'bP', 9:'wP' };
+  for(let i=0;i<16;i++){
+    const r=Math.floor(i/4), c=i%4, light=(r+c)%2===0;
+    const cell=document.createElement('div');
+    let bg = t.type==='css' ? (light?t.light:t.dark) : (light?'transparent':'rgba(0,0,0,0.18)');
+    cell.style.cssText='background:'+bg+';display:flex;align-items:center;justify-content:center;';
+    const code = sample[i];
+    if(code){
+      const img=document.createElement('img');
+      img.src=pieceImgURL(code);
+      img.style.cssText='width:88%;height:88%;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35));';
+      img.draggable=false;
+      const glyph=PIECE_GLYPHS[code]; const isW=code[0]==='w';
+      img.onerror=function(){ const s=document.createElement('span'); s.textContent=glyph; s.style.cssText='font-size:26px;line-height:1;color:'+(isW?'#fff':'#1a1a1a')+';'; if(img.parentNode) img.parentNode.replaceChild(s,img); };
+      cell.appendChild(img);
+    }
+    grid.appendChild(cell);
+  }
+  const setName = (PIECE_SETS.find(s=>s.id===pieceSet)||{}).name || pieceSet;
+  const lbl=document.createElement('div');
+  lbl.className='preview-label';
+  lbl.textContent = (t.name||'Échiquier') + ' · ' + setName;
+  box.appendChild(grid);
+  box.appendChild(lbl);
 }
 
 function goHome(){
