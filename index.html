@@ -1217,7 +1217,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-DIAG-G</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-SPLASH-FIX</div>
   <!-- Échiquier d'aperçu avec micro central pour activer la commande vocale -->
   <div class="splash-board-wrap">
     <div class="splash-mini-board" id="splashBoard"></div>
@@ -2222,7 +2222,23 @@ function confirmQuit(yes){
 
 function hideSplash() {
   const s = document.getElementById('splash');
-  if(s){ s.style.pointerEvents='none'; s.style.opacity='0'; s.style.transform='scale(1.05)'; s.style.transition='opacity .6s,transform .6s'; setTimeout(()=>s.style.display='none', 650); }
+  if(s){
+    s.style.pointerEvents='none';
+    s.style.opacity='0';
+    s.style.transform='scale(1.05)';
+    s.style.transition='opacity .5s,transform .5s';
+    // Cache de façon GARANTIE : display:none + visibility + z-index négatif,
+    // pour qu'il ne puisse jamais rester par-dessus la page de jeu.
+    setTimeout(()=>{
+      try{
+        s.style.display='none';
+        s.style.visibility='hidden';
+        s.style.zIndex='-1';
+      }catch(e){}
+    }, 520);
+  }
+  // Stoppe l'écoute vocale du splash si active
+  try{ if(typeof stopSplashVoice==='function') stopSplashVoice(); }catch(e){}
 }
 
 function splashChooseColor(color) {
@@ -5578,6 +5594,11 @@ function _diagGameStart(){
       var pg=document.getElementById('page-game');
       var bd=document.getElementById('board');
       var sp=document.getElementById('splash');
+      // FILET DE SÉCURITÉ : si le splash est encore visible par-dessus, on le cache de force
+      if(sp){
+        var spDisp=getComputedStyle(sp).display;
+        if(spDisp!=='none'){ sp.style.display='none'; sp.style.visibility='hidden'; sp.style.zIndex='-1'; }
+      }
       var pgVisible = pg && getComputedStyle(pg).display!=='none';
       var bdVisible = bd && getComputedStyle(bd).display!=='none';
       var ok = pgVisible && bdVisible && bd && bd.childElementCount>0;
