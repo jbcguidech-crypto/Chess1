@@ -5881,34 +5881,20 @@ maybeShowVoiceWelcome();
 initFirebase();
 </script>
 <script>
-/* Enregistrement du Service Worker (PWA hors-ligne) */
+/* Service Worker DÉSACTIVÉ : il causait des blocages (ancienne version servie depuis
+   le cache → écran vide après mise à jour). On désinscrit tout SW existant et on vide
+   ses caches pour repartir proprement. L'app fonctionne très bien sans (chargement direct). */
 if('serviceWorker' in navigator){
-  window.addEventListener('load', function(){
-    // Chemin du SW relatif au dossier courant (robuste sur GitHub Pages /Chess1/)
-    var base = location.pathname.replace(/[^/]*$/, '');
-    navigator.serviceWorker.register(base + 'sw.js', { scope: base })
-      .then(function(reg){
-        // Vérifie les mises à jour à chaque chargement
-        reg.update();
-        // Quand une nouvelle version est trouvée, on l'active dès qu'elle est prête
-        reg.addEventListener('updatefound', function(){
-          var nw = reg.installing;
-          if(!nw) return;
-          nw.addEventListener('statechange', function(){
-            if(nw.state === 'installed' && navigator.serviceWorker.controller){
-              nw.postMessage && nw.postMessage('SKIP_WAITING');
-            }
-          });
-        });
-      })
-      .catch(function(){ /* hors-ligne ou non supporté */ });
-    // Recharge une seule fois quand le nouveau SW prend le contrôle
-    var _reloaded = false;
-    navigator.serviceWorker.addEventListener('controllerchange', function(){
-      if(_reloaded) return; _reloaded = true;
-      window.location.reload();
-    });
-  });
+  try{
+    navigator.serviceWorker.getRegistrations().then(function(regs){
+      regs.forEach(function(r){ r.unregister(); });
+    }).catch(function(){});
+  }catch(e){}
+  try{
+    if(window.caches && caches.keys){
+      caches.keys().then(function(names){ names.forEach(function(n){ caches.delete(n); }); }).catch(function(){});
+    }
+  }catch(e){}
 }
 </script>
 </body></html>
