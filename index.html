@@ -1217,7 +1217,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-SPLASH-FIX</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN</div>
   <!-- Échiquier d'aperçu avec micro central pour activer la commande vocale -->
   <div class="splash-board-wrap">
     <div class="splash-mini-board" id="splashBoard"></div>
@@ -1300,21 +1300,6 @@ canvas#eloChart { width:100%!important;height:90px!important; }
         <div class="settings-section-title">▦ Style de l'échiquier</div>
         <div class="pieceset-grid" id="boardThemeGrid"></div>
       </div>
-      <!-- Voix : une pour le joueur, une pour l'IA -->
-      <div class="settings-section">
-        <div class="settings-section-title">🔊 Voix des annonces</div>
-        <div class="voice-pick-row">
-          <label class="voice-pick-lbl">🧑 Vous</label>
-          <select id="voiceSelectMe" class="voice-select" onchange="setVoiceMe(this.value)"></select>
-          <button class="voice-test-btn" onclick="testVoice('me')" title="Écouter">▶</button>
-        </div>
-        <div class="voice-pick-row">
-          <label class="voice-pick-lbl">🤖 DYSC-AI</label>
-          <select id="voiceSelectAi" class="voice-select" onchange="setVoiceAi(this.value)"></select>
-          <button class="voice-test-btn" onclick="testVoice('ai')" title="Écouter">▶</button>
-        </div>
-        <div class="settings-toggle-hint">Choisissez une voix différente pour vos coups et ceux de l'IA (par exemple une voix d'homme et une de femme). Les voix proposées dépendent de celles installées sur votre appareil.</div>
-      </div>
       <!-- Glossaire des commandes vocales -->
       <div class="settings-section">
         <button class="glossary-toggle" id="glossaryToggle" onclick="toggleGlossary()">
@@ -1326,16 +1311,11 @@ canvas#eloChart { width:100%!important;height:90px!important; }
             <div class="gloss-head">♟ Jouer un coup</div>
             <div class="gloss-row"><span class="gloss-ex">« e4 »</span><span class="gloss-desc">avancer un pion</span></div>
             <div class="gloss-row"><span class="gloss-ex">« cavalier f3 »</span><span class="gloss-desc">déplacer une pièce</span></div>
-            <div class="gloss-row"><span class="gloss-ex">« delta 4 » = d4 · « alpha 2 » = a2</span><span class="gloss-desc">colonnes en alphabet radio (plus fiable)</span></div>
             <div class="gloss-row"><span class="gloss-ex">« cavalier g f3 »</span><span class="gloss-desc">préciser la colonne de départ</span></div>
             <div class="gloss-row"><span class="gloss-ex">« dame prend dame »</span><span class="gloss-desc">capture par type de pièce</span></div>
             <div class="gloss-row"><span class="gloss-ex">« petit roque » / « grand roque »</span><span class="gloss-desc">roquer</span></div>
             <div class="gloss-row"><span class="gloss-ex">« promotion tour »</span><span class="gloss-desc">choisir la promotion</span></div>
           </div>
-          <div class="gloss-group">
-            <div class="gloss-head">📻 Alphabet radio (colonnes)</div>
-            <div class="gloss-row"><span class="gloss-ex">Alpha=a · Bravo=b · Charlie=c · Delta=d</span><span class="gloss-desc">a à d</span></div>
-            <div class="gloss-row"><span class="gloss-ex">Echo=e · Foxtrot=f · Golf=g · Hotel=h</span><span class="gloss-desc">e à h</span></div>
           <div class="gloss-group">
             <div class="gloss-head">↔ Si un coup est ambigu</div>
             <div class="gloss-row"><span class="gloss-ex">« g » / « g1 » / « le premier »</span><span class="gloss-desc">choisir quelle pièce après la question</span></div>
@@ -4667,24 +4647,24 @@ function _lev(a,b){
 // ── CORRECTION PHONÉTIQUE mot par mot ──────────────
 // Mappe les sons/variantes/erreurs vers lettre de colonne, chiffre, ou nom de pièce
 const _PHON_FILES = {
-  a:['a','ah','as','ha','at','â','ace','alpha','alfa','alpha,'],
-  b:['b','be','bee','bay','bi','bé','bébé','bébère','baie','bay','bravo','bravos'],
-  c:['c','ce','ces','se','say','cee','ci','cé','c\'est','ces','sait','sais','session','charlie','charly','charlies','sharly'],
-  d:['d','de','des','dey','di','dé','dés','dais','dée','der','dee','the','der','day','dette','daie','d\'','dei','dez','dais','dé2','t','té','tee','thé','delta','deltas'],
-  e:['e','eu','heu','euh','eux','é','ai','et','est','euuh','echo','écho','écho,','echos'],
-  f:['f','ef','eff','effe','aef','aiffe','effet','fe','foxtrot','fox','foxtrott'],
-  g:['g','ge','je','jee','gee','ze','gé','j','j\'ai','geai','jet','golf','golfe','golfes']
-,  h:['h','ache','hache','ash','hash','aches','hâche','hotel','hôtel','hotels']
+  a:['a','ah','as','ha','at','â','ace'],
+  b:['b','be','bee','bay','bi','bé','bébé','baie'],
+  c:['c','ce','ces','se','say','cee','ci','cé','c\'est','sait','sais'],
+  d:['d','de','des','dey','di','dé','dés','dais','dée'],
+  e:['e','eu','heu','euh','eux','é','ai','et','est'],
+  f:['f','ef','eff','effe','aef','effet','fe'],
+  g:['g','ge','je','jee','gee','ze','gé','j','geai']
+,  h:['h','ache','hache','ash','hash','hâche']
 };
 const _PHON_RANKS = {
-  '1':['1','un','une','hun','in','1er','premier','ain'],
-  '2':['2','deux','deu','do','d2'],
-  '3':['3','trois','troi','troie','troy','toi','troit'],
-  '4':['4','quatre','quat','catre','quattro','cat','car','quatres','quart'],
-  '5':['5','cinq','sink','sain','sin','saint','sinq','sank'],
-  '6':['6','six','sis','cisse','sisse','sics','cease','seas'],
-  '7':['7','sept','set','cet','sete','cette','sète','cèt'],
-  '8':['8','huit','wit','uit','hui','houit','wee','we']
+  '1':['1','un','une','hun','in','premier'],
+  '2':['2','deux','deu','do'],
+  '3':['3','trois','troi','troie','troy'],
+  '4':['4','quatre','quat','catre','quattro'],
+  '5':['5','cinq','sink','sain','sin'],
+  '6':['6','six','sis','cisse','sisse'],
+  '7':['7','sept','set','cet','cette'],
+  '8':['8','huit','wit','uit','hui']
 };
 const _PHON_PIECES = {
   cavalier:['cavalier','cavalie','cavaliers','caval','chevalier','cheval','knight','nait','night','cavalié','cavaliere','cavalière','cavaler','cavaler','cav','calva','gavalier','kavalier','cavalyé','cavaliez'],
@@ -4715,28 +4695,7 @@ function _classifyWord(w){
 function _phonTokens(text){
   let raw = text.toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g,'');   // retire accents
-  // Pré-corrections : homophones FR fréquents de Chrome pour les cases d'échecs
   raw = raw
-    .replace(/\bbebe\b/g,'b e')          // "bébé" → b + e? souvent "b6"; on laisse e mais souvent capté seul
-    .replace(/\bcedez?\b/g,'c d')        // "cédez" → c d
-    .replace(/\bachete\b/g,'h')          // "acheté" parfois pour "h"
-    // ── Cases en D : Chrome rend souvent "d + chiffre" comme un MOT entier ──
-    .replace(/\bdebat\b/g,'d 4')         // "débat" → d4
-    .replace(/\bdebats\b/g,'d 4')
-    .replace(/\bdetroit\b/g,'d 3')       // "détroit" → d3
-    .replace(/\bdecide\b/g,'d 6')        // "décide" → d6 (approx fréquent)
-    .replace(/\bdesse\b/g,'d 6')
-    .replace(/\bdes as\b/g,'d 1')        // "des as" → d1
-    .replace(/\bde un\b/g,'d 1')
-    .replace(/\bde deux\b/g,'d 2')
-    .replace(/\bde trois\b/g,'d 3')
-    .replace(/\bde quatre\b/g,'d 4')
-    .replace(/\bde cinq\b/g,'d 5')
-    .replace(/\bde six\b/g,'d 6')
-    .replace(/\bde sept\b/g,'d 7')
-    .replace(/\bde huit\b/g,'d 8')
-    .replace(/\bde\s+([1-8])\b/g,'d $1')  // "de 4" → d4 (le "de" suivi d'un chiffre = colonne D)
-    .replace(/\bthe\s+([1-8])\b/g,'d $1') // "the 4" (mauvaise capture) → d4
     .replace(/([a-z])\s*-\s*([0-9])/g,'$1 $2'); // "e-4" → "e 4"
   const words = raw.replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(Boolean);
   const out=[];
@@ -4758,15 +4717,6 @@ function _phonTokens(text){
     const cls=_classifyWord(w);
     if(cls!==null) out.push(cls);
     else out.push(w); // mot inconnu conservé (peut être un nom de pièce déjà propre)
-  }
-  // Correction « dé » → D : en français, la lettre D (« dé ») est souvent captée par
-  // Chrome comme le chiffre 2 (« deux »). Or « 2 » suivi d'un chiffre de rangée (1-8)
-  // est impossible pour une case (une case = lettre+chiffre). Donc un « 2 » placé
-  // juste AVANT un chiffre est réinterprété comme la colonne 'd'.
-  for(let i=0;i<out.length-1;i++){
-    if(out[i]==='2' && /^[1-8]$/.test(out[i+1])){
-      out[i]='d';
-    }
   }
   return out;
 }
@@ -5328,25 +5278,15 @@ function getVoicesForLang(){
   return matching.length ? matching : availableVoices;
 }
 
-// Choisit une voix selon QUI parle : 'me' (le joueur) ou 'ai' (l'adversaire).
-// Chaque rôle a sa propre voix réglable dans les préférences. À défaut de
-// réglage, on prend deux voix différentes de la langue pour les distinguer.
+// Voix unique pour toutes les annonces (joueur et IA) : la 1re voix de la langue.
 function getVoiceFor(who){
   if(!availableVoices.length) return null;
-  const list = getVoicesForLang();
-  if(!list.length) return null;
-  const byURI = (uri)=> uri ? availableVoices.find(v => v.voiceURI === uri) : null;
-  if(who==='ai'){
-    let v = byURI(voiceAiURI);
+  if(selectedVoiceURI){
+    const v = availableVoices.find(v => v.voiceURI === selectedVoiceURI);
     if(v) return v;
-    // pas de réglage IA → une voix différente de celle du joueur
-    const mine = byURI(voiceMeURI) || list[0];
-    return list.find(x => x.voiceURI !== mine.voiceURI) || mine;
   }
-  // joueur
-  let v = byURI(voiceMeURI);
-  if(v) return v;
-  return list[0];
+  const list = getVoicesForLang();
+  return list[0] || null;
 }
 
 function getSelectedVoice(){
@@ -5469,9 +5409,6 @@ function speak(text, onEnd, who){
   listening = false;
   const myEpoch = speechEpoch;
   window.speechSynthesis.cancel();
-  // Carillon distinctif AVANT l'annonce de l'IA (joué tout de suite, indépendamment du TTS)
-  const _isAi = (who==='ai');
-  if(_isAi){ try{ playSound('bell'); }catch(e){} }
   setTimeout(()=>{
     if(myEpoch !== speechEpoch){ aiSpeaking=false; return; } // parole annulée (ex: retour au menu)
     // Petit « tampon » en tête : sur Android, le moteur TTS avale souvent le tout
@@ -5480,9 +5417,8 @@ function speak(text, onEnd, who){
     u.lang = currentLang==='fr' ? 'fr-FR' : 'en-US';
     const chosen = getVoiceFor(who || 'me');
     if(chosen) u.voice = chosen;
-    // Légère différence de hauteur pour mieux distinguer les deux voix
-    u.pitch = 1.0; // tonalité naturelle (pas de déformation)
-    u.rate = 1.0;  // même vitesse pour les deux voix
+    u.pitch = 1.0;
+    u.rate = 1.0;
     u.volume = 1;
     u.onend = ()=>{
       aiSpeaking = false;
@@ -5497,12 +5433,7 @@ function speak(text, onEnd, who){
       if(onEnd) setTimeout(onEnd, 300);
       if(voiceContinuous && !listening && !aiThinking) setTimeout(()=>{ if(!aiSpeaking) startListening(); }, 800);
     };
-    if(_isAi){
-      // laisse le carillon résonner avant de parler
-      setTimeout(()=>{ try{ window.speechSynthesis.speak(u); }catch(e){} }, 450);
-    } else {
-      window.speechSynthesis.speak(u);
-    }
+    window.speechSynthesis.speak(u);
   }, 250);
 }
 
@@ -5589,61 +5520,14 @@ function configureStockfishStrength(){
 }
 
 function _diagGameStart(){
+  // Filet de sécurité : si le splash est resté visible par-dessus le jeu, on le cache.
   setTimeout(()=>{
     try{
-      var pg=document.getElementById('page-game');
-      var bd=document.getElementById('board');
       var sp=document.getElementById('splash');
-      // FILET DE SÉCURITÉ : si le splash est encore visible par-dessus, on le cache de force
-      if(sp){
-        var spDisp=getComputedStyle(sp).display;
-        if(spDisp!=='none'){ sp.style.display='none'; sp.style.visibility='hidden'; sp.style.zIndex='-1'; }
+      if(sp && getComputedStyle(sp).display!=='none'){
+        sp.style.display='none'; sp.style.visibility='hidden'; sp.style.zIndex='-1';
       }
-      var pgVisible = pg && getComputedStyle(pg).display!=='none';
-      var bdVisible = bd && getComputedStyle(bd).display!=='none';
-      var ok = pgVisible && bdVisible && bd && bd.childElementCount>0;
-      // N'affiche le diagnostic QUE si la partie ne s'est pas lancée correctement
-      if(!ok){
-        var prev=document.getElementById('__diagbox');
-        if(prev) prev.remove();
-        var d=document.createElement('div');
-        d.id='__diagbox';
-        d.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#06140b;color:#46ff9e;font:14px/1.6 monospace;padding:20px;overflow:auto;white-space:pre-wrap;';
-        var cs = pg?getComputedStyle(pg):null;
-        var bcs = bd?getComputedStyle(bd):null;
-        d.textContent='🔍 DIAGNOSTIC DÉMARRAGE PARTIE\n'
-          +'(copie ou photographie cet écran)\n'
-          +'──────────────────────────\n'
-          +'page-game existe : '+(!!pg)+'\n'
-          +'page-game display : '+(cs?cs.display:'?')+'\n'
-          +'page-game visibility : '+(cs?cs.visibility:'?')+'\n'
-          +'page-game opacity : '+(cs?cs.opacity:'?')+'\n'
-          +'page-game classes : '+(pg?pg.className:'?')+'\n'
-          +'──────────────────────────\n'
-          +'board existe : '+(!!bd)+'\n'
-          +'board display : '+(bcs?bcs.display:'?')+'\n'
-          +'board nb cases : '+(bd?bd.childElementCount:'?')+'\n'
-          +'──────────────────────────\n'
-          +'splash existe : '+(!!sp)+'\n'
-          +'splash display : '+(sp?(sp.style.display||getComputedStyle(sp).display):'?')+'\n'
-          +'playerColor : '+(typeof playerColor!=='undefined'?playerColor:'?')+'\n'
-          +'gameMode : '+(typeof gameMode!=='undefined'?gameMode:'?');
-        var close=document.createElement('button');
-        close.textContent='Fermer';
-        close.style.cssText='margin-top:16px;padding:10px 20px;background:#46ff9e;color:#000;border:none;border-radius:8px;font-weight:bold;';
-        close.onclick=function(){ d.remove(); };
-        d.appendChild(document.createElement('br'));
-        d.appendChild(close);
-        document.body.appendChild(d);
-      }
-    }catch(e){
-      try{
-        var er=document.createElement('div');
-        er.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#1a0606;color:#ff6b6b;font:14px monospace;padding:20px;white-space:pre-wrap;';
-        er.textContent='ERREUR DANS LE DIAGNOSTIC :\n'+(e&&e.message||e)+'\n'+(e&&e.stack||'');
-        document.body.appendChild(er);
-      }catch(e2){}
-    }
+    }catch(e){}
   }, 1000);
 }
 
