@@ -3917,8 +3917,8 @@ function playSound(kind){
     case 'castle':  break;
     case 'check':   tone(880,0,0.12,0.16,'sine'); tone(1320,0.1,0.14,0.14,'sine'); break;
     case 'end':     tone(523,0,0.18,0.13,'sine'); tone(659,0.14,0.18,0.13,'sine'); tone(784,0.28,0.32,0.13,'sine'); break;
-    case 'bell':    // petit carillon clair avant l'annonce de l'IA (deux notes qui résonnent)
-                    tone(1568,0,0.5,0.13,'sine'); tone(2093,0.04,0.55,0.07,'sine'); break;
+    case 'bell':    // carillon clair et net avant l'annonce de l'IA (deux notes qui résonnent)
+                    tone(1318,0,0.45,0.28,'sine'); tone(1976,0.05,0.5,0.18,'sine'); tone(2637,0.1,0.4,0.1,'sine'); break;
     default:        break;
   }
 }
@@ -5416,6 +5416,9 @@ function speak(text, onEnd, who){
   listening = false;
   const myEpoch = speechEpoch;
   window.speechSynthesis.cancel();
+  // Carillon distinctif AVANT l'annonce de l'IA (joué tout de suite, indépendamment du TTS)
+  const _isAi = (who==='ai');
+  if(_isAi){ try{ playSound('bell'); }catch(e){} }
   setTimeout(()=>{
     if(myEpoch !== speechEpoch){ aiSpeaking=false; return; } // parole annulée (ex: retour au menu)
     // Petit « tampon » en tête : sur Android, le moteur TTS avale souvent le tout
@@ -5441,10 +5444,9 @@ function speak(text, onEnd, who){
       if(onEnd) setTimeout(onEnd, 300);
       if(voiceContinuous && !listening && !aiThinking) setTimeout(()=>{ if(!aiSpeaking) startListening(); }, 800);
     };
-    if(who==='ai'){
-      // Petit carillon distinctif juste avant que l'IA annonce son coup
-      try{ playSound('bell'); }catch(e){}
-      setTimeout(()=>{ try{ window.speechSynthesis.speak(u); }catch(e){} }, 350);
+    if(_isAi){
+      // laisse le carillon résonner avant de parler
+      setTimeout(()=>{ try{ window.speechSynthesis.speak(u); }catch(e){} }, 450);
     } else {
       window.speechSynthesis.speak(u);
     }
