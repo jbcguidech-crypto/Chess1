@@ -1655,16 +1655,17 @@ const BOARD_THEMES = [
 
 const BOARD_CDN = 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/images/board/';
 
-let boardTheme = 'blue3';
+let boardTheme = 'green';
 try { const sv = localStorage.getItem('dysc_board'); if(sv) boardTheme = sv; } catch(e){}
 
-// Migration unique : impose les nouveaux défauts (Merida + Bleu 3) une seule fois,
-// même si d'anciens choix sont déjà mémorisés. Respecte tout choix fait APRÈS la migration.
+// Migration unique : impose les nouveaux défauts (Merida + plateau Vert façon Chess.com)
+// une seule fois, même si d'anciens choix sont déjà mémorisés. Respecte tout choix
+// fait APRÈS la migration.
 try {
-  if(localStorage.getItem('dysc_defaults_v2') !== '1'){
-    pieceSet = 'merida';   localStorage.setItem('dysc_pieceset','merida');
-    boardTheme = 'blue3';  localStorage.setItem('dysc_board','blue3');
-    localStorage.setItem('dysc_defaults_v2','1');
+  if(localStorage.getItem('dysc_defaults_v3') !== '1'){
+    pieceSet = 'merida';  localStorage.setItem('dysc_pieceset','merida');
+    boardTheme = 'green';  localStorage.setItem('dysc_board','green');
+    localStorage.setItem('dysc_defaults_v3','1');
   }
 } catch(e){}
 
