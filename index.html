@@ -5409,11 +5409,13 @@ function speak(text, onEnd, who){
     const chosen = getVoiceFor(who || 'me');
     if(chosen) u.voice = chosen;
     // Légère différence de hauteur pour mieux distinguer les deux voix
-    // Léger écart de tonalité pour distinguer les voix sans les déformer.
-    // (Le moteur Google rend souvent France/Canada avec le même timbre, donc
-    // un petit décalage aide à différencier le joueur de l'IA.)
-    u.pitch = (who==='ai') ? 0.88 : 1.12;
-    u.rate = 1;
+    u.pitch = 1.0; // tonalité naturelle (pas de déformation)
+    // Légère différence de débit pour distinguer les voix sans les déformer
+    // (la vitesse, contrairement au pitch, ne rend pas la voix robotique) :
+    // l'IA parle un peu plus lentement, le joueur un peu plus vite.
+    // Distinction par la VITESSE (n'altère pas le timbre, donc pas d'effet robotique) :
+    // l'IA parle posément, le joueur un peu plus vif.
+    u.rate = (who==='ai') ? 0.85 : 1.12;
     u.volume = 1;
     u.onend = ()=>{
       aiSpeaking = false;
