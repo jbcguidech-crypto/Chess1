@@ -3917,8 +3917,8 @@ function playSound(kind){
     case 'castle':  break;
     case 'check':   tone(880,0,0.12,0.16,'sine'); tone(1320,0.1,0.14,0.14,'sine'); break;
     case 'end':     tone(523,0,0.18,0.13,'sine'); tone(659,0.14,0.18,0.13,'sine'); tone(784,0.28,0.32,0.13,'sine'); break;
-    case 'bell':    // carillon clair et net avant l'annonce de l'IA (deux notes qui résonnent)
-                    tone(1318,0,0.45,0.28,'sine'); tone(1976,0.05,0.5,0.18,'sine'); tone(2637,0.1,0.4,0.1,'sine'); break;
+    case 'bell':    // carillon doux et discret avant l'annonce de l'IA
+                    tone(1318,0,0.6,0.12,'sine'); tone(1976,0.06,0.55,0.06,'sine'); break;
     default:        break;
   }
 }
@@ -4714,6 +4714,15 @@ function _phonTokens(text){
     const cls=_classifyWord(w);
     if(cls!==null) out.push(cls);
     else out.push(w); // mot inconnu conservé (peut être un nom de pièce déjà propre)
+  }
+  // Correction « dé » → D : en français, la lettre D (« dé ») est souvent captée par
+  // Chrome comme le chiffre 2 (« deux »). Or « 2 » suivi d'un chiffre de rangée (1-8)
+  // est impossible pour une case (une case = lettre+chiffre). Donc un « 2 » placé
+  // juste AVANT un chiffre est réinterprété comme la colonne 'd'.
+  for(let i=0;i<out.length-1;i++){
+    if(out[i]==='2' && /^[1-8]$/.test(out[i+1])){
+      out[i]='d';
+    }
   }
   return out;
 }
