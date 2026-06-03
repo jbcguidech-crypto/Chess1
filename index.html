@@ -1209,16 +1209,6 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 </script>
 
 <!-- ══ FENÊTRE D'ACCUEIL : activation du pilotage vocal ══ -->
-<div id="voiceWelcome">
-  <div class="vw-box">
-    <div class="vw-icon">🎙</div>
-    <div class="vw-title">Pilotage vocal</div>
-    <p class="vw-text">Jouez aux échecs sans toucher l'écran. Activez la commande vocale, puis dites par exemple « jouer avec les blancs ».</p>
-    <button class="vw-activate" onclick="activateVoiceFromWelcome()">🎙 Activer le pilotage vocal</button>
-    <button class="vw-skip" onclick="dismissVoiceWelcome()">Non merci, je préfère toucher l'écran</button>
-  </div>
-</div>
-
 <!-- ══ SPLASH ══════════════════════════════════════ -->
 <div id="splash">
   <button class="splash-auth" id="splashAuthBtn" onclick="loginGoogle()" title="Se connecter ou créer un compte">🔑 Connexion / Inscription</button>
@@ -2282,6 +2272,27 @@ function splashChooseColor(color) {
       renderBoard();
       if(gameMode==='ai' && color==='b') setTimeout(()=>{ try{ askStockfish(); }catch(e){} }, 700);
       enableMicAuto();
+      // DIAGNOSTIC : vérifie que la page de jeu est bien visible
+      setTimeout(()=>{
+        try{
+          var pg=document.getElementById('page-game');
+          var bd=document.getElementById('board');
+          var sp=document.getElementById('splash');
+          var pgVisible = pg && getComputedStyle(pg).display!=='none';
+          var ok = pgVisible && bd && bd.childElementCount>0;
+          if(!ok){
+            var b=document.getElementById('__errbox');
+            if(b){ b.style.display='block'; b.textContent='⚠️ DIAGNOSTIC démarrage :\n\n'
+              +'page-game existe : '+(!!pg)+'\n'
+              +'page-game display : '+(pg?getComputedStyle(pg).display:'?')+'\n'
+              +'page-game classes : '+(pg?pg.className:'?')+'\n'
+              +'board existe : '+(!!bd)+'\n'
+              +'board nb cases : '+(bd?bd.childElementCount:'?')+'\n'
+              +'splash display : '+(sp?sp.style.display:'?')+'\n'
+              +'playerColor : '+playerColor; }
+          }
+        }catch(e){}
+      }, 900);
     }catch(err){
       // Affiche l'erreur au lieu d'un écran vide
       try{
@@ -5579,6 +5590,29 @@ function configureStockfishStrength(){
   }
 }
 
+function _diagGameStart(){
+  setTimeout(()=>{
+    try{
+      var pg=document.getElementById('page-game');
+      var bd=document.getElementById('board');
+      var sp=document.getElementById('splash');
+      var pgVisible = pg && getComputedStyle(pg).display!=='none';
+      var ok = pgVisible && bd && bd.childElementCount>0;
+      if(!ok){
+        var b=document.getElementById('__errbox');
+        if(b){ b.style.display='block'; b.textContent='⚠️ DIAGNOSTIC démarrage :\n\n'
+          +'page-game existe : '+(!!pg)+'\n'
+          +'page-game display : '+(pg?getComputedStyle(pg).display:'?')+'\n'
+          +'page-game classes : '+(pg?pg.className:'?')+'\n'
+          +'board existe : '+(!!bd)+'\n'
+          +'board nb cases : '+(bd?bd.childElementCount:'?')+'\n'
+          +'splash display : '+(sp?sp.style.display:'?')+'\n'
+          +'playerColor : '+(typeof playerColor!=='undefined'?playerColor:'?'); }
+      }
+    }catch(e){}
+  }, 900);
+}
+
 function setPlayerColor(color){
  try{
   // Choisir une couleur ici = jouer contre l'IA → on quitte tout mode en ligne
@@ -5602,6 +5636,7 @@ function setPlayerColor(color){
     speak(msg, null, 'me');
     if(gameMode==='ai' && chosen==='b') setTimeout(()=>{ try{ askStockfish(); }catch(e){} }, 600);
     enableMicAuto();
+    _diagGameStart();
     return;
   }
   playerColor = color;
@@ -5612,6 +5647,7 @@ function setPlayerColor(color){
   resetGame();
   if(gameMode==='ai' && color==='b') setTimeout(()=>{ try{ askStockfish(); }catch(e){} }, 500);
   enableMicAuto();   // ← active le micro (démarre tout de suite si blanc, après le coup IA si noir)
+  _diagGameStart();
  }catch(err){
   try{ var b=document.getElementById('__errbox'); if(b){ b.style.display='block'; b.textContent='⚠️ ERREUR setPlayerColor :\n\n'+(err&&err.message||err)+'\n\n'+(err&&err.stack||''); } }catch(e){}
  }
