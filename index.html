@@ -1187,6 +1187,17 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 </head>
 <body onclick="userInteracted=true;" ontouchstart="userInteracted=true;">
 
+<!-- Capteur d'erreur : affiche tout plantage JS au démarrage au lieu d'un écran vide -->
+<div id="__errbox" style="display:none;position:fixed;inset:0;z-index:999999;background:#1a1a1a;color:#ff6b6b;font:14px/1.5 monospace;padding:20px;overflow:auto;white-space:pre-wrap;"></div>
+<script>
+window.addEventListener('error', function(ev){
+  try{
+    var b=document.getElementById('__errbox');
+    if(b){ b.style.display='block'; b.textContent='⚠️ ERREUR JS :\n\n'+(ev.message||ev.error&&ev.error.message||'?')+'\n\nFichier : '+(ev.filename||'?')+'\nLigne : '+(ev.lineno||'?')+' col '+(ev.colno||'?')+'\n\n'+(ev.error&&ev.error.stack?ev.error.stack:''); }
+  }catch(e){}
+});
+</script>
+
 <!-- ══ FENÊTRE D'ACCUEIL : activation du pilotage vocal ══ -->
 <div id="voiceWelcome">
   <div class="vw-box">
