@@ -1259,7 +1259,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN6</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN7</div>
   <!-- Échiquier d'aperçu avec micro central pour activer la commande vocale -->
   <div class="splash-board-wrap">
     <div class="splash-mini-board" id="splashBoard"></div>
@@ -4951,6 +4951,18 @@ function parseVoiceToAction(text){
   return act;
 }
 
+// Désambiguïsation d'un coup à case unique : utilise une lettre de colonne ou
+// un chiffre de rangée de départ éventuellement dits (« cavalier b c3 »).
+function _disambiguate(candidates, norm, files, tr, tc){
+  const loneFiles = (norm.match(/\b[a-h]\b/g)||[]).map(x=>files[x]).filter(f=>f!==tc);
+  const loneRanks = (norm.match(/\b[1-8]\b/g)||[]).map(x=>8-parseInt(x)).filter(r=>r!==tr);
+  let filt = candidates;
+  for(const f of loneFiles){ const f2=filt.filter(x=>x.fc===f); if(f2.length) filt=f2; }
+  for(const r of loneRanks){ const r2=filt.filter(x=>x.fr===r); if(r2.length) filt=r2; }
+  if(filt.length===1){ const x=filt[0]; return {kind:'move', fr:x.fr,fc:x.fc,tr:x.tr,tc:x.tc,promo:x.mv[2]}; }
+  return {kind:'ambiguous', pieceType:type(candidates[0].piece), candidates, tr, tc};
+}
+
 function _parseStrict(text){
   // PARSEUR PUR — renvoie une action sans aucun effet de bord (pour tester en silence)
   if(!text) return {kind:'none'};
@@ -5048,26 +5060,30 @@ function _parseStrict(text){
       if(mv) candidates.push({fr:r,fc:c,tr,tc,mv,piece:p});
     }
     if(candidates.length===0) return {kind:'nopiece', tr, tc};
+
+    // RÈGLE STRICTE : pour déplacer un PION, il faut dire explicitement « pion ».
+    // Une case seule sans nom de pièce (« a3 ») ne doit PLUS bouger un pion par défaut,
+    // pour éviter le conflit où « cavalier a3 » mal entendu devient un coup de pion.
+    if(!mentionedType){
+      // On retire les pions des candidats : ils exigent le mot « pion ».
+      const nonPawn = candidates.filter(x=>type(x.piece)!=='P');
+      if(nonPawn.length===0){
+        // Seul un pion pourrait jouer, mais « pion » n'a pas été dit → on demande de préciser.
+        return {kind:'needpiece', tr, tc};
+      }
+      if(nonPawn.length===1){
+        const x = nonPawn[0];
+        return {kind:'move', fr:x.fr,fc:x.fc,tr:x.tr,tc:x.tc,promo:x.mv[2]};
+      }
+      // Plusieurs pièces (non-pion) possibles → désambiguïsation ci-dessous sur ce sous-ensemble
+      return _disambiguate(nonPawn, norm, files, tr, tc);
+    }
+
     if(candidates.length===1){
       const x = candidates[0];
       return {kind:'move', fr:x.fr,fc:x.fc,tr:x.tr,tc:x.tc,promo:x.mv[2]};
     }
-    // Sans nom de pièce → convention : une case seule = coup de pion
-    if(!mentionedType){
-      const pawns = candidates.filter(x=>type(x.piece)==='P');
-      if(pawns.length===1){ const x=pawns[0]; return {kind:'move', fr:x.fr,fc:x.fc,tr:x.tr,tc:x.tc,promo:x.mv[2]}; }
-    }
-    // DÉSAMBIGUÏSATION : lettre de colonne de départ (ou chiffre de rangée si même colonne)
-    // ex. "cavalier b c3" → le cavalier de la colonne b. "tour 1 d4" → la tour de la rangée 1.
-    {
-      const loneFiles = (norm.match(/\b[a-h]\b/g)||[]).map(x=>files[x]).filter(f=>f!==tc);
-      const loneRanks = (norm.match(/\b[1-8]\b/g)||[]).map(x=>8-parseInt(x)).filter(r=>r!==tr);
-      let filt = candidates;
-      for(const f of loneFiles){ const f2=filt.filter(x=>x.fc===f); if(f2.length) filt=f2; }
-      for(const r of loneRanks){ const r2=filt.filter(x=>x.fr===r); if(r2.length) filt=r2; }
-      if(filt.length===1){ const x=filt[0]; return {kind:'move', fr:x.fr,fc:x.fc,tr:x.tr,tc:x.tc,promo:x.mv[2]}; }
-    }
-    return {kind:'ambiguous', pieceType:type(candidates[0].piece), candidates, tr, tc};
+    return _disambiguate(candidates, norm, files, tr, tc);
   }
 
   if(coords.length<2) return {kind:'none'};
@@ -5217,6 +5233,15 @@ function executeVoiceAction(act, verbose){
         : ('Which '+pieceName.toLowerCase()+' to '+sq+'? The one on '+list+'?');
       if(verbose) setStatus(q,'error');
       _voiceSay(q);
+      return false;
+    }
+    case 'needpiece': {
+      const sq = String.fromCharCode(97+act.tc)+(8-act.tr);
+      const msg = currentLang==='fr'
+        ? ('Pour déplacer un pion, dites « pion '+sq+' ».')
+        : ('To move a pawn, say "pawn '+sq+'".');
+      if(verbose) setStatus(msg,'error');
+      _voiceSay(msg);
       return false;
     }
     case 'nopiece':
