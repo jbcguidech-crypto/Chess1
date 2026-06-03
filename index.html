@@ -1217,7 +1217,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN2</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN3</div>
   <!-- Échiquier d'aperçu avec micro central pour activer la commande vocale -->
   <div class="splash-board-wrap">
     <div class="splash-mini-board" id="splashBoard"></div>
@@ -2164,6 +2164,8 @@ function showSplash(){
     s.style.opacity = '1';
     s.style.transform = 'scale(1)';
     s.style.pointerEvents = 'auto';   // ré-active les clics (hideSplash les avait coupés)
+    s.style.visibility = 'visible';   // hideSplash l'avait masqué → on le rétablit
+    s.style.zIndex = '999';           // hideSplash l'avait mis à -1 → on le remet au-dessus
   }
   // ── ARRÊT COMPLET : aucune parole/coup ne doit survenir sur le splash ──
   voiceContinuous = false;
