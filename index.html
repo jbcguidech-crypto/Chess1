@@ -190,6 +190,48 @@ body {
 }
 .quit-yes:active { background:rgba(224,112,112,.1); }
 
+/* ── FENÊTRE HISTORIQUE (modale défilable) ─────── */
+.history-modal {
+  position:fixed;inset:0;z-index:1100;
+  background:rgba(0,0,0,.7);backdrop-filter:blur(4px);
+  display:none;align-items:center;justify-content:center;padding:20px;
+}
+.history-modal.show { display:flex;animation:quit-fade .2s ease; }
+.history-modal-box {
+  background:linear-gradient(160deg,#2C313A,#262A31);
+  border:1px solid var(--border);border-radius:18px;
+  width:100%;max-width:380px;max-height:75vh;display:flex;flex-direction:column;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
+  animation:quit-pop .25s cubic-bezier(.2,1.2,.4,1);
+  overflow:hidden;
+}
+html[data-theme="light"] .history-modal-box { background:linear-gradient(160deg,#FFFFFF,#F2F5F9); }
+.history-modal-head {
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 18px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.history-modal-title {
+  font-family:'Manrope',system-ui,sans-serif;font-weight:800;font-size:1.05rem;color:var(--text-light);
+}
+.history-modal-close {
+  width:34px;height:34px;border-radius:50%;border:1px solid var(--border);
+  background:transparent;color:var(--text-muted);font-size:1rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;
+}
+.history-modal-close:active { background:var(--surface-hi); }
+.history-modal-body {
+  padding:14px 18px;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  display:flex;flex-direction:column;gap:6px;
+}
+.history-modal-body .history-move {
+  display:flex;gap:12px;align-items:center;
+  padding:9px 12px;border-radius:10px;background:var(--surface);
+  font-family:'Manrope',system-ui,sans-serif;font-size:.92rem;
+}
+.history-modal-body .history-move .mn { color:var(--text-muted);font-weight:700;min-width:30px; }
+.history-modal-body .history-move .mw { color:var(--text-light);font-weight:600;flex:1; }
+.history-modal-body .history-move .mb { color:var(--text-light);font-weight:600;flex:1; }
+
 /* ── BOUTON CONFIG SPLASH ─────────────────────── */
 .splash-settings-btn {
   display:inline-flex;align-items:center;gap:8px;
@@ -1217,7 +1259,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN5</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN6</div>
   <!-- Échiquier d'aperçu avec micro central pour activer la commande vocale -->
   <div class="splash-board-wrap">
     <div class="splash-mini-board" id="splashBoard"></div>
@@ -1462,9 +1504,22 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     <span id="turnGem" class="turn-gem" style="display:none"></span>
     <span id="turnText" style="display:none"></span>
 
-    <div class="card side-history">
-      <div class="card-title">📜 Historique</div>
-      <div id="history"><span style="color:rgba(255,255,255,.2);font-size:.65rem">Aucun coup</span></div>
+    <div class="card side-history" style="padding:0;border:none;background:none;box-shadow:none;">
+      <button id="historyOpenBtn" onclick="openHistoryModal()" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:var(--text-light);font-family:'Manrope',system-ui,sans-serif;font-weight:700;font-size:.82rem;cursor:pointer;-webkit-tap-highlight-color:transparent;">
+        <span>📜 Historique des coups</span>
+        <span id="historyLastMove" style="color:var(--text-muted);font-weight:600;font-size:.76rem;">—</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Fenêtre défilable de l'historique (devant l'échiquier) -->
+  <div id="historyModal" class="history-modal" onclick="if(event.target===this)closeHistoryModal()">
+    <div class="history-modal-box">
+      <div class="history-modal-head">
+        <div class="history-modal-title">📜 Historique des coups</div>
+        <button class="history-modal-close" onclick="closeHistoryModal()" aria-label="Fermer">✕</button>
+      </div>
+      <div id="history" class="history-modal-body"><span style="color:var(--text-muted);font-size:.8rem">Aucun coup</span></div>
     </div>
   </div>
 
@@ -1503,16 +1558,6 @@ canvas#eloChart { width:100%!important;height:90px!important; }
           </div>
         </div>
       </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">💡 Aide vocale</div>
-      <ul class="help-list">
-        <li>« <b>e2 e4</b> » — case à case</li>
-        <li>« <b>cavalier g1 f3</b> »</li>
-        <li>« <b>roque</b> / <b>grand roque</b> »</li>
-        <li>« <b>nouvelle partie</b> »</li>
-      </ul>
     </div>
 
     <div style="display:flex;gap:8px;">
@@ -4277,10 +4322,28 @@ function updateSidebar(){
   } else {
     txt.textContent = turn==='w'?L().whites:L().blacks;
   }
-  const hist=document.getElementById('history');hist.innerHTML='';
+  const hist=document.getElementById('history');
+  const lastMoveBtn=document.getElementById('historyLastMove');
   const pairs=[];for(let i=0;i<history.length;i+=2)pairs.push({n:Math.floor(i/2)+1,w:history[i].move,b:history[i+1]?.move||''});
-  if(!pairs.length){hist.innerHTML='<span style="color:#333;font-size:.68rem">Aucun coup</span>';return;}
-  pairs.reverse().slice(0,10).forEach(p=>{const d=document.createElement('div');d.className='history-move';d.innerHTML=`<span class="mn">${p.n}.</span><span class="mw">${p.w}</span><span class="mb">${p.b}</span>`;hist.appendChild(d);});
+  // Bouton compact : montre le dernier coup joué
+  if(lastMoveBtn){
+    if(history.length){ lastMoveBtn.textContent = history[history.length-1].move + ' · ' + history.length + ' coup' + (history.length>1?'s':''); }
+    else { lastMoveBtn.textContent = '—'; }
+  }
+  if(!hist) return;
+  hist.innerHTML='';
+  if(!pairs.length){hist.innerHTML='<span style="color:var(--text-muted);font-size:.8rem">Aucun coup</span>';return;}
+  // Fenêtre défilable : tous les coups, du plus récent au plus ancien
+  pairs.slice().reverse().forEach(p=>{const d=document.createElement('div');d.className='history-move';d.innerHTML=`<span class="mn">${p.n}.</span><span class="mw">${p.w}</span><span class="mb">${p.b}</span>`;hist.appendChild(d);});
+}
+
+function openHistoryModal(){
+  const m=document.getElementById('historyModal');
+  if(m){ m.classList.add('show'); }
+}
+function closeHistoryModal(){
+  const m=document.getElementById('historyModal');
+  if(m){ m.classList.remove('show'); }
 }
 
 // ===== VOICE =====
