@@ -1217,7 +1217,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN2</div>
   <!-- Échiquier d'aperçu avec micro central pour activer la commande vocale -->
   <div class="splash-board-wrap">
     <div class="splash-mini-board" id="splashBoard"></div>
@@ -1315,6 +1315,11 @@ canvas#eloChart { width:100%!important;height:90px!important; }
             <div class="gloss-row"><span class="gloss-ex">« dame prend dame »</span><span class="gloss-desc">capture par type de pièce</span></div>
             <div class="gloss-row"><span class="gloss-ex">« petit roque » / « grand roque »</span><span class="gloss-desc">roquer</span></div>
             <div class="gloss-row"><span class="gloss-ex">« promotion tour »</span><span class="gloss-desc">choisir la promotion</span></div>
+          </div>
+          <div class="gloss-group">
+            <div class="gloss-head">📻 Alphabet radio (pour les colonnes)</div>
+            <div class="gloss-row"><span class="gloss-ex">Alpha=a · Bravo=b · Charlie=c · Delta=d</span><span class="gloss-desc">dites « Delta 4 » pour d4</span></div>
+            <div class="gloss-row"><span class="gloss-ex">Echo=e · Foxtrot=f · Golf=g · Hotel=h</span><span class="gloss-desc">plus fiable que les lettres seules</span></div>
           </div>
           <div class="gloss-group">
             <div class="gloss-head">↔ Si un coup est ambigu</div>
@@ -4647,14 +4652,14 @@ function _lev(a,b){
 // ── CORRECTION PHONÉTIQUE mot par mot ──────────────
 // Mappe les sons/variantes/erreurs vers lettre de colonne, chiffre, ou nom de pièce
 const _PHON_FILES = {
-  a:['a','ah','as','ha','at','â','ace'],
-  b:['b','be','bee','bay','bi','bé','bébé','baie'],
-  c:['c','ce','ces','se','say','cee','ci','cé','c\'est','sait','sais'],
-  d:['d','de','des','dey','di','dé','dés','dais','dée'],
-  e:['e','eu','heu','euh','eux','é','ai','et','est'],
-  f:['f','ef','eff','effe','aef','effet','fe'],
-  g:['g','ge','je','jee','gee','ze','gé','j','geai']
-,  h:['h','ache','hache','ash','hash','hâche']
+  a:['a','ah','as','ha','at','â','ace','alpha','alfa'],
+  b:['b','be','bee','bay','bi','bé','bébé','baie','bravo'],
+  c:['c','ce','ces','se','say','cee','ci','cé','c\'est','sait','sais','charlie','charly'],
+  d:['d','de','des','dey','di','dé','dés','dais','dée','delta'],
+  e:['e','eu','heu','euh','eux','é','ai','et','est','echo','écho'],
+  f:['f','ef','eff','effe','aef','effet','fe','foxtrot','fox'],
+  g:['g','ge','je','jee','gee','ze','gé','j','geai','golf','golfe']
+,  h:['h','ache','hache','ash','hash','hâche','hotel','hôtel']
 };
 const _PHON_RANKS = {
   '1':['1','un','une','hun','in','premier'],
@@ -4717,6 +4722,12 @@ function _phonTokens(text){
     const cls=_classifyWord(w);
     if(cls!==null) out.push(cls);
     else out.push(w); // mot inconnu conservé (peut être un nom de pièce déjà propre)
+  }
+  // Aide à la reconnaissance : la lettre « D » (« dé ») est souvent captée par Chrome
+  // comme le chiffre 2 (« deux »). Or « 2 » suivi d'un chiffre de rangée (1-8) est
+  // impossible pour une case (case = lettre+chiffre) → on réinterprète ce « 2 » en 'd'.
+  for(let i=0;i<out.length-1;i++){
+    if(out[i]==='2' && /^[1-8]$/.test(out[i+1])){ out[i]='d'; }
   }
   return out;
 }
@@ -5409,6 +5420,9 @@ function speak(text, onEnd, who){
   listening = false;
   const myEpoch = speechEpoch;
   window.speechSynthesis.cancel();
+  // Petit carillon doux AVANT l'annonce de l'IA (pour distinguer sa voix de la vôtre)
+  const _isAi = (who==='ai');
+  if(_isAi){ try{ playSound('bell'); }catch(e){} }
   setTimeout(()=>{
     if(myEpoch !== speechEpoch){ aiSpeaking=false; return; } // parole annulée (ex: retour au menu)
     // Petit « tampon » en tête : sur Android, le moteur TTS avale souvent le tout
@@ -5433,7 +5447,11 @@ function speak(text, onEnd, who){
       if(onEnd) setTimeout(onEnd, 300);
       if(voiceContinuous && !listening && !aiThinking) setTimeout(()=>{ if(!aiSpeaking) startListening(); }, 800);
     };
-    window.speechSynthesis.speak(u);
+    if(_isAi){
+      setTimeout(()=>{ try{ window.speechSynthesis.speak(u); }catch(e){} }, 450);
+    } else {
+      window.speechSynthesis.speak(u);
+    }
   }, 250);
 }
 
