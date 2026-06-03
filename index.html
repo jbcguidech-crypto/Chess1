@@ -3917,6 +3917,8 @@ function playSound(kind){
     case 'castle':  break;
     case 'check':   tone(880,0,0.12,0.16,'sine'); tone(1320,0.1,0.14,0.14,'sine'); break;
     case 'end':     tone(523,0,0.18,0.13,'sine'); tone(659,0.14,0.18,0.13,'sine'); tone(784,0.28,0.32,0.13,'sine'); break;
+    case 'bell':    // petit carillon clair avant l'annonce de l'IA (deux notes qui résonnent)
+                    tone(1568,0,0.5,0.13,'sine'); tone(2093,0.04,0.55,0.07,'sine'); break;
     default:        break;
   }
 }
@@ -5424,12 +5426,7 @@ function speak(text, onEnd, who){
     if(chosen) u.voice = chosen;
     // Légère différence de hauteur pour mieux distinguer les deux voix
     u.pitch = 1.0; // tonalité naturelle (pas de déformation)
-    // Légère différence de débit pour distinguer les voix sans les déformer
-    // (la vitesse, contrairement au pitch, ne rend pas la voix robotique) :
-    // l'IA parle un peu plus lentement, le joueur un peu plus vite.
-    // Distinction par la VITESSE (n'altère pas le timbre, donc pas d'effet robotique) :
-    // l'IA parle posément, le joueur un peu plus vif.
-    u.rate = (who==='ai') ? 0.85 : 1.12;
+    u.rate = 1.0;  // même vitesse pour les deux voix
     u.volume = 1;
     u.onend = ()=>{
       aiSpeaking = false;
@@ -5444,7 +5441,13 @@ function speak(text, onEnd, who){
       if(onEnd) setTimeout(onEnd, 300);
       if(voiceContinuous && !listening && !aiThinking) setTimeout(()=>{ if(!aiSpeaking) startListening(); }, 800);
     };
-    window.speechSynthesis.speak(u);
+    if(who==='ai'){
+      // Petit carillon distinctif juste avant que l'IA annonce son coup
+      try{ playSound('bell'); }catch(e){}
+      setTimeout(()=>{ try{ window.speechSynthesis.speak(u); }catch(e){} }, 350);
+    } else {
+      window.speechSynthesis.speak(u);
+    }
   }, 250);
 }
 
