@@ -1314,11 +1314,16 @@ canvas#eloChart { width:100%!important;height:90px!important; }
             <div class="gloss-head">♟ Jouer un coup</div>
             <div class="gloss-row"><span class="gloss-ex">« e4 »</span><span class="gloss-desc">avancer un pion</span></div>
             <div class="gloss-row"><span class="gloss-ex">« cavalier f3 »</span><span class="gloss-desc">déplacer une pièce</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« delta 4 » = d4 · « alpha 2 » = a2</span><span class="gloss-desc">colonnes en alphabet radio (plus fiable)</span></div>
             <div class="gloss-row"><span class="gloss-ex">« cavalier g f3 »</span><span class="gloss-desc">préciser la colonne de départ</span></div>
             <div class="gloss-row"><span class="gloss-ex">« dame prend dame »</span><span class="gloss-desc">capture par type de pièce</span></div>
             <div class="gloss-row"><span class="gloss-ex">« petit roque » / « grand roque »</span><span class="gloss-desc">roquer</span></div>
             <div class="gloss-row"><span class="gloss-ex">« promotion tour »</span><span class="gloss-desc">choisir la promotion</span></div>
           </div>
+          <div class="gloss-group">
+            <div class="gloss-head">📻 Alphabet radio (colonnes)</div>
+            <div class="gloss-row"><span class="gloss-ex">Alpha=a · Bravo=b · Charlie=c · Delta=d</span><span class="gloss-desc">a à d</span></div>
+            <div class="gloss-row"><span class="gloss-ex">Echo=e · Foxtrot=f · Golf=g · Hotel=h</span><span class="gloss-desc">e à h</span></div>
           <div class="gloss-group">
             <div class="gloss-head">↔ Si un coup est ambigu</div>
             <div class="gloss-row"><span class="gloss-ex">« g » / « g1 » / « le premier »</span><span class="gloss-desc">choisir quelle pièce après la question</span></div>
@@ -4623,14 +4628,14 @@ function _lev(a,b){
 // ── CORRECTION PHONÉTIQUE mot par mot ──────────────
 // Mappe les sons/variantes/erreurs vers lettre de colonne, chiffre, ou nom de pièce
 const _PHON_FILES = {
-  a:['a','ah','as','ha','at','â','ace'],
-  b:['b','be','bee','bay','bi','bé','bébé','bébère','baie','bay'],
-  c:['c','ce','ces','se','say','cee','ci','cé','c\'est','ces','sait','sais','session'],
-  d:['d','de','des','dey','di','dé','dés','dais','dée','der','dee','the','der','day','dette','daie','d\'','dei','dez','dais','dé2','t','té','tee','thé'],
-  e:['e','eu','heu','euh','eux','é','ai','et','est','euuh'],
-  f:['f','ef','eff','effe','aef','aiffe','effet','fe'],
-  g:['g','ge','je','jee','gee','ze','gé','j','j\'ai','geai','jet']
-,  h:['h','ache','hache','ash','hash','aches','hâche']
+  a:['a','ah','as','ha','at','â','ace','alpha','alfa','alpha,'],
+  b:['b','be','bee','bay','bi','bé','bébé','bébère','baie','bay','bravo','bravos'],
+  c:['c','ce','ces','se','say','cee','ci','cé','c\'est','ces','sait','sais','session','charlie','charly','charlies','sharly'],
+  d:['d','de','des','dey','di','dé','dés','dais','dée','der','dee','the','der','day','dette','daie','d\'','dei','dez','dais','dé2','t','té','tee','thé','delta','deltas'],
+  e:['e','eu','heu','euh','eux','é','ai','et','est','euuh','echo','écho','écho,','echos'],
+  f:['f','ef','eff','effe','aef','aiffe','effet','fe','foxtrot','fox','foxtrott'],
+  g:['g','ge','je','jee','gee','ze','gé','j','j\'ai','geai','jet','golf','golfe','golfes']
+,  h:['h','ache','hache','ash','hash','aches','hâche','hotel','hôtel','hotels']
 };
 const _PHON_RANKS = {
   '1':['1','un','une','hun','in','1er','premier','ain'],
