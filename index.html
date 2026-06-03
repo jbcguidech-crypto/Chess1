@@ -4521,10 +4521,10 @@ const LANG = {
     no_moves:'Aucun coup joué',
     // French letter pronunciations
     normalize: (t) => t
-      .replace(/ah?/g,'a').replace(/bé/g,'b').replace(/cé/g,'c').replace(/dé/g,'d')
-      .replace(/eu?/g,'e').replace(/effe/g,'f').replace(/jé/g,'g').replace(/ache/g,'h')
-      .replace(/un/g,'1').replace(/deux/g,'2').replace(/trois/g,'3').replace(/quatre/g,'4')
-      .replace(/cinq/g,'5').replace(/six/g,'6').replace(/sept/g,'7').replace(/huit/g,'8'),
+      .replace(/\bah?\b/g,'a').replace(/\bbé\b/g,'b').replace(/\bcé\b/g,'c').replace(/\bdé\b/g,'d')
+      .replace(/\beu?\b/g,'e').replace(/\beffe\b/g,'f').replace(/\bjé\b/g,'g').replace(/\bache\b/g,'h')
+      .replace(/\bun\b/g,'1').replace(/\bdeux\b/g,'2').replace(/\btrois\b/g,'3').replace(/\bquatre\b/g,'4')
+      .replace(/\bcinq\b/g,'5').replace(/\bsix\b/g,'6').replace(/\bsept\b/g,'7').replace(/\bhuit\b/g,'8'),
     piece_names:{'pion':'P','tour':'R','cavalier':'N','fou':'B','dame':'Q','roi':'K'},
   },
   en: {
@@ -4562,10 +4562,10 @@ const LANG = {
     level_title:'⚡ AI Level',
     no_moves:'No moves yet',
     normalize: (t) => t
-      .replace(/one/g,'1').replace(/two/g,'2').replace(/three/g,'3').replace(/four/g,'4')
-      .replace(/five/g,'5').replace(/six/g,'6').replace(/seven/g,'7').replace(/eight/g,'8')
-      .replace(/aye/g,'a').replace(/bee/g,'b').replace(/see/g,'c').replace(/dee/g,'d')
-      .replace(/gee/g,'g').replace(/aitch/g,'h'),
+      .replace(/\bone\b/g,'1').replace(/\btwo\b/g,'2').replace(/\bthree\b/g,'3').replace(/\bfour\b/g,'4')
+      .replace(/\bfive\b/g,'5').replace(/\bsix\b/g,'6').replace(/\bseven\b/g,'7').replace(/\beight\b/g,'8')
+      .replace(/\baye\b/g,'a').replace(/\bbee\b/g,'b').replace(/\bsee\b/g,'c').replace(/\bdee\b/g,'d')
+      .replace(/\bgee\b/g,'g').replace(/\baitch\b/g,'h'),
     piece_names:{'pawn':'P','rook':'R','knight':'N','bishop':'B','queen':'Q','king':'K'},
   }
 };
