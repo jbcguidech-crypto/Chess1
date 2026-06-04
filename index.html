@@ -1276,7 +1276,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN19</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN20</div>
   <!-- Échiquier d'aperçu avec micro central pour activer la commande vocale -->
   <div class="splash-board-wrap">
     <div class="splash-mini-board" id="splashBoard"></div>
@@ -1875,8 +1875,23 @@ function buildSplash() {
         let bg;
         if(_bt0.type==='css'){ bg = isLight ? _bt0.light : _bt0.dark; }
         else { bg = isLight ? (grid.dataset.fbL||'transparent') : 'rgba(0,0,0,0.18)'; }
-        cell.style.cssText = 'width:'+SZ+'px;height:'+SZ+'px;display:flex;align-items:center;justify-content:center;background:'+bg+';';
+        cell.style.cssText = 'position:relative;width:'+SZ+'px;height:'+SZ+'px;display:flex;align-items:center;justify-content:center;background:'+bg+';';
         if(_bt0.type==='img' && isLight) cell.dataset.sq='light';
+        // Coordonnées (cohérence avec l'échiquier de jeu) : chiffres à gauche, lettres en bas
+        const coordCol = isLight ? '#2a3a2a' : '#fff';
+        const coordHalo = isLight ? '0 0 2px rgba(255,255,255,.9),0 0 2px rgba(255,255,255,.9)' : '0 0 2px rgba(0,0,0,.7),0 0 2px rgba(0,0,0,.7)';
+        if(c===0){
+          const rk=document.createElement('span');
+          rk.textContent=(8-r);
+          rk.style.cssText='position:absolute;top:1px;left:2px;font:800 8px/1 Manrope,system-ui,sans-serif;color:'+coordCol+';text-shadow:'+coordHalo+';pointer-events:none;';
+          cell.appendChild(rk);
+        }
+        if(r===7){
+          const fl=document.createElement('span');
+          fl.textContent='abcdefgh'[c];
+          fl.style.cssText='position:absolute;bottom:1px;right:2px;font:800 8px/1 Manrope,system-ui,sans-serif;color:'+coordCol+';text-shadow:'+coordHalo+';pointer-events:none;';
+          cell.appendChild(fl);
+        }
         const code = BOARD_INIT[r][c];
         if(code){
           const img = document.createElement('img');
