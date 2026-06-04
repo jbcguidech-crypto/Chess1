@@ -753,8 +753,8 @@ html[data-theme="dark"] .settings-preview img {
 @keyframes logoFloat { 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-6px);} }
 .splash-logo-test.listening { animation:logoListen 1.1s ease-in-out infinite; }
 @keyframes logoListen {
-  0%,100%{ filter:hue-rotate(-145deg) saturate(1.5) drop-shadow(0 10px 28px rgba(224,80,80,.5)) drop-shadow(0 0 0 rgba(255,90,90,.5)); transform:scale(1); }
-  50%{ filter:hue-rotate(-145deg) saturate(1.5) drop-shadow(0 10px 28px rgba(224,80,80,.65)) drop-shadow(0 0 16px rgba(255,90,90,.8)); transform:scale(1.04); }
+  0%,100%{ filter:sepia(1) saturate(6) hue-rotate(-18deg) brightness(1) drop-shadow(0 0 0 rgba(255,70,70,.5)); transform:scale(1); }
+  50%{ filter:sepia(1) saturate(6) hue-rotate(-18deg) brightness(1.05) drop-shadow(0 0 18px rgba(255,70,70,.85)); transform:scale(1.04); }
 }
 .online-modal {
   display:none;position:fixed;inset:0;z-index:1300;
@@ -1309,7 +1309,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN25</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN26</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
