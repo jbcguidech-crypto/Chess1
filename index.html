@@ -1066,42 +1066,54 @@ input[type=range]::-webkit-slider-thumb {
 
 /* ── GAME OVER ───────────────────────────────── */
 /* Fin de partie : bannière compacte en bas, l'échiquier reste visible */
-#gameOver { display:none;position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:200;width:calc(100% - 28px);max-width:380px; }
+#gameOver { display:none;position:fixed;inset:0;z-index:400;background:rgba(10,12,16,.72);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:24px; }
+#gameOver.show { display:flex;animation:go-fade .25s ease; }
+@keyframes go-fade { from{opacity:0;} to{opacity:1;} }
+.go-modal-box {
+  background:linear-gradient(165deg,#2C313A,#21252c);
+  border:1px solid var(--border);border-radius:24px;padding:30px 26px 24px;text-align:center;
+  width:100%;max-width:340px;box-shadow:0 24px 70px rgba(0,0,0,.6);
+  animation:go-pop .35s cubic-bezier(.2,1.3,.4,1);
+}
+html[data-theme="light"] .go-modal-box { background:linear-gradient(165deg,#FFFFFF,#EEF2F8); }
+@keyframes go-pop { from{ transform:scale(.85) translateY(20px);opacity:0; } to{ transform:scale(1) translateY(0);opacity:1; } }
+.go-icon {
+  width:84px;height:84px;margin:0 auto 16px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:44px;
+  animation:go-icon-pop .5s cubic-bezier(.2,1.4,.4,1) .1s both;
+}
+@keyframes go-icon-pop { from{ transform:scale(0) rotate(-30deg); } to{ transform:scale(1) rotate(0); } }
+.go-icon.win  { background:linear-gradient(160deg,#FFE08A,#F5B53A);box-shadow:0 8px 24px rgba(245,181,58,.45); }
+.go-icon.lose { background:linear-gradient(160deg,#4a5160,#363c47);box-shadow:0 8px 24px rgba(0,0,0,.4); }
+.go-icon.draw { background:linear-gradient(160deg,#8FB4F7,#5B8DEF);box-shadow:0 8px 24px rgba(91,141,239,.4); }
+.go-title {
+  font-family:'Manrope',system-ui,sans-serif;font-size:1.35rem;font-weight:800;
+  color:var(--text-light);margin-bottom:6px;line-height:1.2;
+}
+.go-sub { font-size:.9rem;color:var(--text-muted);margin-bottom:22px;font-weight:600; }
+.go-btns { display:flex;gap:10px;justify-content:center; }
+.go-btn {
+  padding:13px 26px;border-radius:50px;cursor:pointer;flex:1;
+  font-family:'Manrope',system-ui,sans-serif;font-size:.92rem;font-weight:700;
+  transition:all .12s;-webkit-tap-highlight-color:transparent;
+}
+.go-btn.primary {
+  background:linear-gradient(180deg,#6ea0ff,#3a6fd8);color:#fff;border:none;
+  box-shadow:0 4px 14px rgba(58,111,216,.45);
+}
+.go-btn.primary:active { transform:translateY(2px); }
+.go-btn.secondary { background:transparent;border:1.5px solid var(--border);color:var(--text-muted); }
+.go-btn.secondary:active { background:var(--surface-hi); }
+
 /* Choix de promotion */
 #promoOverlay { display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);align-items:center;justify-content:center; }
 #promoOverlay.show { display:flex;animation:fadeUp .2s ease; }
-.promo-box { background:linear-gradient(160deg,var(--green-dark,#1a2e22),var(--green-mid,#22382a));border:2px solid var(--gold);border-radius:18px;padding:18px 20px;text-align:center;box-shadow:0 16px 48px rgba(0,0,0,.5); }
-.promo-title { font-family:'Manrope',system-ui,sans-serif;font-weight:800;color:var(--gold-light);font-size:1rem;margin-bottom:14px; }
+.promo-box { background:linear-gradient(160deg,#2C313A,#21252c);border:1px solid var(--border);border-radius:18px;padding:18px 20px;text-align:center;box-shadow:0 16px 48px rgba(0,0,0,.5); }
+.promo-title { font-family:'Manrope',system-ui,sans-serif;font-weight:800;color:var(--text-light);font-size:1rem;margin-bottom:14px; }
 .promo-choices { display:flex;gap:10px;justify-content:center; }
 .promo-piece { width:60px;height:60px;border-radius:12px;cursor:pointer;background:rgba(255,255,255,.06);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;transition:all .12s;-webkit-tap-highlight-color:transparent; }
 .promo-piece:hover { background:rgba(91,141,239,.2);border-color:var(--gold);transform:translateY(-3px); }
 .promo-piece img { width:46px;height:46px;object-fit:contain; }
-#gameOver.show { display:block;animation:fadeUp .4s cubic-bezier(.34,1.56,.64,1); }
-.go-banner {
-  background:linear-gradient(160deg,var(--green-dark),var(--green-mid));
-  border:2px solid var(--gold);border-radius:18px;padding:16px 20px;text-align:center;
-  box-shadow:0 12px 40px rgba(0,0,0,.5);
-}
-#gameOverText {
-  font-family:'Manrope',system-ui,sans-serif;
-  font-size:1.1rem;font-weight:800;
-  color:var(--gold-light);margin-bottom:10px;white-space:pre-line;
-}
-#eloDeltaDisplay { font-size:.85rem;margin-bottom:12px;color:var(--cream); }
-.go-btns { display:flex;gap:10px;flex-wrap:wrap;justify-content:center; }
-.go-btn {
-  padding:10px 22px;border-radius:50px;cursor:pointer;
-  font-family:'Manrope',system-ui,sans-serif;font-size:.9rem;font-weight:700;letter-spacing:.3px;
-  transition:all .1s;
-}
-.go-btn.primary {
-  background:linear-gradient(180deg,var(--gold-light),var(--gold),var(--gold-dark));
-  color:var(--text-dark);border:none;
-  box-shadow:0 4px 0 var(--gold-dark);
-}
-.go-btn.primary:active { transform:translateY(3px);box-shadow:0 1px 0 var(--gold-dark); }
-.go-btn.secondary { background:transparent;border:2px solid rgba(255,255,255,.2);color:var(--text-muted); }
-.go-btn.secondary:hover { border-color:var(--gold);color:var(--gold-light); }
 
 /* Animation : le roi perdant bascule et s'estompe */
 @keyframes king-die {
@@ -1276,7 +1288,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN20</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN21</div>
   <!-- Échiquier d'aperçu avec micro central pour activer la commande vocale -->
   <div class="splash-board-wrap">
     <div class="splash-mini-board" id="splashBoard"></div>
@@ -1541,12 +1553,13 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 
 <!-- ══ GAME OVER ══════════════════════════════════════ -->
 <div id="gameOver">
-  <div class="go-banner">
-    <div id="gameOverText">Échec et mat !</div>
-    <div id="eloDeltaDisplay"></div>
+  <div class="go-modal-box">
+    <div class="go-icon" id="goIcon"></div>
+    <div class="go-title" id="gameOverText">Échec et mat !</div>
+    <div class="go-sub" id="goSub"></div>
     <div class="go-btns">
-      <button class="go-btn primary" onclick="resetGame()">↺ Rejouer !</button>
-      <button class="go-btn secondary" onclick="goHome()">🏠 Menu</button>
+      <button class="go-btn primary" onclick="resetGame()">↺ Rejouer</button>
+      <button class="go-btn secondary" onclick="goHome()">Menu</button>
     </div>
   </div>
 </div>
@@ -3890,11 +3903,21 @@ function _animateKingDeath(loserColor){
   setTimeout(tryAnim, 250);
 }
 
-function _showEndBanner(msg, result, mate){
+function _showEndBanner(msg, result, mate, outcome){
   const banner=document.getElementById('gameOver');
   if(!banner) return;
   const txt=document.getElementById('gameOverText');
-  if(txt) txt.textContent = msg;
+  const icon=document.getElementById('goIcon');
+  const sub=document.getElementById('goSub');
+  // Détermine l'apparence selon l'issue
+  let cls='draw', emoji='🤝', title=msg, subtitle='';
+  if(outcome==='win'){ cls='win'; emoji='👑'; title='Victoire !'; subtitle='Échec et mat'; }
+  else if(outcome==='lose'){ cls='lose'; emoji='♚'; title='Défaite'; subtitle='Échec et mat'; }
+  else if(outcome==='mate'){ cls='win'; emoji='👑'; title='Échec et mat !'; subtitle=msg.replace('Échec et mat ! ',''); }
+  else { cls='draw'; emoji='🤝'; title='Match nul'; subtitle=msg.replace('Pat — ','').replace('Nulle — ',''); }
+  if(txt) txt.textContent = title;
+  if(sub) sub.textContent = subtitle;
+  if(icon){ icon.className='go-icon '+cls; icon.textContent=emoji; }
   banner.classList.add('show');
 }
 
@@ -3903,17 +3926,26 @@ function checkGameState(){
   outer:for(let r=0;r<8;r++)for(let c=0;c<8;c++){if(color(board[r][c])===opp&&legalMoves(r,c).length>0){has=true;break outer;}}
   if(!has){
     const inCk=isInCheck(board,opp);
-    let msg,result;
-    if(inCk){msg=opp==='w'?'Échec et mat ! Vous perdez.':'Échec et mat ! Vous gagnez !';result=opp==='w'?0:1;}
-    else{msg='Pat ! Match nul.';result=0.5;}
-    if(gameMode==='ai'){
-      const delta=recordGameResult(result,currentElo);
-      msg+='\n'+( delta>0?'+'+delta:delta)+' Elo → '+userProfile.elo;
+    let msg,result,outcome;
+    if(inCk){
+      // opp = camp qui ne peut plus jouer = le camp maté (le perdant)
+      const playerLost = (opp===playerColor);
+      if(gameMode==='2p'){
+        // À deux : on annonce quel camp gagne, sans notion de "vous"
+        msg = opp==='w' ? 'Échec et mat ! Les Noirs gagnent.' : 'Échec et mat ! Les Blancs gagnent.';
+        result = 0; outcome = 'mate';
+      } else {
+        msg = playerLost ? 'Échec et mat — vous avez perdu.' : 'Échec et mat — vous avez gagné !';
+        result = playerLost ? 0 : 1;
+        outcome = playerLost ? 'lose' : 'win';
+      }
+    } else {
+      msg='Pat — match nul.'; result=0.5; outcome='draw';
     }
-    // Animation : le roi perdant "meurt" (uniquement en cas de mat, pas de pat)
+    // Animation : le roi maté "meurt" (uniquement en cas de mat)
     if(inCk){ try{ _animateKingDeath(opp); }catch(e){} }
-    _showEndBanner(msg, result, inCk);
-    if(result===1||inCk)spawnStars();
+    _showEndBanner(msg, result, inCk, outcome);
+    if(outcome==='win')spawnStars();
     return {over:true, check:inCk, msg:msg};
   }
   // Nulles : matériel insuffisant / règle des 50 coups / triple répétition
@@ -3922,8 +3954,7 @@ function checkGameState(){
   else if(halfmoveClock>=100) drawMsg=(currentLang==='fr')?'Nulle — règle des 50 coups.':'Draw — fifty-move rule.';
   else if(isThreefold()) drawMsg=(currentLang==='fr')?'Nulle — triple répétition.':'Draw — threefold repetition.';
   if(drawMsg){
-    if(gameMode==='ai'){ const delta=recordGameResult(0.5,currentElo); drawMsg+='\n'+(delta>0?'+'+delta:delta)+' Elo → '+userProfile.elo; }
-    _showEndBanner(drawMsg, 0.5, false);
+    _showEndBanner(drawMsg, 0.5, false, 'draw');
     return {over:true, check:false, msg:drawMsg};
   }
   return {over:false, check:isInCheck(board,opp), msg:null};
