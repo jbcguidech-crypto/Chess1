@@ -747,7 +747,7 @@ html[data-theme="dark"] .settings-preview img {
   animation:logoFloat 3s ease-in-out infinite;transition:transform .2s;
   border-radius:28px;
 }
-.splash-logo-test svg { display:block;border-radius:28px; }
+.splash-logo-test svg { display:block;overflow:visible; }
 .splash-logo-test:hover { transform:scale(1.05); }
 .splash-logo-test:active { transform:scale(.96); }
 @keyframes logoFloat { 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-6px);} }
@@ -760,7 +760,10 @@ html[data-theme="dark"] .settings-preview img {
 .splash-logo-test .rec-dot { opacity:0;transition:opacity .2s; }
 .splash-logo-test.listening .rec-dot { opacity:1;animation:recBlink 1s ease-in-out infinite; }
 @keyframes recBlink { 0%,100%{ opacity:1; } 50%{ opacity:.3; } }
-.splash-logo-test.listening { filter:drop-shadow(0 0 14px rgba(224,60,60,.55)); }
+/* Anneau REC autour du logo */
+.splash-logo-test .rec-ring { opacity:0;transition:opacity .2s; }
+.splash-logo-test.listening .rec-ring { opacity:1;animation:recRing 1.4s ease-in-out infinite; }
+@keyframes recRing { 0%,100%{ opacity:.9; } 50%{ opacity:.35; } }
 .online-modal {
   display:none;position:fixed;inset:0;z-index:1300;
   background:rgba(0,0,0,.55);backdrop-filter:blur(3px);
@@ -1314,7 +1317,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN28</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN30</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -1325,6 +1328,8 @@ canvas#eloChart { width:100%!important;height:90px!important; }
           <clipPath id="splashLogoMic"><rect x="45" y="28" width="30" height="46" rx="15"/></clipPath>
           <linearGradient id="splashLogoSheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(255,255,255,.22)"/><stop offset=".5" stop-color="rgba(255,255,255,0)"/></linearGradient>
         </defs>
+        <!-- Anneau rouge (visible seulement quand le micro écoute) -->
+        <rect class="rec-ring" x="4" y="4" width="112" height="112" rx="31" fill="none" stroke="#E03C3C" stroke-width="4"/>
         <rect x="8" y="8" width="104" height="104" rx="28" fill="url(#splashLogoBg)"/>
         <!-- vrai damier 8x8 en fond, subtil -->
         <g clip-path="url(#splashLogoRound)" opacity=".13" fill="#fff">
