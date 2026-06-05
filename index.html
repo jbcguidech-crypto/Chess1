@@ -1313,7 +1313,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN40</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN42</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -5129,6 +5129,9 @@ function parseVoiceToAction(text){
   // 0) Roque détecté sur le texte BRUT en priorité (avant normalisation)
   const cs = detectCastle(text);
   if(cs) return {kind:'castle', side:cs};
+  // 0a) Prise EN PASSANT explicite : « prise en passant », « en passant », « passant »
+  const ep = _parseEnPassant(text);
+  if(ep) return ep;
   // 0bis) Promotion d'un pion (priorité, pour choisir la pièce)
   const promoAct = _parsePromotion(text);
   if(promoAct) return promoAct;
@@ -5148,6 +5151,33 @@ function parseVoiceToAction(text){
   const fz = fuzzyMatchMove(text);
   if(fz) return {kind:'move', fr:fz.fr,fc:fz.fc,tr:fz.tr,tc:fz.tc,promo:fz.promo};
   return act;
+}
+
+// Détecte une demande de prise EN PASSANT et renvoie le coup correspondant s'il existe.
+function _parseEnPassant(text){
+  const s = ' ' + (text||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ') + ' ';
+  // "en passant", "prise en passant", "passant", déformations courantes
+  if(!/\b(en passant|prise en passant|passant|passon|pass en|enpassant)\b/.test(s)) return null;
+  if(!enPassant) return null; // aucune prise en passant possible dans la position
+  const [epr, epc] = enPassant; // case de destination de la prise
+  // Pions du trait qui peuvent capturer en passant vers (epr,epc)
+  const cands=[];
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+    const p=board[r][c];
+    if(p && color(p)===turn && type(p)==='P'){
+      if(legalMoves(r,c).some(([mr,mc])=>mr===epr&&mc===epc)) cands.push({fr:r,fc:c});
+    }
+  }
+  if(!cands.length) return null;
+  // Si une colonne de départ est dite (« d prend » / « pion d »), on filtre
+  let chosen = cands[0];
+  if(cands.length>1){
+    const files={a:0,b:1,c:2,d:3,e:4,f:5,g:6,h:7};
+    const toks=_phonTokens(text);
+    for(const t of toks){ if(/^[a-h]$/.test(t)){ const f=files[t]; const m=cands.find(x=>x.fc===f); if(m){ chosen=m; break; } } }
+  }
+  return {kind:'move', fr:chosen.fr, fc:chosen.fc, tr:epr, tc:epc, promo:null};
 }
 
 // Désambiguïsation d'un coup à case unique : utilise une lettre de colonne ou
@@ -6179,17 +6209,13 @@ initFirebase();
 /* Service Worker DÉSACTIVÉ : il causait des blocages (ancienne version servie depuis
    le cache → écran vide après mise à jour). On désinscrit tout SW existant et on vide
    ses caches pour repartir proprement. L'app fonctionne très bien sans (chargement direct). */
+/* Service Worker : enregistrement d'un SW "réseau d'abord" qui rend l'app installable
+   (PWA) tout en évitant le bug d'écran vide (il sert toujours la version en ligne quand
+   le réseau est dispo, et ne tombe sur le cache que hors-ligne). */
 if('serviceWorker' in navigator){
-  try{
-    navigator.serviceWorker.getRegistrations().then(function(regs){
-      regs.forEach(function(r){ r.unregister(); });
-    }).catch(function(){});
-  }catch(e){}
-  try{
-    if(window.caches && caches.keys){
-      caches.keys().then(function(names){ names.forEach(function(n){ caches.delete(n); }); }).catch(function(){});
-    }
-  }catch(e){}
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
 }
 </script>
 </body></html>
