@@ -1313,7 +1313,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN42</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN43</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -4522,21 +4522,9 @@ function enableMicAuto(){
   if(!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return;
   voiceContinuous = true;
   userInteracted = true;
-  // Si l'utilisateur pilotait à la voix depuis le splash, on garantit que le SON de l'IA
-  // est actif aussi (cohérence du mode mains-libres : micro + voix ensemble).
-  if(_splashVoiceWanted){
-    if(voiceMuted){
-      voiceMuted = false;
-      try{ localStorage.setItem('dysc-muted','0'); }catch(e){}
-      if(typeof updateSpeakerBtn==='function') try{ updateSpeakerBtn(); }catch(e){}
-    }
-    // En mains-libres, on veut entendre la confirmation de ses propres coups.
-    if(typeof speakSelf!=='undefined' && !speakSelf){
-      speakSelf = true;
-      try{ localStorage.setItem('dysc_speak_self','1'); }catch(e){}
-      const _t=document.getElementById('speakSelfToggle'); if(_t) _t.checked=true;
-    }
-  }
+  // NB : on NE force PAS voiceMuted ici. Si l'utilisateur a coupé le son (même en
+  // mains-libres), on respecte son choix — sinon le son se rallumerait tout seul.
+  // L'annonce de SES PROPRES coups (who==='me') passe de toute façon même son coupé.
   // Si c'est au joueur de jouer → on écoute tout de suite.
   // Sinon (l'IA joue en premier), l'écoute reprendra automatiquement après le coup de l'IA.
   if(turn===playerColor && !listening){
