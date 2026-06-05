@@ -1,92 +1,39 @@
-/* Service Worker — Do You Speak Chess? (PWA hors-ligne)
-   Stratégie :
-   - PAGE HTML (navigation)  → "réseau d'abord" : on récupère toujours la dernière
-     version en ligne, et on retombe sur le cache uniquement hors-ligne.
-   - AUTRES RESSOURCES (polices, pièces, échiquiers, Stockfish, manifest, CDN)
-     → "cache d'abord" : réponse instantanée, et mise en cache au passage —
-       y compris les réponses CDN cross-origin (type "opaque") pour garantir
-       le jeu hors-ligne (moteur Stockfish, images de pièces, échiquiers).
-   À chaque nouvelle version, augmenter le numéro de CACHE ci-dessous. */
+/* Service Worker minimal et SÛR pour "Do You Speak Chess?"
+   But : rendre l'app installable (PWA) SANS le bug d'écran vide lié au cache obsolète.
+   Stratégie : "réseau d'abord" — on sert toujours la dernière version en ligne quand le
+   réseau est disponible, et on ne tombe sur le cache QUE si l'utilisateur est hors-ligne. */
 
-const CACHE = 'dysc-v4';
+const CACHE = 'dysc-v1';
 
-const CORE = ['./', './index.html', './manifest.json'];
-
-// Ressources externes utiles à précharger (best-effort)
-const PRECACHE_OPTIONAL = [
-  'https://cdn.jsdelivr.net/npm/stockfish@18.0.7/bin/stockfish-18-lite-single.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js'
-];
-
-self.addEventListener('install', (e) => {
-  self.skipWaiting();
-  e.waitUntil((async () => {
-    const c = await caches.open(CACHE);
-    await c.addAll(CORE).catch(() => {});
-    await Promise.all(PRECACHE_OPTIONAL.map(async (url) => {
-      try {
-        const res = await fetch(url, { mode: 'no-cors' });
-        if (res) await c.put(url, res);
-      } catch (e) { /* ignoré : sera mis en cache à l'usage */ }
-    }));
-  })());
-});
+self.addEventListener('install', (e) => { self.skipWaiting(); });
 
 self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim())
-  );
+  e.waitUntil((async () => {
+    const names = await caches.keys();
+    await Promise.all(names.filter(n => n !== CACHE).map(n => caches.delete(n)));
+    await self.clients.claim();
+  })());
 });
-
-self.addEventListener('message', (e) => {
-  if (e.data === 'SKIP_WAITING') self.skipWaiting();
-});
-
-function isHtmlRequest(req) {
-  return req.mode === 'navigate' ||
-    (req.headers.get('accept') || '').includes('text/html');
-}
 
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
-
-  // ── PAGE HTML : réseau d'abord ──
-  if (isHtmlRequest(req)) {
-    e.respondWith(
-      fetch(req)
-        .then((res) => {
-          if (res && res.status === 200) {
-            const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
-          }
-          return res;
-        })
-        .catch(() =>
-          caches.match(req)
-            .then((c) => c || caches.match('./index.html'))
-            .then((c) => c || caches.match('./'))
-        )
-    );
-    return;
-  }
-
-  // ── AUTRES RESSOURCES : cache d'abord, réseau en repli + mise en cache ──
-  e.respondWith(
-    caches.match(req).then((cached) => {
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;
+  e.respondWith((async () => {
+    try {
+      const fresh = await fetch(req);
+      const cache = await caches.open(CACHE);
+      cache.put(req, fresh.clone());
+      return fresh;
+    } catch (err) {
+      const cached = await caches.match(req);
       if (cached) return cached;
-      return fetch(req)
-        .then((res) => {
-          // Met en cache basic / cors / opaque (CDN cross-origin) → vital hors-ligne
-          if (res && (res.status === 200 || res.type === 'opaque')) {
-            const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
-          }
-          return res;
-        })
-        .catch(() => cached || Response.error());
-    })
-  );
+      if (req.mode === 'navigate') {
+        const fallback = await caches.match('./index.html') || await caches.match('./');
+        if (fallback) return fallback;
+      }
+      throw err;
+    }
+  })());
 });
