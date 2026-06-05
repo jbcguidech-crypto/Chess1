@@ -756,11 +756,7 @@ html[data-theme="dark"] .settings-preview img {
   0%,100%{ transform:scale(1); }
   50%{ transform:scale(1.04); }
 }
-/* Pastille REC : cachée par défaut, clignote quand le micro écoute */
-.splash-logo-test .rec-dot { opacity:0;transition:opacity .2s; }
-.splash-logo-test.listening .rec-dot { opacity:1;animation:recBlink 1s ease-in-out infinite; }
-@keyframes recBlink { 0%,100%{ opacity:1; } 50%{ opacity:.3; } }
-/* Anneau REC autour du logo */
+/* Anneau rouge autour du logo quand le micro écoute */
 .splash-logo-test .rec-ring { opacity:0;transition:opacity .2s; }
 .splash-logo-test.listening .rec-ring { opacity:1;animation:recRing 1.4s ease-in-out infinite; }
 @keyframes recRing { 0%,100%{ opacity:.9; } 50%{ opacity:.35; } }
@@ -1311,13 +1307,13 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 <!-- ══ FENÊTRE D'ACCUEIL : activation du pilotage vocal ══ -->
 <!-- ══ SPLASH ══════════════════════════════════════ -->
 <div id="splash">
-  <button class="splash-auth" id="splashAuthBtn" onclick="loginGoogle()" title="Se connecter ou créer un compte">🔑 Connexion / Inscription</button>
+  <button class="splash-auth" id="splashAuthBtn" onclick="loginGoogle()" title="Se connecter avec Google"><svg viewBox="0 0 18 18" width="16" height="16" style="vertical-align:-3px;margin-right:6px;"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.02-3.7H.96v2.34A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.98 10.72a5.4 5.4 0 0 1 0-3.44V4.94H.96a9 9 0 0 0 0 8.12l3.02-2.34z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.46 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.94l3.02 2.34C4.68 5.16 6.66 3.58 9 3.58z"/></svg>Connexion avec Google</button>
   <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Mode clair" title="Mode clair / sombre">☀️</button>
   <button class="settings-toggle" id="settingsToggle" onclick="openSettings()" aria-label="Personnaliser" title="Personnaliser">⚙️</button>
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN34</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN37</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -1359,11 +1355,6 @@ canvas#eloChart { width:100%!important;height:90px!important; }
         <g fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round">
           <path d="M35 62 C35 84 85 84 85 62"/>
           <path d="M60 84 L60 98 M47 100 L73 100"/>
-        </g>
-        <!-- Pastille REC (visible seulement quand le micro écoute) -->
-        <g class="rec-dot">
-          <circle cx="96" cy="24" r="13" fill="#E03C3C" stroke="#fff" stroke-width="3"/>
-          <circle cx="96" cy="24" r="4.5" fill="#fff"/>
         </g>
       </svg>
     </button>
@@ -2803,8 +2794,8 @@ function updateSplashAuth(user) {
       if(ok){ try { logoutGoogle(); } catch(e){} }
     };
   } else {
-    el.innerHTML = '🔑 Connexion / Inscription';
-    el.title = 'Se connecter ou créer un compte';
+    el.innerHTML = '<svg viewBox="0 0 18 18" width="16" height="16" style="vertical-align:-3px;margin-right:6px;"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.02-3.7H.96v2.34A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.98 10.72a5.4 5.4 0 0 1 0-3.44V4.94H.96a9 9 0 0 0 0 8.12l3.02-2.34z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.46 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.94l3.02 2.34C4.68 5.16 6.66 3.58 9 3.58z"/></svg>Connexion avec Google';
+    el.title = 'Se connecter avec Google';
     el.onclick = function(){ loginGoogle(); };
   }
 }
@@ -2961,14 +2952,14 @@ function _pickHumanMove(){
   // dépendant du niveau. Empêche les bourdes catastrophiques aux niveaux moyens/hauts,
   // tout en laissant les débutants jouer des coups franchement faibles.
   let maxLoss;
-  if(elo <= 500)       maxLoss = 600;  // débutant : peut lâcher une pièce
-  else if(elo <= 800)  maxLoss = 400;
-  else if(elo <= 1100) maxLoss = 250;
-  else if(elo <= 1400) maxLoss = 150;
-  else if(elo <= 1700) maxLoss = 90;
-  else if(elo <= 2000) maxLoss = 55;
-  else if(elo <= 2400) maxLoss = 30;
-  else                 maxLoss = 15;
+  if(elo <= 500)       maxLoss = 350;  // débutant : peut faire de grosses erreurs
+  else if(elo <= 800)  maxLoss = 220;
+  else if(elo <= 1100) maxLoss = 150;
+  else if(elo <= 1400) maxLoss = 100;
+  else if(elo <= 1700) maxLoss = 65;
+  else if(elo <= 2000) maxLoss = 40;
+  else if(elo <= 2400) maxLoss = 22;
+  else                 maxLoss = 12;
   const capped = cands.filter(c => (best - c.cp) <= maxLoss);
   if(capped.length) cands = capped;
 
@@ -2984,15 +2975,17 @@ function _pickHumanMove(){
   }
 
   // "Température" (centipions) : plus l'Elo est bas, plus on tolère des coups sous-optimaux.
+  // NB : Skill Level / UCI_Elo affaiblit DÉJÀ le moteur ; cette couche ne fait qu'ajouter
+  // un peu de variété humaine, sans re-doubler l'affaiblissement (sinon l'IA joue trop mal).
   let tau;
-  if(elo <= 500)       tau = 250;
-  else if(elo <= 800)  tau = 170;
-  else if(elo <= 1100) tau = 110;
-  else if(elo <= 1400) tau = 70;
-  else if(elo <= 1700) tau = 45;
-  else if(elo <= 2000) tau = 28;
-  else if(elo <= 2400) tau = 15;
-  else                 tau = 8;
+  if(elo <= 500)       tau = 130;
+  else if(elo <= 800)  tau = 90;
+  else if(elo <= 1100) tau = 60;
+  else if(elo <= 1400) tau = 42;
+  else if(elo <= 1700) tau = 30;
+  else if(elo <= 2000) tau = 20;
+  else if(elo <= 2400) tau = 12;
+  else                 tau = 7;
   const b2 = cands[0].cp;
   // Poids = exp(-perte/tau) : le meilleur coup a poids 1, les autres décroissent
   const weights = cands.map(c => Math.exp(-Math.max(0, b2 - c.cp)/tau));
@@ -3955,9 +3948,13 @@ function _renderReviewBoard(){
   const snap = _buildBoardAt(idx);
   // On échange temporairement board/lastMove pour réutiliser renderBoard
   const savedBoard=board, savedLast=lastMove, savedSel=selected, savedPm=possibleMoves;
-  board=snap.board; lastMove=snap.lastMove; selected=null; possibleMoves=[];
-  renderBoard();
-  board=savedBoard; lastMove=savedLast; selected=savedSel; possibleMoves=savedPm;
+  try{
+    board=snap.board; lastMove=snap.lastMove; selected=null; possibleMoves=[];
+    renderBoard();
+  } finally {
+    // Restaure TOUJOURS l'état réel, même si renderBoard échoue (évite un plateau bloqué)
+    board=savedBoard; lastMove=savedLast; selected=savedSel; possibleMoves=savedPm;
+  }
   // Met à jour l'étiquette
   const lbl=document.getElementById('reviewLabel');
   if(lbl) lbl.textContent = (idx>=total) ? (currentLang==='fr'?'En direct':'Live') : (idx+' / '+total);
@@ -4307,9 +4304,8 @@ function _attachBoardPointer(boardEl){
       return;
     }
     if(ev.button && ev.button!==0) return; // autres boutons ignorés
-    // EN REVUE : visualisation seule. Aucun glissement/coup possible.
-    // Un simple clic revient au direct, mais on ne prépare jamais de drag.
-    if(reviewIndex!==null){ return; }
+    // EN REVUE : visualisation seule. Un simple tap sur le plateau revient au direct.
+    if(reviewIndex!==null){ exitReview(); return; }
     const hit = _cellFromPoint(ev.clientX, ev.clientY);
     if(!hit) return;
     if(aiThinking && !premoveEnabled) return;
@@ -5720,15 +5716,15 @@ function updateEloUI(){
   sfDepth=eloToDepth(currentElo);
 }
 function eloToTime(elo){
-  // Temps de réflexion : très court en bas (limite la profondeur → erreurs),
+  // Temps de réflexion : court en bas (mais assez pour un jeu cohérent),
   // croissant jusqu'à la pleine puissance (3 s) au sommet.
-  if(elo <= 500)  return 40;
-  if(elo <= 800)  return 90;
-  if(elo <= 1100) return 180;
-  if(elo <= 1400) return 320;
-  if(elo <= 1700) return 550;
-  if(elo <= 2000) return 850;
-  if(elo <= 2300) return 1300;
+  if(elo <= 500)  return 120;
+  if(elo <= 800)  return 220;
+  if(elo <= 1100) return 350;
+  if(elo <= 1400) return 500;
+  if(elo <= 1700) return 700;
+  if(elo <= 2000) return 1000;
+  if(elo <= 2300) return 1400;
   if(elo <= 2600) return 2000;
   return 3000; // niveau max : pleine puissance NNUE
 }
@@ -5757,16 +5753,18 @@ function configureStockfishStrength(){
     stockfish.postMessage('setoption name UCI_Elo value ' + sentElo);
     stockfish.postMessage('setoption name Skill Level value 20');
   } else {
-    // Sous la plage UCI_Elo → on bride par Skill Level (LimitStrength désactivé)
+    // Sous la plage UCI_Elo → on bride par Skill Level (LimitStrength désactivé).
     stockfish.postMessage('setoption name UCI_LimitStrength value false');
-    // Mapping affiné : 400→0, 700→1, 1000→3, 1350→8. Bas niveaux vraiment faibles.
+    // Mapping recalibré pour coller au ressenti : un "800" doit jouer comme un vrai 800,
+    // pas comme un débutant absolu. (Skill 0≈800, 4≈1100, 8≈1350 en force brute SF ;
+    // notre couche humaine retire encore un peu, d'où ces valeurs un cran au-dessus.)
     let skill;
-    if(elo <= 450)       skill = 0;
-    else if(elo <= 650)  skill = 1;
-    else if(elo <= 850)  skill = 2;
-    else if(elo <= 1050) skill = 4;
-    else if(elo <= 1200) skill = 6;
-    else                 skill = 8;
+    if(elo <= 450)       skill = 1;
+    else if(elo <= 650)  skill = 3;
+    else if(elo <= 850)  skill = 5;
+    else if(elo <= 1050) skill = 7;
+    else if(elo <= 1200) skill = 9;
+    else                 skill = 11;
     stockfish.postMessage('setoption name Skill Level value ' + skill);
   }
 }
