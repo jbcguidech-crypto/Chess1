@@ -632,26 +632,35 @@ html[data-theme="dark"] .settings-preview img {
 }
 .rv-label.live { color:var(--blue); }
 
-/* ── INTERRUPTEURS EN JEU (analyse / aveugle) ── */
+/* ── INTERRUPTEURS EN JEU (entendre mes coups / aveugle / pré-coups) ── */
 .ingame-toggles {
-  display:flex;align-items:center;justify-content:center;gap:8px;
-  width:100%;max-width:420px;margin:0 auto 8px;box-sizing:border-box;
+  display:flex;align-items:stretch;justify-content:center;gap:6px;flex-wrap:wrap;
+  width:100%;max-width:440px;margin:0 auto 8px;box-sizing:border-box;
 }
 .igt-pill {
-  display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;
-  padding:7px 14px;border-radius:50px;
+  flex:1 1 0;min-width:96px;
+  display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;user-select:none;
+  padding:9px 10px;border-radius:12px;text-align:center;
   background:var(--surface-hi);border:1px solid var(--border);
-  font-family:'Manrope',system-ui,sans-serif;font-weight:700;font-size:.8rem;color:var(--text-muted);
+  font-family:'Manrope',system-ui,sans-serif;font-weight:700;font-size:.76rem;line-height:1.15;color:var(--text-muted);
   transition:all .15s;-webkit-tap-highlight-color:transparent;
 }
 .igt-pill:hover { border-color:var(--border-hi); }
 .igt-pill input { position:absolute;opacity:0;width:0;height:0; }
-.igt-pill span { display:flex;align-items:center;gap:5px; }
-/* État actif : pilule mise en évidence quand cochée */
+.igt-pill span { display:flex;align-items:center;justify-content:center;gap:6px; }
+/* Pastille d'état à gauche du libellé (remplace l'emoji) */
+.igt-pill span::before {
+  content:'';width:8px;height:8px;border-radius:50%;flex:0 0 auto;
+  background:var(--border-hi);transition:all .15s;box-shadow:none;
+}
+/* État actif : bouton mis en évidence + pastille allumée */
 .igt-pill:has(input:checked) {
-  background:rgba(91,141,239,.18);
+  background:rgba(91,141,239,.16);
   border-color:var(--border-gold);
   color:var(--gold-light);
+}
+.igt-pill:has(input:checked) span::before {
+  background:var(--blue);box-shadow:0 0 6px rgba(91,141,239,.7);
 }
 
 /* ── JOUER EN LIGNE ── */
@@ -1317,7 +1326,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN46</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN47</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -1556,19 +1565,19 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     <button class="rv-btn" id="reviewLive" onclick="reviewEnd()" aria-label="Dernier coup" title="Dernier coup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><line x1="7" y1="6" x2="7" y2="18"/></svg></button>
   </div>
 
-  <!-- INTERRUPTEURS EN JEU : mes coups + mode aveugle + pré-coups -->
+  <!-- INTERRUPTEURS EN JEU : entendre mes coups + jouer à l'aveugle + autoriser les pré-coups -->
   <div class="ingame-toggles">
     <label class="igt-pill">
       <input type="checkbox" id="speakSelfToggle" checked onchange="setSpeakSelf(this.checked)">
-      <span>🗣 Mes coups</span>
+      <span>Entendre mes coups</span>
     </label>
     <label class="igt-pill">
       <input type="checkbox" id="blindToggleGame" onchange="setBlindfold(this.checked)">
-      <span>🙈 Aveugle</span>
+      <span>Jouer à l'aveugle</span>
     </label>
     <label class="igt-pill">
       <input type="checkbox" id="premoveToggleGame" onchange="setPremoveEnabled(this.checked)">
-      <span>⚡ Pré-coups</span>
+      <span>Autoriser les pré-coups</span>
     </label>
   </div>
 
