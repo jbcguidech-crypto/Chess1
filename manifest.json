@@ -1,17 +1,22 @@
 {
+  "id": "/?source=pwa",
   "name": "Do You Speak Chess?",
   "short_name": "DYSC",
-  "description": "Jeu d'échecs vocal, mains-libres, en français. Jouez en parlant.",
+  "description": "Jeu d'échecs vocal et mains-libres, en français. Jouez une partie entière en parlant : annoncez vos coups à la voix, l'application les joue et vous répond. Contre l'ordinateur (niveau réglable) ou à deux.",
   "lang": "fr",
+  "dir": "ltr",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
   "background_color": "#262A31",
   "theme_color": "#5B8DEF",
+  "categories": ["games", "board", "education"],
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
