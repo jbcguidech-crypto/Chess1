@@ -1317,7 +1317,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN30</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN31</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -5921,30 +5921,41 @@ function _stopEverything(){
 
 // Crée une nouvelle partie en ligne → renvoie le code
 async function createOnlineGame(){
-  if(!(await _requireLogin())) return; // connexion Google obligatoire pour le jeu en ligne
-  if(!fbReady || !db){ alert(currentLang==='fr'?'Firebase non connecté. Vérifiez votre connexion.':'Firebase not connected.'); return; }
-  _stopEverything();
-  const { doc, setDoc } = window._fb;
-  let code=_genCode();
-  // Couleur du créateur tirée au hasard ; celui qui rejoint aura l'opposée
-  const hostColor = (Math.random() < 0.5) ? 'w' : 'b';
-  gameMode='online'; onlineColor=hostColor; onlineCode=code; onlineRev=0; onlineIsHost=true; window._guestNotified=false;
-  // Position initiale (les Blancs commencent toujours)
-  initBoard(); turn='w'; selected=null; possibleMoves=[]; history=[]; moveHistoryUCI=[]; undoStack=[];
-  lastMove=null; enPassant=null; castling={wK:true,wR_k:true,wR_q:true,bK:true,bR_k:true,bR_q:true};
-  halfmoveClock=0; positionHistory=[posKey()]; gameActive=true; playerColor=hostColor;
   try{
-    await setDoc(doc(db,'online_games',code), Object.assign(_serializeGame(), {
-      createdAt: Date.now(), hostName: userProfile.name||'Hôte', guestJoined:false, hostColor: hostColor
-    }));
-  }catch(e){ console.warn(e); alert(currentLang==='fr'?'Création impossible.':'Could not create game.'); return; }
-  _listenOnline(code);
-  closeOnlineModal();
-  userInteracted = true;
-  try{ hideSplash(); }catch(e){ showPage('game'); }
-  renderBoard(); updateSidebar(); buildCoords();
-  _showOnlineBanner(code, hostColor);
-  _updateOnlineStatus();
+    if(!(await _requireLogin())){ showToast(currentLang==='fr'?'Connexion requise pour jouer en ligne.':'Login required.', 'error'); return; }
+    if(!fbReady || !db){ showToast(currentLang==='fr'?'Firebase non connecté. Vérifiez votre connexion.':'Firebase not connected.', 'error'); return; }
+    _stopEverything();
+    const { doc, setDoc } = window._fb;
+    let code=_genCode();
+    // Couleur du créateur tirée au hasard ; celui qui rejoint aura l'opposée
+    const hostColor = (Math.random() < 0.5) ? 'w' : 'b';
+    gameMode='online'; onlineColor=hostColor; onlineCode=code; onlineRev=0; onlineIsHost=true; window._guestNotified=false;
+    // Position initiale (les Blancs commencent toujours)
+    initBoard(); turn='w'; selected=null; possibleMoves=[]; history=[]; moveHistoryUCI=[]; undoStack=[];
+    lastMove=null; enPassant=null; castling={wK:true,wR_k:true,wR_q:true,bK:true,bR_k:true,bR_q:true};
+    halfmoveClock=0; positionHistory=[posKey()]; gameActive=true; playerColor=hostColor;
+    try{
+      await setDoc(doc(db,'online_games',code), Object.assign(_serializeGame(), {
+        createdAt: Date.now(), hostName: userProfile.name||'Hôte', guestJoined:false, hostColor: hostColor
+      }));
+    }catch(e){
+      console.error('createOnlineGame setDoc error:', e);
+      showToast((currentLang==='fr'?'Création impossible : ':'Could not create: ')+(e&&e.code?e.code:(e&&e.message?e.message:e)), 'error');
+      return;
+    }
+    _listenOnline(code);
+    closeOnlineModal();
+    userInteracted = true;
+    try{ showPage('game'); }catch(e){}
+    try{ hideSplash(); }catch(e){}
+    renderBoard(); updateSidebar(); buildCoords();
+    try{ _showOnlineBanner(code, hostColor); }catch(e){ console.warn('banner', e); }
+    _updateOnlineStatus();
+    showToast((currentLang==='fr'?'Partie créée — code : ':'Game created — code: ')+code, 'success');
+  }catch(err){
+    console.error('createOnlineGame fatal:', err);
+    showToast((currentLang==='fr'?'Erreur : ':'Error: ')+(err&&err.message?err.message:err), 'error');
+  }
 }
 
 // Rejoint une partie existante via son code
@@ -5968,10 +5979,12 @@ async function joinOnlineGame(code){
   _listenOnline(code);
   closeOnlineModal();
   userInteracted = true;
-  try{ hideSplash(); }catch(e){ showPage('game'); }
+  try{ showPage('game'); }catch(e){}
+  try{ hideSplash(); }catch(e){}
   renderBoard(); updateSidebar(); buildCoords();
-  _showOnlineBanner(code, myColor);
+  try{ _showOnlineBanner(code, myColor); }catch(e){ console.warn('banner', e); }
   _updateOnlineStatus();
+  showToast((currentLang==='fr'?'Partie rejointe !':'Joined game!'), 'success');
 }
 
 function leaveOnlineGame(){
