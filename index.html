@@ -1313,7 +1313,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN37</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN39</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -3571,10 +3571,12 @@ function makeMove(fr,fc,tr,tc,castleType,promo,byVoice){
   renderBoard();updateSidebar();
   const st=checkGameState();
   try{ if(st.over) playSound('end'); else if(st.check) playSound('check'); else if(castleType) playSound('castle'); else if(_isCap) playSound('capture'); else playSound('move'); }catch(e){}
-  // Annonce du coup du joueur : version courte « Pion d4 » (validation rapide)
-  // Respecte l'option « Mes coups » : si désactivée, on n'annonce pas, mais l'IA joue quand même.
-  let say = speakSelf ? humanSpokenShort : '';
-  if(speakSelf && st.check && !st.over) say = (say||'') + (currentLang==='fr'?', échec':', check');
+  // Annonce du coup du joueur : version courte « Pion d4 » (validation rapide).
+  // En mains-libres (coup dit à la voix), on annonce TOUJOURS, même si l'option
+  // « Mes coups » est désactivée — c'est indispensable pour confirmer sans regarder l'écran.
+  const announceSelf = speakSelf || byVoice;
+  let say = announceSelf ? humanSpokenShort : '';
+  if(announceSelf && st.check && !st.over) say = (say||'') + (currentLang==='fr'?', échec':', check');
   if(st.over){
     if(say) speak(say, ()=>{ if(st.msg) speak(st.msg, null, 'me'); }, 'me');   // coup PUIS message de fin
   } else if(gameMode==='ai' && turn!==playerColor){
@@ -4520,10 +4522,25 @@ function enableMicAuto(){
   if(!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return;
   voiceContinuous = true;
   userInteracted = true;
+  // Si l'utilisateur pilotait à la voix depuis le splash, on garantit que le SON de l'IA
+  // est actif aussi (cohérence du mode mains-libres : micro + voix ensemble).
+  if(_splashVoiceWanted){
+    if(voiceMuted){
+      voiceMuted = false;
+      try{ localStorage.setItem('dysc-muted','0'); }catch(e){}
+      if(typeof updateSpeakerBtn==='function') try{ updateSpeakerBtn(); }catch(e){}
+    }
+    // En mains-libres, on veut entendre la confirmation de ses propres coups.
+    if(typeof speakSelf!=='undefined' && !speakSelf){
+      speakSelf = true;
+      try{ localStorage.setItem('dysc_speak_self','1'); }catch(e){}
+      const _t=document.getElementById('speakSelfToggle'); if(_t) _t.checked=true;
+    }
+  }
   // Si c'est au joueur de jouer → on écoute tout de suite.
   // Sinon (l'IA joue en premier), l'écoute reprendra automatiquement après le coup de l'IA.
   if(turn===playerColor && !listening){
-    setTimeout(()=>{ try{ startListening(); }catch(e){} }, 800);
+    setTimeout(()=>{ try{ if(voiceContinuous && !listening) startListening(); }catch(e){} }, 1100);
   }
 }
 
@@ -5622,7 +5639,9 @@ function setSpeakSelf(on){
 function speak(text, onEnd, who){
   if(!window.speechSynthesis || !text) return;
   if(!gameActive){ if(onEnd) setTimeout(onEnd,50); return; } // pas de voix hors partie (ex: splash)
-  if(voiceMuted){ if(onEnd) setTimeout(onEnd, 50); return; } // voix coupée : on n'annonce pas mais la partie continue
+  // voiceMuted coupe la voix BAVARDE de l'IA, mais PAS la confirmation de votre propre coup
+  // (essentielle en mains-libres pour savoir si le bon coup a été joué).
+  if(voiceMuted && who!=='me'){ if(onEnd) setTimeout(onEnd, 50); return; }
   if(!userInteracted){
     pendingSpeech = text;
     if(onEnd) setTimeout(onEnd, 1500);
