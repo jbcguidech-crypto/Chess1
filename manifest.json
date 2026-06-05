@@ -1,7 +1,7 @@
 {
   "id": "/?source=pwa",
   "name": "Do You Speak Chess?",
-  "short_name": "DYSC",
+  "short_name": "Speak Chess",
   "description": "Jeu d'échecs vocal et mains-libres, en français. Jouez une partie entière en parlant : annoncez vos coups à la voix, l'application les joue et vous répond. Contre l'ordinateur (niveau réglable) ou à deux.",
   "lang": "fr",
   "dir": "ltr",
