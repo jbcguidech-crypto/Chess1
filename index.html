@@ -1317,7 +1317,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN31</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN32</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -2938,8 +2938,9 @@ let _multipvCount = 1;
 
 // Combien de coups candidats demander selon l'Elo (plus bas = plus de variété/erreurs)
 function _multipvForElo(elo){
-  if(elo <= 800)  return 4;
-  if(elo <= 1500) return 3;
+  if(elo <= 600)  return 6;  // débutant : large choix → erreurs fréquentes
+  if(elo <= 1000) return 5;
+  if(elo <= 1500) return 4;
   if(elo <= 2000) return 2;
   return 1; // haut niveau : on veut le meilleur coup
 }
@@ -2952,13 +2953,17 @@ function _pickHumanMove(){
   const cands = ranks.map(r=>_pvCandidates[r]).filter(Boolean);
   if(cands.length<=1) return cands[0] ? cands[0].move : null;
   const elo = currentElo;
-  // "Température" (centipions) : plus l'Elo est bas, plus on tolère des coups sous-optimaux
+  // "Température" (centipions) : plus l'Elo est bas, plus on tolère des coups sous-optimaux.
+  // Gradient accentué pour que la différence entre niveaux soit nettement ressentie.
   let tau;
-  if(elo <= 800)       tau = 120;
-  else if(elo <= 1200) tau = 80;
-  else if(elo <= 1600) tau = 50;
-  else if(elo <= 2000) tau = 30;
-  else                 tau = 12;
+  if(elo <= 500)       tau = 250;  // débutant : joue souvent des coups franchement faibles
+  else if(elo <= 800)  tau = 170;
+  else if(elo <= 1100) tau = 110;
+  else if(elo <= 1400) tau = 70;
+  else if(elo <= 1700) tau = 45;
+  else if(elo <= 2000) tau = 28;
+  else if(elo <= 2400) tau = 15;
+  else                 tau = 8;    // quasi parfait
   const best = cands[0].cp;
   // Poids = exp(-perte/tau) : le meilleur coup a poids 1, les autres décroissent
   const weights = cands.map(c => Math.exp(-Math.max(0, best - c.cp)/tau));
@@ -5686,17 +5691,17 @@ function updateEloUI(){
   sfDepth=eloToDepth(currentElo);
 }
 function eloToTime(elo){
-  // Réactif aux niveaux intermédiaires, puissance maximale (3 s) au niveau le plus élevé.
-  if(elo <= 400)  return 50;
-  if(elo <= 800)  return 120;
-  if(elo <= 1200) return 250;
-  if(elo <= 1500) return 400;
-  if(elo <= 1800) return 650;
-  if(elo <= 2000) return 900;
-  if(elo <= 2200) return 1200;
-  if(elo <= 2500) return 1800;
-  if(elo <= 2800) return 2400;
-  return 3000; // niveau max : 3 s, pleine puissance NNUE
+  // Temps de réflexion : très court en bas (limite la profondeur → erreurs),
+  // croissant jusqu'à la pleine puissance (3 s) au sommet.
+  if(elo <= 500)  return 40;
+  if(elo <= 800)  return 90;
+  if(elo <= 1100) return 180;
+  if(elo <= 1400) return 320;
+  if(elo <= 1700) return 550;
+  if(elo <= 2000) return 850;
+  if(elo <= 2300) return 1300;
+  if(elo <= 2600) return 2000;
+  return 3000; // niveau max : pleine puissance NNUE
 }
 
 function configureStockfishStrength(){
@@ -5719,8 +5724,14 @@ function configureStockfishStrength(){
   } else {
     // Sous la plage UCI_Elo → on bride par Skill Level (LimitStrength désactivé)
     stockfish.postMessage('setoption name UCI_LimitStrength value false');
-    // 400 ELO → 0 (débutant), 1350 ELO → 12
-    const skill = Math.max(0, Math.min(12, Math.round((elo - 400) / (UCI_MIN - 400) * 12)));
+    // Mapping affiné : 400→0, 700→1, 1000→3, 1350→8. Bas niveaux vraiment faibles.
+    let skill;
+    if(elo <= 450)       skill = 0;
+    else if(elo <= 650)  skill = 1;
+    else if(elo <= 850)  skill = 2;
+    else if(elo <= 1050) skill = 4;
+    else if(elo <= 1200) skill = 6;
+    else                 skill = 8;
     stockfish.postMessage('setoption name Skill Level value ' + skill);
   }
 }
