@@ -613,20 +613,24 @@ html[data-theme="dark"] .settings-preview img {
 .gc-btn.gc-primary:hover { background:var(--gold-light);border-color:var(--gold-light); }
 
 /* ── BARRE DE REVUE ── */
-.review-bar {  display:flex;align-items:center;justify-content:center;gap:6px;
-  width:100%;max-width:420px;margin:0 auto 6px;box-sizing:border-box;
+.review-bar {  display:flex;align-items:center;justify-content:center;gap:4px;
+  width:100%;max-width:300px;margin:0 auto 8px;box-sizing:border-box;
+  background:var(--surface-hi);border:1px solid var(--border);border-radius:12px;padding:4px;
 }
 .rv-btn {
-  width:42px;height:38px;border-radius:9px;cursor:pointer;
-  background:var(--surface-hi);color:var(--text-light);border:1px solid var(--border);
-  font-size:.95rem;transition:background .15s,transform .08s;-webkit-tap-highlight-color:transparent;
+  flex:0 0 auto;width:40px;height:34px;border-radius:8px;cursor:pointer;
+  background:transparent;color:var(--text-light);border:none;
+  display:inline-flex;align-items:center;justify-content:center;
+  transition:background .15s,transform .08s;-webkit-tap-highlight-color:transparent;
 }
-.rv-btn:hover { background:rgba(91,141,239,.14);border-color:var(--border-hi); }
-.rv-btn:active { transform:scale(.94); }
+.rv-btn svg { width:17px;height:17px;display:block; }
+.rv-btn:hover { background:rgba(91,141,239,.12); }
+.rv-btn:active { transform:scale(.9); }
 .rv-label {
-  min-width:74px;text-align:center;font-size:.78rem;font-weight:700;
-  font-family:'JetBrains Mono',monospace;color:var(--gold-light);
+  flex:1;min-width:64px;text-align:center;font-size:.76rem;font-weight:800;
+  font-family:'JetBrains Mono',monospace;color:var(--gold-light);letter-spacing:.02em;
 }
+.rv-label.live { color:var(--blue); }
 
 /* ── INTERRUPTEURS EN JEU (analyse / aveugle) ── */
 .ingame-toggles {
@@ -1313,7 +1317,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN45</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN46</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -1545,11 +1549,11 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 
   <!-- BARRE DE REVUE (navigation des coups) -->
   <div class="review-bar" id="reviewBar" style="display:none;">
-    <button class="rv-btn" onclick="reviewStart()" title="Début">⏮</button>
-    <button class="rv-btn" onclick="reviewGo(-1)" title="Coup précédent">◀</button>
-    <span class="rv-label" id="reviewLabel">En direct</span>
-    <button class="rv-btn" onclick="reviewGo(1)" title="Coup suivant">▶</button>
-    <button class="rv-btn" id="reviewLive" onclick="reviewEnd()" title="Revenir au direct">⏭</button>
+    <button class="rv-btn" onclick="reviewStart()" aria-label="Premier coup" title="Premier coup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="11 17 6 12 11 7"/><line x1="17" y1="6" x2="17" y2="18"/></svg></button>
+    <button class="rv-btn" onclick="reviewGo(-1)" aria-label="Coup précédent" title="Coup précédent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <span class="rv-label" id="reviewLabel">0 / 0</span>
+    <button class="rv-btn" onclick="reviewGo(1)" aria-label="Coup suivant" title="Coup suivant"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+    <button class="rv-btn" id="reviewLive" onclick="reviewEnd()" aria-label="Dernier coup" title="Dernier coup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><line x1="7" y1="6" x2="7" y2="18"/></svg></button>
   </div>
 
   <!-- INTERRUPTEURS EN JEU : mes coups + mode aveugle + pré-coups -->
@@ -3957,9 +3961,12 @@ function _renderReviewBoard(){
     // Restaure TOUJOURS l'état réel, même si renderBoard échoue (évite un plateau bloqué)
     board=savedBoard; lastMove=savedLast; selected=savedSel; possibleMoves=savedPm;
   }
-  // Met à jour l'étiquette
+  // Met à jour l'étiquette : format numérique « X / Y » (bleu au direct, doré en navigation)
   const lbl=document.getElementById('reviewLabel');
-  if(lbl) lbl.textContent = (idx>=total) ? (currentLang==='fr'?'En direct':'Live') : (idx+' / '+total);
+  if(lbl){
+    lbl.textContent = idx + ' / ' + total;
+    lbl.classList.toggle('live', idx>=total);
+  }
 }
 
 function reviewGo(delta){
@@ -3984,8 +3991,16 @@ function exitReview(){
 function _updateReviewUI(){
   const bar=document.getElementById('reviewBar');
   if(!bar) return;
-  bar.style.display = moveHistoryUCI.length ? 'flex' : 'none';
+  const total = moveHistoryUCI.length;
+  bar.style.display = total ? 'flex' : 'none';
   const live = (reviewIndex===null);
+  const idx = live ? total : reviewIndex;
+  // Label toujours numérique : « 12 / 12 » au direct, « 5 / 12 » en navigation
+  const lbl=document.getElementById('reviewLabel');
+  if(lbl){
+    lbl.textContent = idx + ' / ' + total;
+    lbl.classList.toggle('live', live); // bleu au dernier coup, doré sinon
+  }
   const liveBtn=document.getElementById('reviewLive');
   if(liveBtn) liveBtn.style.opacity = live ? '.4' : '1';
 }
