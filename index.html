@@ -1313,7 +1313,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN39</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN40</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -4865,14 +4865,14 @@ const _PHON_FILES = {
 ,  h:['h','ache','hache','ash','hash','hâche','hotel','hôtel']
 };
 const _PHON_RANKS = {
-  '1':['1','un','une','hun','in','premier'],
+  '1':['1','un','une','hun','in','premier','um'],
   '2':['2','deux','deu','do'],
-  '3':['3','trois','troi','troie','troy'],
-  '4':['4','quatre','quat','catre','quattro'],
+  '3':['3','trois','troi','troie','troy','trwa'],
+  '4':['4','quatre','quat','catre','quattro','quate'],
   '5':['5','cinq','sink','sain','sin','saint','sein','sank','sinq','cinque','sang','cinqu','5e'],
-  '6':['6','six','sis','cisse','sisse'],
-  '7':['7','sept','set','cet','cette'],
-  '8':['8','huit','wit','uit','hui']
+  '6':['6','six','sis','cisse','sisse','sixe'],
+  '7':['7','sept','set','cet','cette','sète'],
+  '8':['8','huit','wit','uit','hui','huite','wite']
 };
 const _PHON_PIECES = {
   cavalier:['cavalier','cavalie','cavaliers','caval','chevalier','cheval','knight','nait','night','cavalié','cavaliere','cavalière','cavaler','cavaler','cav','calva','gavalier','kavalier','cavalyé','cavaliez'],
@@ -4907,7 +4907,13 @@ function _phonTokens(text){
     .replace(/\bdel\s+ta\b/g,'delta')      // "del ta" → delta (Chrome sépare parfois)
     .replace(/\bfox\s+trot\b/g,'foxtrot')
     .replace(/\bchar\s+lie\b/g,'charlie')
-    .replace(/([a-z])\s*-\s*([0-9])/g,'$1 $2'); // "e-4" → "e 4"
+    .replace(/\bgrand\s*roque?\b/g,'grandroque')
+    .replace(/([a-z])\s*-\s*([0-9])/g,'$1 $2') // "e-4" → "e 4"
+    // Sépare un nom de pièce collé à une case : "cavalierf3" → "cavalier f3",
+    // "tourd1" → "tour d1", utile quand on enchaîne vite sans pause.
+    .replace(/\b(cavalier|cheval|chevalier|tour|fou|dame|reine|roi|pion|knight|rook|bishop|queen|king|pawn)([a-h][1-8])\b/g,'$1 $2')
+    // Sépare deux cases collées : "e2e4" → "e2 e4"
+    .replace(/\b([a-h][1-8])([a-h][1-8])\b/g,'$1 $2');
   const words = raw.replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(Boolean);
   const out=[];
   for(const w of words){
@@ -4978,6 +4984,37 @@ function fuzzyMatchMove(rawText){
     // Exige exactement une colonne et une rangée pour une cible non ambiguë
     if(fs.length===1 && rs.length===1){
       squares.push([8-parseInt(rs[0]), files[fs[0]]]);
+    }
+  }
+
+  // ── FILET DE RATTRAPAGE (langage haché / mots mangés / débit rapide) ──
+  // Si on n'a pas encore de case nette mais qu'on a repéré des lettres ET des chiffres
+  // (même plusieurs, mal placés à cause des hésitations), on teste TOUTES les
+  // combinaisons lettre×chiffre et on ne garde QUE celles qui correspondent à un coup
+  // légal. Si une seule combinaison légale ressort (filtrée par la pièce si nommée),
+  // on la joue : c'est le cas typique de « euh… cavalier… f… 3 ».
+  if(!squares.length){
+    const fs=[...new Set(toks.filter(t=>/^[a-h]$/.test(t)))];
+    const rs=[...new Set(toks.filter(t=>/^[1-8]$/.test(t)))];
+    if(fs.length && rs.length){
+      const hits=[];
+      for(const f of fs) for(const r of rs){
+        const tr=8-parseInt(r), tc=files[f];
+        let ms = legal.filter(mv=>mv.tr===tr&&mv.tc===tc);
+        if(pieceType) ms = ms.filter(mv=>mv.ptype===pieceType);
+        else { const pawns=ms.filter(mv=>mv.ptype==='P'); if(pawns.length) ms=pawns; }
+        for(const mv of ms) hits.push(mv);
+      }
+      // Coups uniques (par destination + origine)
+      const uniq = [];
+      const seen = new Set();
+      for(const mv of hits){ const k=mv.fr+'-'+mv.fc+'-'+mv.tr+'-'+mv.tc; if(!seen.has(k)){ seen.add(k); uniq.push(mv); } }
+      if(uniq.length===1) return uniq[0];
+      // Plusieurs candidats : si une pièce est nommée et qu'un seul coup de cette pièce existe
+      if(pieceType){
+        const byPiece = uniq.filter(mv=>mv.ptype===pieceType);
+        if(byPiece.length===1) return byPiece[0];
+      }
     }
   }
   if(!squares.length) return null;
