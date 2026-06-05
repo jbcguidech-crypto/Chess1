@@ -1326,7 +1326,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN47</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN48</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -3261,6 +3261,7 @@ function playRandomMove(){
   const gen = aiGen;
   setTimeout(()=>{
     if(gen !== aiGen){ aiThinking=false; return; } // annulé entre-temps
+    if(gameMode==='ai' && turn===playerColor){ aiThinking=false; return; } // plus le tour de l'IA
     aiThinking=false;
     document.getElementById('aiSpinner').classList.remove('show');
     document.getElementById('voiceBtn').disabled=false;
@@ -3289,7 +3290,11 @@ function askStockfish(){
     document.getElementById('aiSpinner').classList.add('show');
     const dbg=document.getElementById('debugVoice');
     if(dbg){ dbg.style.display='block'; dbg.textContent='📖 Coup d\'ouverture: '+bookMv; }
-    setTimeout(()=>applyStockfishMove(bookMv), 150); // petit délai pour le réalisme
+    const _bookGen = aiGen; // mémorise la génération : annulée si on fait "annuler" entre-temps
+    setTimeout(()=>{
+      if(_bookGen !== aiGen){ aiThinking=false; return; } // annulé → on ne joue pas le coup fantôme
+      applyStockfishMove(bookMv);
+    }, 150); // petit délai pour le réalisme
     return;
   }
   if(!stockfish || !sfReady){
@@ -3337,6 +3342,9 @@ function askStockfish(){
 function applyStockfishMove(uciMove){
   if(!gameActive){ aiThinking=false; return; } // partie abandonnée → on n'applique pas
   if(aiReqGen !== aiGen){ aiThinking=false; return; } // annulé entre-temps → on n'applique pas
+  // Sécurité : ne JAMAIS appliquer un coup d'IA si ce n'est pas son tour (évite les
+  // coups fantômes après une annulation qui a rendu le trait au joueur).
+  if(gameMode==='ai' && turn===playerColor){ aiThinking=false; return; }
   const files={a:0,b:1,c:2,d:3,e:4,f:5,g:6,h:7};
   const fc=files[uciMove[0]],fr=8-parseInt(uciMove[1]),tc=files[uciMove[2]],tr=8-parseInt(uciMove[3]);
   const promo=uciMove[4];
