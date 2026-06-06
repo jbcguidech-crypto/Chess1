@@ -1357,7 +1357,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN50</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN51</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -5788,9 +5788,12 @@ function setSpeakSelf(on){
 function speak(text, onEnd, who){
   if(!window.speechSynthesis || !text) return;
   if(!gameActive){ if(onEnd) setTimeout(onEnd,50); return; } // pas de voix hors partie (ex: splash)
-  // voiceMuted coupe la voix BAVARDE de l'IA, mais PAS la confirmation de votre propre coup
-  // (essentielle en mains-libres pour savoir si le bon coup a été joué).
-  if(voiceMuted && who!=='me'){ if(onEnd) setTimeout(onEnd, 50); return; }
+  // voiceMuted coupe la voix BAVARDE de l'IA. La confirmation de SON PROPRE coup ('me')
+  // ne contourne le mute QUE en vrai mode mains-libres (micro en écoute continue),
+  // car c'est là qu'elle est indispensable pour jouer sans regarder l'écran.
+  // En jeu tactile avec son coupé, on respecte le silence total.
+  const handsFree = (typeof voiceContinuous!=='undefined' && voiceContinuous && typeof listening!=='undefined' && listening);
+  if(voiceMuted && !(who==='me' && handsFree)){ if(onEnd) setTimeout(onEnd, 50); return; }
   if(!userInteracted){
     pendingSpeech = text;
     if(onEnd) setTimeout(onEnd, 1500);
