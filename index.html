@@ -692,24 +692,24 @@ html[data-theme="dark"] .settings-preview img {
 .gc-btn.gc-primary:hover { background:linear-gradient(180deg,#8FB4F7,var(--gold-light));box-shadow:0 6px 18px rgba(91,141,239,.5); }
 
 /* ── BARRE DE REVUE ── */
-.review-bar {  display:flex;align-items:center;justify-content:center;gap:4px;
-  width:100%;max-width:300px;margin:0 auto 8px;box-sizing:border-box;
-  background:var(--surface-hi);border:1px solid var(--border);border-radius:12px;padding:4px;
+.review-bar {  display:flex;align-items:center;justify-content:center;gap:18px;
+  width:100%;max-width:200px;margin:0 auto 6px;box-sizing:border-box;
+  background:transparent;border:none;padding:0;
 }
 .rv-btn {
-  flex:0 0 auto;width:40px;height:34px;border-radius:8px;cursor:pointer;
-  background:transparent;color:var(--text-light);border:none;
+  flex:0 0 auto;width:36px;height:30px;border-radius:8px;cursor:pointer;
+  background:transparent;color:var(--text-muted);border:none;
   display:inline-flex;align-items:center;justify-content:center;
-  transition:background .15s,transform .08s;-webkit-tap-highlight-color:transparent;
+  transition:color .15s,transform .08s;-webkit-tap-highlight-color:transparent;
 }
-.rv-btn svg { width:17px;height:17px;display:block; }
-.rv-btn:hover { background:rgba(91,141,239,.12); }
-.rv-btn:active { transform:scale(.9); }
+.rv-btn svg { width:18px;height:18px;display:block; }
+.rv-btn:hover { color:var(--gold-light); }
+.rv-btn:active { transform:scale(.85); }
 .rv-label {
-  flex:1;min-width:64px;text-align:center;font-size:.76rem;font-weight:800;
-  font-family:'JetBrains Mono',monospace;color:var(--gold-light);letter-spacing:.02em;
+  min-width:48px;text-align:center;font-size:.72rem;font-weight:700;
+  font-family:'JetBrains Mono',monospace;color:var(--text-muted);letter-spacing:.02em;
 }
-.rv-label.live { color:var(--blue); }
+.rv-label.live { color:var(--text-muted); }
 
 /* ── INTERRUPTEURS EN JEU (entendre mes coups / aveugle / pré-coups) ── */
 .ingame-toggles {
@@ -1456,7 +1456,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN71</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN72</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -1712,13 +1712,11 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     </button>
   </div>
 
-  <!-- BARRE DE REVUE (navigation des coups) -->
-  <div class="review-bar" id="reviewBar" style="display:none;">
-    <button class="rv-btn" onclick="reviewStart()" aria-label="Premier coup" title="Premier coup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="11 17 6 12 11 7"/><line x1="17" y1="6" x2="17" y2="18"/></svg></button>
-    <button class="rv-btn" onclick="reviewGo(-1)" aria-label="Coup précédent" title="Coup précédent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+  <!-- BARRE DE NAVIGATION (minimaliste) : précédent / position / suivant -->
+  <div class="review-bar" id="reviewBar">
+    <button class="rv-btn" onclick="reviewGo(-1)" aria-label="Coup précédent" title="Coup précédent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
     <span class="rv-label" id="reviewLabel">0 / 0</span>
-    <button class="rv-btn" onclick="reviewGo(1)" aria-label="Coup suivant" title="Coup suivant"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
-    <button class="rv-btn" id="reviewLive" onclick="reviewEnd()" aria-label="Dernier coup" title="Dernier coup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><line x1="7" y1="6" x2="7" y2="18"/></svg></button>
+    <button class="rv-btn" onclick="reviewGo(1)" aria-label="Coup suivant" title="Coup suivant"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
   </div>
 
   <!-- INTERRUPTEURS : déplacés dans les Préférences (voir section "En jeu") -->
@@ -1759,8 +1757,8 @@ canvas#eloChart { width:100%!important;height:90px!important; }
       <span class="spk-slash"></span>
     </button>
     </div>
-    <div id="status" class="mic-status">Micro coupé</div>
-    <div id="debugVoice" style="display:none;font-size:.62rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-top:3px;text-align:center;word-break:break-word;max-width:280px;"></div>
+    <div id="status" class="mic-status" style="display:none;">Micro coupé</div>
+    <div id="debugVoice" style="display:none !important;"></div>
     <div class="ai-spinner" id="aiSpinner">
       <div class="sdot"></div><div class="sdot"></div><div class="sdot"></div>
       <span>IA…</span>
@@ -4308,20 +4306,11 @@ function _updateReviewUI(){
   const total = moveHistoryUCI.length;
   const live = (reviewIndex===null);
   const idx = live ? total : reviewIndex;
-  // La barre de revue n'existe plus à l'écran ; on affiche la position de navigation
-  // dans la zone de statut (sous le micro) quand on parcourt la partie au swipe.
-  const st=document.getElementById('status');
-  if(st && !live){
-    st.textContent = (currentLang==='fr'?'Coup ':'Move ') + idx + ' / ' + total + (currentLang==='fr'?'  ·  glissez pour naviguer, tapez pour revenir':'  ·  swipe to navigate, tap to resume');
-  }
-  // Compat : si la barre existe encore (replay sauvegardé), on la met à jour
   const bar=document.getElementById('reviewBar');
   if(bar){
     bar.style.display = total ? 'flex' : 'none';
     const lbl=document.getElementById('reviewLabel');
     if(lbl){ lbl.textContent = idx + ' / ' + total; lbl.classList.toggle('live', live); }
-    const liveBtn=document.getElementById('reviewLive');
-    if(liveBtn) liveBtn.style.opacity = live ? '.4' : '1';
   }
 }
 
@@ -4696,28 +4685,6 @@ function _cellFromPoint(x, y){
 function _attachBoardPointer(boardEl){
   if(boardEl._pointerBound) return; // une seule fois
   boardEl._pointerBound = true;
-
-  // ── SWIPE horizontal pour naviguer dans les coups (remplace la barre de revue) ──
-  // Swipe vers la GAUCHE = coup précédent ; vers la DROITE = coup suivant.
-  let _swipeX=0, _swipeY=0, _swipeT=0, _swipeOnPiece=false;
-  boardEl.addEventListener('touchstart', (e)=>{
-    if(e.touches.length!==1) return;
-    const t=e.touches[0];
-    _swipeX=t.clientX; _swipeY=t.clientY; _swipeT=Date.now();
-    // Le swipe ne navigue que s'il NE commence PAS sur une de nos pièces jouables
-    const hit=_cellFromPoint(t.clientX,t.clientY);
-    const pc = hit ? board[hit.r] && board[hit.r][hit.c] : null;
-    _swipeOnPiece = !!(hit && pc && color(pc)===turn && reviewIndex===null);
-  }, {passive:true});
-  boardEl.addEventListener('touchend', (e)=>{
-    const t=e.changedTouches && e.changedTouches[0]; if(!t) return;
-    const dx=t.clientX-_swipeX, dy=t.clientY-_swipeY, dt=Date.now()-_swipeT;
-    // Geste horizontal franc, rapide, pas un drag de pièce
-    if(!_swipeOnPiece && Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.6 && dt<700 && moveHistoryUCI.length){
-      if(reviewIndex===null) reviewIndex = moveHistoryUCI.length; // on part du direct
-      if(dx<0) reviewGo(-1); else reviewGo(1); // gauche=précédent, droite=suivant
-    }
-  }, {passive:true});
 
   // Annule un glissement/sélection en cours et remet la pièce à sa place
   function _cancelDrag(){
