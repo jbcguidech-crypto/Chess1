@@ -1359,7 +1359,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN53</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN54</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -5376,22 +5376,21 @@ function _parseStrict(text){
     }
     if(candidates.length===0) return {kind:'nopiece', tr, tc};
 
-    // RÈGLE STRICTE : pour déplacer un PION, il faut dire explicitement « pion ».
-    // Une case seule sans nom de pièce (« a3 ») ne doit PLUS bouger un pion par défaut,
-    // pour éviter le conflit où « cavalier a3 » mal entendu devient un coup de pion.
+    // RÈGLE PRATIQUE : une case seule sans nom de pièce privilégie le PION s'il peut y aller.
+    // Raison : la reconnaissance vocale avale souvent le mot court « pion », donc « pion e3 »
+    // arrive fréquemment comme « e3 ». Le coup de pion étant le plus courant et intuitif, on
+    // le choisit par défaut. Pour bouger une autre pièce vers cette case, on la nomme (« fou e3 »).
     if(!mentionedType){
-      // On retire les pions des candidats : ils exigent le mot « pion ».
-      const nonPawn = candidates.filter(x=>type(x.piece)!=='P');
-      if(nonPawn.length===0){
-        // Seul un pion pourrait jouer, mais « pion » n'a pas été dit → on demande de préciser.
-        return {kind:'needpiece', tr, tc};
+      const pawnMove = candidates.find(x=>type(x.piece)==='P');
+      if(pawnMove){
+        return {kind:'move', fr:pawnMove.fr,fc:pawnMove.fc,tr:pawnMove.tr,tc:pawnMove.tc,promo:pawnMove.mv[2]};
       }
-      if(nonPawn.length===1){
-        const x = nonPawn[0];
+      // Pas de pion possible → une seule autre pièce ? on la joue. Sinon désambiguïsation.
+      if(candidates.length===1){
+        const x = candidates[0];
         return {kind:'move', fr:x.fr,fc:x.fc,tr:x.tr,tc:x.tc,promo:x.mv[2]};
       }
-      // Plusieurs pièces (non-pion) possibles → désambiguïsation ci-dessous sur ce sous-ensemble
-      return _disambiguate(nonPawn, norm, files, tr, tc);
+      return _disambiguate(candidates, norm, files, tr, tc);
     }
 
     if(candidates.length===1){
