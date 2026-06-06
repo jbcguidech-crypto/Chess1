@@ -1357,7 +1357,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN51</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN52</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -2997,9 +2997,9 @@ function _pickHumanMove(){
   // tout en laissant les débutants jouer des coups franchement faibles.
   let maxLoss;
   if(elo <= 500)       maxLoss = 350;  // débutant : peut faire de grosses erreurs
-  else if(elo <= 800)  maxLoss = 220;
-  else if(elo <= 1100) maxLoss = 150;
-  else if(elo <= 1400) maxLoss = 100;
+  else if(elo <= 800)  maxLoss = 140;
+  else if(elo <= 1100) maxLoss = 110;
+  else if(elo <= 1400) maxLoss = 85;
   else if(elo <= 1700) maxLoss = 65;
   else if(elo <= 2000) maxLoss = 40;
   else if(elo <= 2400) maxLoss = 22;
@@ -3023,9 +3023,9 @@ function _pickHumanMove(){
   // un peu de variété humaine, sans re-doubler l'affaiblissement (sinon l'IA joue trop mal).
   let tau;
   if(elo <= 500)       tau = 130;
-  else if(elo <= 800)  tau = 90;
-  else if(elo <= 1100) tau = 60;
-  else if(elo <= 1400) tau = 42;
+  else if(elo <= 800)  tau = 55;
+  else if(elo <= 1100) tau = 45;
+  else if(elo <= 1400) tau = 35;
   else if(elo <= 1700) tau = 30;
   else if(elo <= 2000) tau = 20;
   else if(elo <= 2400) tau = 12;
@@ -5931,10 +5931,10 @@ function configureStockfishStrength(){
     // notre couche humaine retire encore un peu, d'où ces valeurs un cran au-dessus.)
     let skill;
     if(elo <= 450)       skill = 1;
-    else if(elo <= 650)  skill = 3;
-    else if(elo <= 850)  skill = 5;
-    else if(elo <= 1050) skill = 7;
-    else if(elo <= 1200) skill = 9;
+    else if(elo <= 650)  skill = 4;
+    else if(elo <= 850)  skill = 6;
+    else if(elo <= 1050) skill = 8;
+    else if(elo <= 1200) skill = 10;
     else                 skill = 11;
     stockfish.postMessage('setoption name Skill Level value ' + skill);
   }
