@@ -308,6 +308,20 @@ html[data-theme="light"] .history-modal-box { background:linear-gradient(160deg,
 .glossary-chevron { color:var(--gold-light);font-size:1rem;transition:transform .2s; }
 .glossary-chevron.open { transform:rotate(180deg); }
 .glossary-body { margin-top:12px;display:flex;flex-direction:column;gap:14px;animation:fadeUp .2s ease; }
+.history-body { margin-top:12px;animation:fadeUp .2s ease; }
+.hist-empty { font-size:.8rem;color:var(--text-muted);text-align:center;padding:18px 10px;line-height:1.5; }
+.hist-item { display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;margin-bottom:8px;background:var(--surface-hi); }
+.hist-main { flex:1;display:flex;align-items:center;gap:10px;cursor:pointer;min-width:0; }
+.hist-dot { width:10px;height:10px;border-radius:50%;flex:0 0 auto; }
+.hist-info { min-width:0; }
+.hist-res { font-weight:800;font-size:.86rem;color:var(--text-light);display:flex;align-items:baseline;gap:8px;flex-wrap:wrap; }
+.hist-meta { font-weight:600;font-size:.72rem;color:var(--text-muted); }
+.hist-date { font-size:.72rem;color:var(--text-muted);margin-top:1px; }
+.hist-actions { display:flex;gap:4px;flex:0 0 auto; }
+.hist-btn { width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:.95rem;color:var(--text-muted);transition:all .12s;-webkit-tap-highlight-color:transparent; }
+.hist-btn:hover { border-color:var(--border-hi); }
+.hist-btn.pinned { color:var(--gold-light);border-color:var(--border-gold); }
+.hist-btn.del:hover { color:#C0566A;border-color:#C0566A; }
 .gloss-group { display:flex;flex-direction:column;gap:5px; }
 .gloss-head { font-family:'Manrope',system-ui,sans-serif;font-weight:700;font-size:.78rem;color:var(--gold-light);margin-bottom:2px; }
 .gloss-row { display:flex;flex-direction:column;gap:1px;padding:5px 8px;border-radius:8px;background:rgba(255,255,255,.04); }
@@ -1359,7 +1373,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN56</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN61</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -1518,6 +1532,16 @@ canvas#eloChart { width:100%!important;height:90px!important; }
           </div>
         </div>
       </div>
+      <!-- Historique des parties -->
+      <div class="settings-section">
+        <button class="glossary-toggle" id="historyToggle" onclick="toggleHistory()" style="padding:14px 16px;border:1px solid var(--border-gold);border-radius:12px;background:rgba(91,141,239,.10);">
+          <span style="margin:0;font-family:'Manrope',system-ui,sans-serif;font-weight:800;font-size:1.05rem;color:var(--gold-light);">Historique des parties</span>
+          <span class="glossary-chevron" id="historyChevron" style="font-size:1.2rem;">▾</span>
+        </button>
+        <div class="history-body" id="historyBody" style="display:none;">
+          <div id="historyList"></div>
+        </div>
+      </div>
     </div>
     <button class="settings-done" onclick="closeSettings()">C'est parfait !</button>
   </div>
@@ -1665,8 +1689,8 @@ canvas#eloChart { width:100%!important;height:90px!important; }
       <div class="go-title" id="gameOverText">Échec et mat !</div>
       <div class="go-sub" id="goSub"></div>
       <div class="go-btns">
-        <button class="go-btn primary" onclick="resetGame()">↺ Rejouer</button>
-        <button class="go-btn secondary" onclick="goHome()">Menu</button>
+        <button class="go-btn primary" onclick="endGameSave(true)">💾 Sauvegarder</button>
+        <button class="go-btn secondary" onclick="endGameSave(false)">Ne pas sauvegarder</button>
       </div>
     </div>
   </div>
@@ -2109,6 +2133,104 @@ function toggleGlossary(){
   if(chev) chev.classList.toggle('open', open);
 }
 
+// ─── Onglet Historique des parties ───
+function toggleHistory(){
+  const body = document.getElementById('historyBody');
+  const chev = document.getElementById('historyChevron');
+  if(!body) return;
+  const open = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  if(chev) chev.classList.toggle('open', open);
+  if(open) renderHistoryList();
+}
+
+function _fmtGameDate(ts){
+  try{
+    const d=new Date(ts);
+    const j=d.toLocaleDateString(currentLang==='fr'?'fr-FR':'en-US',{day:'2-digit',month:'short'});
+    const h=d.toLocaleTimeString(currentLang==='fr'?'fr-FR':'en-US',{hour:'2-digit',minute:'2-digit'});
+    return j+' · '+h;
+  }catch(e){ return ''; }
+}
+
+function renderHistoryList(){
+  const wrap=document.getElementById('historyList');
+  if(!wrap) return;
+  const games=_loadSavedGames();
+  if(!games.length){
+    wrap.innerHTML='<div class="hist-empty">'+(currentLang==='fr'
+      ? 'Aucune partie enregistrée pour l\'instant. Les parties terminées apparaîtront ici.'
+      : 'No saved games yet. Finished games will appear here.')+'</div>';
+    return;
+  }
+  const labels = {
+    win:  currentLang==='fr'?'Victoire':'Win',
+    lose: currentLang==='fr'?'Défaite':'Loss',
+    draw: currentLang==='fr'?'Nulle':'Draw',
+    mate: currentLang==='fr'?'Victoire':'Win'
+  };
+  const dots = { win:'#3DA35D', mate:'#3DA35D', lose:'#C0566A', draw:'#5B8DEF' };
+  wrap.innerHTML = games.map(g=>{
+    const res = labels[g.outcome]||'';
+    const dot = dots[g.outcome]||'#8893a3';
+    const n = g.moves ? g.moves.length : 0;
+    const eloTxt = g.elo ? (' · '+g.elo+' Elo') : '';
+    return '<div class="hist-item" data-id="'+g.id+'">'
+      + '<div class="hist-main" onclick="replaySavedGame('+g.id+')">'
+      +   '<span class="hist-dot" style="background:'+dot+'"></span>'
+      +   '<div class="hist-info">'
+      +     '<div class="hist-res">'+res+'<span class="hist-meta">'+n+(currentLang==='fr'?' coups':' moves')+eloTxt+'</span></div>'
+      +     '<div class="hist-date">'+_fmtGameDate(g.date)+'</div>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="hist-actions">'
+      +   '<button class="hist-btn'+(g.pinned?' pinned':'')+'" onclick="togglePinGame('+g.id+')" title="'+(g.pinned?'Ne plus garder':'Garder')+'">'+(g.pinned?'★':'☆')+'</button>'
+      +   '<button class="hist-btn del" onclick="deleteSavedGame('+g.id+')" title="Supprimer">🗑</button>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function deleteSavedGame(id){
+  let games=_loadSavedGames();
+  games=games.filter(g=>g.id!==id);
+  _saveSavedGames(games);
+  renderHistoryList();
+}
+
+function togglePinGame(id){
+  const games=_loadSavedGames();
+  const g=games.find(x=>x.id===id);
+  if(g){ g.pinned=!g.pinned; _saveSavedGames(games); }
+  renderHistoryList();
+}
+
+// Relit une partie sauvegardée : charge ses coups et entre en mode revue depuis le début
+function replaySavedGame(id){
+  const games=_loadSavedGames();
+  const g=games.find(x=>x.id===id);
+  if(!g) return;
+  closeSettings();
+  // Prépare un plateau neuf et injecte l'historique de coups pour la navigation
+  _stopEverything && _stopEverything();
+  gameMode='replay';
+  initBoard(); turn='w'; selected=null; possibleMoves=[];
+  lastMove=null; enPassant=null; castling={wK:true,wR_k:true,wR_q:true,bK:true,bR_k:true,bR_q:true};
+  halfmoveClock=0; gameActive=false;
+  moveHistoryUCI = g.moves.slice();
+  history = (g.spoken||[]).map((s,i)=>({ spoken:s, move:s, color: i%2===0?'w':'b' }));
+  playerColor = g.playerColor || 'w';
+  try{ showPage('game'); }catch(e){}
+  try{ hideSplash(); }catch(e){}
+  buildCoords();
+  // Entre en revue au tout début (coup 0) pour rejouer pas à pas
+  reviewIndex = 0;
+  _renderReviewBoard();
+  _updateReviewUI();
+  setStatus(currentLang==='fr'?'Relecture — utilisez ◀ ▶ pour parcourir la partie':'Replay — use ◀ ▶ to step through','');
+}
+
+
 // Aperçu en haut du menu : mini-échiquier (colonnes a-e, rangées 1-2) avec coordonnées
 // et les pièces blanches sur leurs cases de départ, dans le thème + set choisis.
 function renderSettingsPreview(mode){
@@ -2325,10 +2447,15 @@ function showSplash(){
 function confirmQuit(yes){
   document.getElementById('quitModal').classList.remove('show');
   if(yes){
-    // Si on abandonne une partie en ligne, quitter proprement (coupe l'écoute, retire la bannière)
+    // Abandon en ligne : quitter proprement la partie réseau
     if(gameMode==='online'){ try{ leaveOnlineGame(); }catch(e){} }
-    resetGame();
-    showSplash();
+    // Abandonner = terminer la partie comme une DÉFAITE, puis proposer la sauvegarde
+    // via la fenêtre de fin (ne PAS renvoyer directement au splash).
+    gameActive=false;
+    try{ if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e){}
+    try{ if(stockfish) stockfish.postMessage('stop'); }catch(e){}
+    aiThinking=false; aiSpeaking=false;
+    _showEndBanner(currentLang==='fr'?'Abandon':'Resigned', null, false, 'lose');
   }
 }
 
@@ -3448,6 +3575,8 @@ let aiGen=0, aiReqGen=-1; // génération : invalide un coup d'IA si on annule e
 let moveJustPlayed=false;
 let undoLock=false; // empêche l'annulation vocale de se répéter sur plusieurs résultats
 let _cmdLock=false; // empêche une commande vocale (toggle, état…) de se redéclencher via l'écho de l'app
+let _interimPlayed=false; // un coup a été joué dès l'intermédiaire → on ignore le final correspondant
+let _lastInterimSig=null; // dernière signature de coup vue en intermédiaire (pour exiger une confirmation stable)
 let listening=false,recognition=null;
 let aiSpeaking=false; // vrai pendant que l'IA parle (pour autoriser "annuler" sans déclencher de coup)
 let speechEpoch=0; // incrémenté pour invalider toute parole programmée (ex: retour au menu)
@@ -4089,6 +4218,48 @@ function _animateKingDeath(loserColor){
   setTimeout(tryAnim, 250);
 }
 
+// ═══════ HISTORIQUE DES PARTIES (sauvegarde locale + relecture) ═══════
+const _SAVED_KEY = 'dysc-saved-games';
+let _pendingArchive = null; // issue de la partie en attente de décision (sauvegarder ou non)
+// Décision de fin de partie : sauvegarde (ou non) puis retour au splash
+function endGameSave(save){
+  try{ if(save && _pendingArchive){ _archiveGame(_pendingArchive.outcome, _pendingArchive.subtitle); } }catch(e){}
+  _pendingArchive = null;
+  try{ document.getElementById('gameOver').classList.remove('show'); }catch(e){}
+  if(save){ try{ showToast(currentLang==='fr'?'Partie sauvegardée':'Game saved','success'); }catch(e){} }
+  // Retour au splash (accueil) — pas de proposition « rejouer/quitter »
+  try{ goHome(); }catch(e){ try{ showSplash(); }catch(_){} }
+}
+function _loadSavedGames(){
+  try{ const j=localStorage.getItem(_SAVED_KEY); return j?JSON.parse(j):[]; }catch(e){ return []; }
+}
+function _saveSavedGames(arr){
+  try{ localStorage.setItem(_SAVED_KEY, JSON.stringify(arr)); }catch(e){}
+}
+// Enregistre la partie qui vient de se terminer
+function _archiveGame(outcome, subtitle){
+  try{
+    if(!moveHistoryUCI || moveHistoryUCI.length<2) return; // partie trop courte, on ignore
+    const games=_loadSavedGames();
+    const entry={
+      id: Date.now(),
+      date: Date.now(),
+      moves: moveHistoryUCI.slice(),
+      spoken: history.map(h=>h.spoken||h.move||''),
+      outcome: outcome,
+      subtitle: subtitle||'',
+      playerColor: playerColor,
+      elo: (gameMode==='ai') ? currentElo : null,
+      mode: gameMode,
+      pinned: false
+    };
+    games.unshift(entry);
+    const pinned=games.filter(g=>g.pinned);
+    let rest=games.filter(g=>!g.pinned).slice(0, 50);
+    _saveSavedGames([...pinned, ...rest].sort((a,b)=>b.date-a.date));
+  }catch(e){}
+}
+
 function _showEndBanner(msg, result, mate, outcome){
   const banner=document.getElementById('gameOver');
   if(!banner) return;
@@ -4098,12 +4269,14 @@ function _showEndBanner(msg, result, mate, outcome){
   // Détermine l'apparence selon l'issue
   let cls='draw', emoji='🤝', title=msg, subtitle='';
   if(outcome==='win'){ cls='win'; emoji='👑'; title='Victoire !'; subtitle='Échec et mat'; }
-  else if(outcome==='lose'){ cls='lose'; emoji='♚'; title='Défaite'; subtitle='Échec et mat'; }
+  else if(outcome==='lose'){ cls='lose'; emoji='♚'; title='Défaite'; subtitle=(msg && msg!=='Abandon' && msg!=='Resigned')?'Échec et mat':(msg||'Échec et mat'); }
   else if(outcome==='mate'){ cls='win'; emoji='👑'; title='Échec et mat !'; subtitle=msg.replace('Échec et mat ! ',''); }
   else { cls='draw'; emoji='🤝'; title='Match nul'; subtitle=msg.replace('Pat — ','').replace('Nulle — ',''); }
   if(txt) txt.textContent = title;
   if(sub) sub.textContent = subtitle;
   if(icon){ icon.className='go-icon '+cls; icon.textContent=emoji; }
+  // Mémorise l'issue pour une éventuelle sauvegarde (proposée à l'utilisateur)
+  _pendingArchive = { outcome: outcome==='mate'?'win':outcome, subtitle: subtitle };
   banner.classList.add('show');
 }
 
@@ -4667,6 +4840,7 @@ function startListening(){
   recognition.onstart = () => {
     listening = true;
     moveJustPlayed = false;
+    _lastInterimSig = null;
     document.getElementById('voiceBtn').classList.add('listening');
     document.getElementById('voiceBtnText').textContent = voiceContinuous?'⏹ Stop':'🎙';
     setStatus(currentLang==='fr'?'🎙 Parlez maintenant…':'🎙 Speak now…', '');
@@ -4734,6 +4908,39 @@ function startListening(){
       }
       return;
     }
+    // ── JEU ANTICIPÉ (fluidité, mode prudent) : on ne joue avant le "final" QUE si le
+    // même coup légal et clair est vu DEUX fois de suite (stabilité), pour éviter de jouer
+    // sur une transcription fugace. Sinon on attend le résultat final comme avant.
+    if(!anyFinal && !_interimPlayed && !moveJustPlayed && !_pendingAmbiguous && !_pendingPromo){
+      let candidateMove = null;
+      for(const raw of candidates){
+        const cleaned = raw.replace(WAKE,'').trim() || raw;
+        // Exige une CASE COMPLÈTE (lettre+chiffre), pas un simple chiffre isolé.
+        if(!/[a-h]\s*[1-8]/.test(cleaned)) continue;
+        const a = parseVoiceToAction(cleaned);
+        if(a && (a.kind==='move' || a.kind==='castle')){
+          if(a.kind==='move' && _isPromotion(a.fr,a.fc,a.tr,a.tc) && !a.promo) { candidateMove=null; break; }
+          candidateMove = a;
+          break;
+        }
+      }
+      // Signature du coup pour comparer d'un passage à l'autre
+      const sig = candidateMove ? (candidateMove.kind==='castle'
+            ? 'castle:'+candidateMove.side
+            : candidateMove.fr+','+candidateMove.fc+'->'+candidateMove.tr+','+candidateMove.tc) : null;
+      if(sig && sig===_lastInterimSig){
+        // Vu deux fois de suite → on le joue (stable)
+        _interimPlayed = true;
+        moveJustPlayed = true;
+        setTimeout(()=>{ moveJustPlayed=false; }, 1200);
+        setTimeout(()=>{ _interimPlayed=false; }, 1500);
+        _pendingAmbiguous = null;
+        _lastInterimSig = null;
+        executeVoiceAction(candidateMove, true);
+        return;
+      }
+      _lastInterimSig = sig; // mémorise pour le prochain passage
+    }
     for(const raw of candidates){
       const cleaned = raw.replace(WAKE,'').trim() || raw;
       // Désambiguïsation parlée : si un coup ambigu attend, on tente de le résoudre
@@ -4742,6 +4949,8 @@ function startListening(){
         return;
       }
       const act = parseVoiceToAction(cleaned);
+      // Si ce coup a déjà été joué dès l'intermédiaire, on ignore le final correspondant.
+      if(_interimPlayed && act && (act.kind==='move'||act.kind==='castle')) return;
       // On ne JOUE un coup que sur un résultat FINAL (quand l'utilisateur a fini de parler).
       // Les résultats intermédiaires ne servent qu'à l'affichage → évite les coups parasites.
       if(anyFinal && act && (act.kind==='move' || act.kind==='castle' || act.kind==='reset' || act.kind==='resign' || act.kind==='newgame' || act.kind==='state' || act.kind==='hint' || act.kind==='mute' || act.kind==='menu' || act.kind==='review' || act.kind==='toggle')){
@@ -4799,9 +5008,9 @@ function startListening(){
         if(!voiceContinuous || listening) return;
         try{ recognition.start(); }
         catch(e){
-          setTimeout(()=>{ try{ if(voiceContinuous && !listening) recognition.start(); }catch(_){} }, 300);
+          setTimeout(()=>{ try{ if(voiceContinuous && !listening) recognition.start(); }catch(_){} }, 250);
         }
-      }, 150);
+      }, 80);
     } else {
       document.getElementById('voiceBtn').classList.remove('listening');
       document.getElementById('voiceBtnText').textContent = currentLang==='fr'?'🎙 Parler':'🎙 Speak';
@@ -5296,6 +5505,11 @@ function _parseEnPassant(text){
 // Désambiguïsation d'un coup à case unique : utilise une lettre de colonne ou
 // un chiffre de rangée de départ éventuellement dits (« cavalier b c3 »).
 function _disambiguate(candidates, norm, files, tr, tc){
+  // Déduplique par case de départ (évite une fausse ambiguïté si un même coup
+  // apparaît deux fois dans la liste des candidats).
+  const seen=new Set();
+  candidates = candidates.filter(x=>{ const k=x.fr+','+x.fc; if(seen.has(k)) return false; seen.add(k); return true; });
+  if(candidates.length===1){ const x=candidates[0]; return {kind:'move', fr:x.fr,fc:x.fc,tr:x.tr,tc:x.tc,promo:x.mv[2]}; }
   const loneFiles = (norm.match(/\b[a-h]\b/g)||[]).map(x=>files[x]).filter(f=>f!==tc);
   const loneRanks = (norm.match(/\b[1-8]\b/g)||[]).map(x=>8-parseInt(x)).filter(r=>r!==tr);
   let filt = candidates;
@@ -5504,10 +5718,11 @@ function executeVoiceAction(act, verbose){
     case 'undo': undoMove(); return true;
     case 'castle': trycastling(act.side); return true;
     case 'resign':
-      if(typeof confirmQuit==='function'){ /* abandon direct */ }
-      _voiceSay(currentLang==='fr'?'Vous abandonnez. Nouvelle partie ?':'You resign. New game?');
       try{ gameActive=false; }catch(e){}
-      if(typeof showSplash==='function') setTimeout(showSplash, 1800);
+      try{ if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e){}
+      try{ if(stockfish) stockfish.postMessage('stop'); }catch(e){}
+      aiThinking=false; aiSpeaking=false;
+      _showEndBanner(currentLang==='fr'?'Abandon':'Resigned', null, false, 'lose');
       return true;
     case 'newgame': {
       if(act.elo){ try{ currentElo=Math.max(400,Math.min(3000,act.elo)); userProfile.elo=currentElo; }catch(e){} }
