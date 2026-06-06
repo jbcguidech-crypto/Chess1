@@ -308,6 +308,14 @@ html[data-theme="light"] .history-modal-box { background:linear-gradient(160deg,
 .glossary-chevron { color:var(--gold-light);font-size:1rem;transition:transform .2s; }
 .glossary-chevron.open { transform:rotate(180deg); }
 .glossary-body { margin-top:12px;display:flex;flex-direction:column;gap:14px;animation:fadeUp .2s ease; }
+/* Lignes d'options "En jeu" dans les préférences */
+.setrow { display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;margin-bottom:8px;background:var(--surface-hi);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:border-color .15s; }
+.setrow:hover { border-color:var(--border-hi); }
+.setrow-lbl { font-weight:700;font-size:.88rem;color:var(--text-light); }
+.setrow-state { width:44px;height:24px;border-radius:50px;background:var(--border);position:relative;flex:0 0 auto;transition:background .2s; }
+.setrow-state::after { content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3); }
+.setrow-state.on { background:var(--gold); }
+.setrow-state.on::after { transform:translateX(20px); }
 .history-body { margin-top:12px;animation:fadeUp .2s ease; }
 .hist-empty { font-size:.8rem;color:var(--text-muted);text-align:center;padding:18px 10px;line-height:1.5; }
 .hist-item { display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;margin-bottom:8px;background:var(--surface-hi); }
@@ -603,10 +611,11 @@ html[data-theme="dark"] .settings-preview img {
   justify-content:flex-start;
   gap:4px;
 }
-/* Échiquier : côté limité par la hauteur restante (réserve ~270px pour tout le reste) */
+/* Échiquier : côté limité par la hauteur restante (réserve réduite car la barre de revue
+   et les 3 toggles ne sont plus affichés en jeu). */
 #page-game .board-container {
-  width:min(100%, calc(100dvh - 300px));
-  max-width:480px;
+  width:min(100%, calc(100dvh - 250px));
+  max-width:520px;
   margin:0 auto;
   flex:0 0 auto;
   padding:6px;border-radius:14px;
@@ -1447,7 +1456,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN69</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN71</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -1571,6 +1580,22 @@ canvas#eloChart { width:100%!important;height:90px!important; }
       <div class="settings-section">
         <div class="settings-section-title">▦ Style de l'échiquier</div>
         <div class="pieceset-grid" id="boardThemeGrid"></div>
+      </div>
+      <!-- Options en jeu -->
+      <div class="settings-section">
+        <div class="settings-section-title">🎮 En jeu</div>
+        <div class="setrow" onclick="(function(c){c.checked=!c.checked;setSpeakSelf(c.checked);_syncSettingsToggles();})(document.getElementById('speakSelfToggle'))">
+          <span class="setrow-lbl">Entendre mes coups</span>
+          <span class="setrow-state" id="stateSpeakSelf"></span>
+        </div>
+        <div class="setrow" onclick="(function(c){c.checked=!c.checked;setBlindfold(c.checked);_syncSettingsToggles();})(document.getElementById('blindToggleGame'))">
+          <span class="setrow-lbl">Jouer à l'aveugle</span>
+          <span class="setrow-state" id="stateBlind"></span>
+        </div>
+        <div class="setrow" onclick="(function(c){c.checked=!c.checked;setPremoveEnabled(c.checked);_syncSettingsToggles();})(document.getElementById('premoveToggleGame'))">
+          <span class="setrow-lbl">Autoriser les pré-coups</span>
+          <span class="setrow-state" id="statePremove"></span>
+        </div>
       </div>
       <!-- Glossaire des commandes vocales -->
       <div class="settings-section">
@@ -1696,8 +1721,8 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     <button class="rv-btn" id="reviewLive" onclick="reviewEnd()" aria-label="Dernier coup" title="Dernier coup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><line x1="7" y1="6" x2="7" y2="18"/></svg></button>
   </div>
 
-  <!-- INTERRUPTEURS EN JEU : entendre mes coups + jouer à l'aveugle + autoriser les pré-coups -->
-  <div class="ingame-toggles">
+  <!-- INTERRUPTEURS : déplacés dans les Préférences (voir section "En jeu") -->
+  <div class="ingame-toggles" style="display:none;">
     <label class="igt-pill">
       <input type="checkbox" id="speakSelfToggle" checked onchange="setSpeakSelf(this.checked)">
       <span>Entendre mes coups</span>
@@ -1805,8 +1830,6 @@ const PIECE_SETS = [
   {id:'california', name:'California'},
   {id:'mpchess',    name:'MPChess'},
   {id:'kiwen-suwi', name:'Kiwen-suwi'},
-  {id:'horsey',     name:'Horsey'},
-  {id:'anarcandy',  name:'Anarcandy'},
   {id:'caliente',   name:'Caliente'},
 ];
 
@@ -2185,6 +2208,7 @@ function openSettings(){
   if(typeof renderSettingsPreview==='function') renderSettingsPreview('pieces');
   const et=document.getElementById('evalToggle'); if(et) et.checked = evalEnabled;
   const bt=document.getElementById('blindToggle'); if(bt) bt.checked = blindfold;
+  if(typeof _syncSettingsToggles==='function') _syncSettingsToggles();
 }
 function closeSettings(){
   const m = document.getElementById('settingsModal');
@@ -2198,6 +2222,15 @@ function toggleGlossary(){
   const open = body.style.display === 'none';
   body.style.display = open ? 'flex' : 'none';
   if(chev) chev.classList.toggle('open', open);
+}
+
+// Synchronise l'apparence des bascules "En jeu" dans les préférences avec l'état réel
+function _syncSettingsToggles(){
+  const map=[['speakSelfToggle','stateSpeakSelf'],['blindToggleGame','stateBlind'],['premoveToggleGame','statePremove']];
+  map.forEach(([cid,sid])=>{
+    const c=document.getElementById(cid), s=document.getElementById(sid);
+    if(c&&s) s.classList.toggle('on', !!c.checked);
+  });
 }
 
 // ─── Onglet Historique des parties ───
@@ -4272,20 +4305,24 @@ function exitReview(){
 }
 
 function _updateReviewUI(){
-  const bar=document.getElementById('reviewBar');
-  if(!bar) return;
   const total = moveHistoryUCI.length;
-  bar.style.display = total ? 'flex' : 'none';
   const live = (reviewIndex===null);
   const idx = live ? total : reviewIndex;
-  // Label toujours numérique : « 12 / 12 » au direct, « 5 / 12 » en navigation
-  const lbl=document.getElementById('reviewLabel');
-  if(lbl){
-    lbl.textContent = idx + ' / ' + total;
-    lbl.classList.toggle('live', live); // bleu au dernier coup, doré sinon
+  // La barre de revue n'existe plus à l'écran ; on affiche la position de navigation
+  // dans la zone de statut (sous le micro) quand on parcourt la partie au swipe.
+  const st=document.getElementById('status');
+  if(st && !live){
+    st.textContent = (currentLang==='fr'?'Coup ':'Move ') + idx + ' / ' + total + (currentLang==='fr'?'  ·  glissez pour naviguer, tapez pour revenir':'  ·  swipe to navigate, tap to resume');
   }
-  const liveBtn=document.getElementById('reviewLive');
-  if(liveBtn) liveBtn.style.opacity = live ? '.4' : '1';
+  // Compat : si la barre existe encore (replay sauvegardé), on la met à jour
+  const bar=document.getElementById('reviewBar');
+  if(bar){
+    bar.style.display = total ? 'flex' : 'none';
+    const lbl=document.getElementById('reviewLabel');
+    if(lbl){ lbl.textContent = idx + ' / ' + total; lbl.classList.toggle('live', live); }
+    const liveBtn=document.getElementById('reviewLive');
+    if(liveBtn) liveBtn.style.opacity = live ? '.4' : '1';
+  }
 }
 
 // ===== FIN DE PARTIE : animation du roi + bannière compacte =====
@@ -4659,6 +4696,28 @@ function _cellFromPoint(x, y){
 function _attachBoardPointer(boardEl){
   if(boardEl._pointerBound) return; // une seule fois
   boardEl._pointerBound = true;
+
+  // ── SWIPE horizontal pour naviguer dans les coups (remplace la barre de revue) ──
+  // Swipe vers la GAUCHE = coup précédent ; vers la DROITE = coup suivant.
+  let _swipeX=0, _swipeY=0, _swipeT=0, _swipeOnPiece=false;
+  boardEl.addEventListener('touchstart', (e)=>{
+    if(e.touches.length!==1) return;
+    const t=e.touches[0];
+    _swipeX=t.clientX; _swipeY=t.clientY; _swipeT=Date.now();
+    // Le swipe ne navigue que s'il NE commence PAS sur une de nos pièces jouables
+    const hit=_cellFromPoint(t.clientX,t.clientY);
+    const pc = hit ? board[hit.r] && board[hit.r][hit.c] : null;
+    _swipeOnPiece = !!(hit && pc && color(pc)===turn && reviewIndex===null);
+  }, {passive:true});
+  boardEl.addEventListener('touchend', (e)=>{
+    const t=e.changedTouches && e.changedTouches[0]; if(!t) return;
+    const dx=t.clientX-_swipeX, dy=t.clientY-_swipeY, dt=Date.now()-_swipeT;
+    // Geste horizontal franc, rapide, pas un drag de pièce
+    if(!_swipeOnPiece && Math.abs(dx)>55 && Math.abs(dx)>Math.abs(dy)*1.6 && dt<700 && moveHistoryUCI.length){
+      if(reviewIndex===null) reviewIndex = moveHistoryUCI.length; // on part du direct
+      if(dx<0) reviewGo(-1); else reviewGo(1); // gauche=précédent, droite=suivant
+    }
+  }, {passive:true});
 
   // Annule un glissement/sélection en cours et remet la pièce à sa place
   function _cancelDrag(){
