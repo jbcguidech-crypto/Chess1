@@ -542,8 +542,7 @@ html[data-theme="dark"] .settings-preview img {
   position:sticky;top:0;z-index:100;
   display:flex;align-items:center;justify-content:space-between;
   padding:10px 16px;
-  background:rgba(42,46,54,.9);
-  backdrop-filter:blur(20px);
+  background:var(--bg);
   border-bottom:2px solid rgba(91,141,239,.35);
 }
 .nav-logo {
@@ -594,6 +593,9 @@ html[data-theme="dark"] .settings-preview img {
 }
 .nav-username { font-size:.7rem;color:var(--text-muted); }
 
+/* Pendant une partie : aucun défilement de la page (l'échiquier ne peut plus glisser
+   sous la barre du haut). Tout l'écran de jeu est verrouillé à la hauteur du viewport. */
+body.playing { overflow:hidden;height:100dvh;position:fixed;width:100%;top:0;left:0; }
 /* ── PAGES ───────────────────────────────────── */
 .page { display:none;width:100%;max-width:1000px;margin:0 auto;padding:16px; }
 .page.active { display:block;animation:fadeUp .35s ease; }
@@ -1456,7 +1458,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN73</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN74</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -2500,6 +2502,7 @@ function parseSplashCommand(text){
 }
 
 function showSplash(){
+  document.body.classList.remove('playing'); // débloque le défilement hors partie
   const s = document.getElementById('splash');
   if(s){
     s.classList.remove('out');
@@ -2903,6 +2906,8 @@ function showPage(id) {
   const pg = document.getElementById('page-'+id) || document.getElementById('page-game');
   if(pg) pg.classList.add('active');
   const firstTab = document.querySelector('.nav-tab'); if(firstTab) firstTab.classList.add('active');
+  // Verrouille le défilement de la page en mode jeu (l'échiquier ne glisse plus sous la nav)
+  document.body.classList.toggle('playing', (id==='game' || !id));
 }
 
 function renderStats() {
