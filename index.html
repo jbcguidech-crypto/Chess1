@@ -914,9 +914,9 @@ html[data-theme="dark"] .settings-preview img {
 /* ── ANIMATION DE CAPTURE : bond écraseur + poussière + étoiles ── */
 @keyframes dyscPounce {
   0%   { transform: translate(var(--dx), var(--dy)) scale(1); }
-  35%  { transform: translate(calc(var(--dx) * .5), calc(var(--dy) - 22px)) scale(1.12); } /* haut du saut */
-  62%  { transform: translate(0, 4px) scaleX(1.3) scaleY(.7); }  /* atterrit, écrase */
-  78%  { transform: translate(0, -3px) scaleX(.88) scaleY(1.15); } /* rebond */
+  35%  { transform: translate(calc(var(--dx) * .5), calc(var(--dy) - 48px)) scale(1.15); } /* haut du saut (plus haut) */
+  62%  { transform: translate(0, 5px) scaleX(1.32) scaleY(.66); }  /* atterrit, écrase */
+  78%  { transform: translate(0, -4px) scaleX(.86) scaleY(1.18); } /* rebond */
   100% { transform: translate(0,0) scale(1); }
 }
 .dysc-dust {
@@ -1357,7 +1357,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN49</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN50</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -4349,10 +4349,10 @@ function renderBoard(){
         // ── CAPTURE : bond écraseur + poussière + étoiles ──
         _pe.style.transition='none'; _pe.style.transform='translate('+dx+'px,'+dy+'px)'; _pe.style.zIndex='8';
         requestAnimationFrame(()=>requestAnimationFrame(()=>{
-          _pe.style.animation='dyscPounce .42s cubic-bezier(.4,0,.5,1) forwards';
+          _pe.style.animation='dyscPounce .5s cubic-bezier(.4,0,.5,1) forwards';
           _pe.style.setProperty('--dx', dx+'px');
           _pe.style.setProperty('--dy', dy+'px');
-          setTimeout(()=>{ try{ _pe.style.zIndex='';_pe.style.transition='';_pe.style.animation='';_pe.style.transform=''; }catch(e){} }, 460);
+          setTimeout(()=>{ try{ _pe.style.zIndex='';_pe.style.transition='';_pe.style.animation='';_pe.style.transform=''; }catch(e){} }, 540);
         }));
         // Effets à l'impact (poussière + étoiles) au centre de la case d'arrivée
         try{ _spawnCaptureFX(_tcl); }catch(e){}
