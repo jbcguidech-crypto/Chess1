@@ -1405,7 +1405,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN63</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN64</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -1755,30 +1755,14 @@ const PIECE_GLYPHS = {wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',bK:'
 
 // ── SETS DE PIÈCES LICHESS (libres de droits) ──────────
 const PIECE_SETS = [
-  {id:'cburnett', name:'Cburnett'},
-  {id:'merida', name:'Merida'},
-  {id:'alpha', name:'Alpha'},
+  {id:'cburnett',  name:'Cburnett'},
+  {id:'merida',    name:'Merida'},
+  {id:'alpha',     name:'Alpha'},
+  {id:'staunty',   name:'Staunty'},
+  {id:'maestro',   name:'Maestro'},
+  {id:'fresca',    name:'Fresca'},
+  {id:'cardinal',  name:'Cardinal'},
   {id:'pirouetti', name:'Pirouetti'},
-  {id:'chessnut', name:'Chessnut'},
-  {id:'chess7', name:'Chess7'},
-  {id:'reillycraig', name:'Reillycraig'},
-  {id:'companion', name:'Companion'},
-  {id:'fantasy', name:'Fantasy'},
-  {id:'spatial', name:'Spatial'},
-  {id:'california', name:'California'},
-  {id:'pixel', name:'Pixel'},
-  {id:'maestro', name:'Maestro'},
-  {id:'fresca', name:'Fresca'},
-  {id:'cardinal', name:'Cardinal'},
-  {id:'gioco', name:'Gioco'},
-  {id:'tatiana', name:'Tatiana'},
-  {id:'staunty', name:'Staunty'},
-  {id:'governor', name:'Governor'},
-  {id:'dubrovny', name:'Dubrovny'},
-  {id:'icpieces', name:'ICpieces'},
-  {id:'kosal', name:'Kosal'},
-  {id:'leipzig', name:'Leipzig'},
-  {id:'mpchess', name:'MPChess'},
 ];
 
 const PIECE_CDN = 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/';
@@ -1789,30 +1773,15 @@ try { const saved = localStorage.getItem('dysc_pieceset'); if(saved) pieceSet = 
 // ── THÈMES D'ÉCHIQUIER ──────────────────────────────
 // Couleurs CSS (rapides) + textures Lichess (jpg)
 const BOARD_THEMES = [
-  // Couleurs unies (rendu CSS instantané)
-  {id:'walnut',  name:'Noyer',   type:'css', light:'#f0d9b5', dark:'#b58863'},
-  {id:'green',   name:'Vert',    type:'css', light:'#eeeed2', dark:'#769656'},
-  {id:'blue',    name:'Bleu',    type:'css', light:'#dee3e6', dark:'#8ca2ad'},
-  {id:'brown',   name:'Marron',  type:'css', light:'#f0d9b5', dark:'#946f51'},
-  {id:'purple',  name:'Violet',  type:'css', light:'#e6dcf0', dark:'#9f90b0'},
-  {id:'grey',    name:'Gris',    type:'css', light:'#dcdcdc', dark:'#888888'},
-  {id:'ic',      name:'Glace',   type:'css', light:'#ececec', dark:'#c1c18e'},
-  {id:'pink',    name:'Rose',    type:'css', light:'#f1f1c9', dark:'#f07272'},
-  // Textures Lichess (images)
-  {id:'wood',    name:'Bois',    type:'img'},
-  {id:'wood2',   name:'Bois 2',  type:'img'},
-  {id:'wood3',   name:'Bois 3',  type:'img'},
-  {id:'wood4',   name:'Bois 4',  type:'img'},
-  {id:'maple',   name:'Érable',  type:'img'},
-  {id:'maple2',  name:'Érable 2',type:'img'},
-  {id:'marble',  name:'Marbre',  type:'img'},
-  {id:'blue-marble',name:'Marbre bleu',type:'img'},
-  {id:'leather', name:'Cuir',    type:'img'},
-  {id:'metal',   name:'Métal',   type:'img'},
-  {id:'canvas2', name:'Toile',   type:'img'},
-  {id:'olive',   name:'Olive',   type:'img'},
-  {id:'horsey',  name:'Horsey',  type:'img'},
-  {id:'blue3',   name:'Bleu 3',  type:'img'},
+  // 8 thèmes populaires, couleurs CSS (aperçu instantané et fiable), bien distincts
+  {id:'green',   name:'Vert',     type:'css', light:'#eeeed2', dark:'#769656'}, // Chess.com
+  {id:'walnut',  name:'Bois',     type:'css', light:'#f0d9b5', dark:'#b58863'}, // Lichess brun
+  {id:'blue',    name:'Bleu',     type:'css', light:'#dee3e6', dark:'#7a93b0'},
+  {id:'grey',    name:'Gris',     type:'css', light:'#dcdcdc', dark:'#808080'},
+  {id:'purple',  name:'Violet',   type:'css', light:'#e6dcf5', dark:'#9075b8'},
+  {id:'marble',  name:'Marbre',   type:'css', light:'#e8e0d0', dark:'#9a8c78'},
+  {id:'ocean',   name:'Océan',    type:'css', light:'#d8e8ea', dark:'#5b9aa0'},
+  {id:'coral',   name:'Corail',   type:'css', light:'#f5e6d8', dark:'#d08770'},
 ];
 
 const BOARD_CDN = 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/images/board/';
@@ -1832,6 +1801,13 @@ try {
 } catch(e){}
 
 function getBoardTheme(){ return BOARD_THEMES.find(t=>t.id===boardTheme) || BOARD_THEMES[0]; }
+
+// Sécurité : si le thème ou le set mémorisé n'existe plus dans les listes (après mise à
+// jour des choix proposés), on retombe sur un défaut valide pour éviter un aperçu figé.
+try{
+  if(!BOARD_THEMES.find(t=>t.id===boardTheme)){ boardTheme='green'; localStorage.setItem('dysc_board','green'); }
+  if(!PIECE_SETS.find(s=>s.id===pieceSet)){ pieceSet='merida'; localStorage.setItem('dysc_pieceset','merida'); }
+}catch(e){}
 
 function applyBoardTheme(){
   const t = getBoardTheme();
