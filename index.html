@@ -589,10 +589,27 @@ html[data-theme="dark"] .settings-preview img {
 /* ── PAGES ───────────────────────────────────── */
 .page { display:none;width:100%;max-width:1000px;margin:0 auto;padding:16px; }
 .page.active { display:block;animation:fadeUp .35s ease; }
+/* Page de JEU : tient dans l'écran sans défilement vertical */
+#page-game.page { padding:8px 12px; }
+#page-game.page.active { display:flex;flex-direction:column; }
+#page-game .game-layout {
+  flex:1;min-height:0;
+  /* hauteur dispo = écran - nav - petites marges */
+  max-height:calc(100dvh - 64px);
+}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 
 /* ── GAME LAYOUT ─────────────────────────────── */
-.game-layout { display:flex;flex-direction:column;gap:8px;align-items:stretch;width:100%;padding-top:8px; }
+.game-layout { display:flex;flex-direction:column;gap:6px;align-items:stretch;width:100%;padding-top:4px; }
+
+/* L'échiquier ne doit jamais dépasser la hauteur disponible.
+   On réserve ~210px pour les 2 bandeaux joueurs + contrôles + barre de revue + marges,
+   et on prend la plus petite valeur entre la largeur et cette hauteur. */
+#page-game .board-container {
+  width:min(100%, calc(100dvh - 250px));
+  max-width:560px;
+  margin:0 auto;
+}
 
 /* ── BOARD ───────────────────────────────────── */
 .board-container {
@@ -616,12 +633,12 @@ html[data-theme="dark"] .settings-preview img {
 
 /* ── BARRE DE CONTRÔLES (moderne, type Lichess) ── */
 .game-controls {  display:flex;gap:8px;width:100%;max-width:420px;
-  margin:10px auto 4px;box-sizing:border-box;
+  margin:6px auto 2px;box-sizing:border-box;
 }
 .gc-btn {
   flex:1;display:flex;align-items:center;justify-content:center;gap:7px;
-  padding:12px 10px;border-radius:12px;cursor:pointer;
-  font-family:'Manrope',system-ui,sans-serif;font-weight:800;font-size:.84rem;
+  padding:10px 10px;border-radius:12px;cursor:pointer;
+  font-family:'Manrope',system-ui,sans-serif;font-weight:800;font-size:.82rem;
   background:linear-gradient(180deg,var(--surface-hi),var(--surface));
   color:var(--text-light);
   border:1px solid var(--border);
@@ -1405,7 +1422,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN66</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN67</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
