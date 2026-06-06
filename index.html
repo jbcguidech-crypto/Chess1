@@ -910,6 +910,37 @@ html[data-theme="dark"] .settings-preview img {
 @keyframes dot-pop{from{transform:scale(0)}to{transform:scale(1)}}
 /* Mode aveugle : pièces cachées (l'échiquier et les surbrillances restent visibles) */
 #board.blindfold .board-piece { opacity:0 !important; visibility:hidden; }
+
+/* ── ANIMATION DE CAPTURE : bond écraseur + poussière + étoiles ── */
+@keyframes dyscPounce {
+  0%   { transform: translate(var(--dx), var(--dy)) scale(1); }
+  35%  { transform: translate(calc(var(--dx) * .5), calc(var(--dy) - 22px)) scale(1.12); } /* haut du saut */
+  62%  { transform: translate(0, 4px) scaleX(1.3) scaleY(.7); }  /* atterrit, écrase */
+  78%  { transform: translate(0, -3px) scaleX(.88) scaleY(1.15); } /* rebond */
+  100% { transform: translate(0,0) scale(1); }
+}
+.dysc-dust {
+  position:absolute; left:50%; top:58%; width:80%; height:55%;
+  transform:translate(-50%,-50%) scale(.3); opacity:0; pointer-events:none; z-index:5;
+  background:radial-gradient(ellipse, rgba(255,255,255,.9), rgba(255,255,255,0) 65%);
+  border-radius:50%; animation:dyscDust .7s ease-out forwards;
+}
+@keyframes dyscDust {
+  0%   { opacity:0; transform:translate(-50%,-50%) scale(.3); }
+  35%  { opacity:.95; transform:translate(-50%,-50%) scale(1.15); }
+  100% { opacity:0; transform:translate(-50%,-50%) scale(1.7); }
+}
+.dysc-burst {
+  position:absolute; left:50%; top:42%; transform:translate(-50%,-50%) scale(0);
+  opacity:0; pointer-events:none; z-index:7; font-size:min(5vw,26px); white-space:nowrap;
+  animation:dyscBurst .7s ease-out forwards;
+}
+@keyframes dyscBurst {
+  0%   { opacity:0; transform:translate(-50%,-50%) scale(0) rotate(0); }
+  45%  { opacity:0; transform:translate(-50%,-50%) scale(0) rotate(0); }
+  62%  { opacity:1; transform:translate(-50%,-50%) scale(1.3) rotate(15deg); }
+  100% { opacity:0; transform:translate(-50%,-50%) scale(2.1) rotate(45deg); }
+}
 @keyframes shake-chk{0%,100%{transform:none}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
 
 .board-piece {
@@ -1326,7 +1357,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN48</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN49</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -3365,7 +3396,7 @@ function applyStockfishMove(uciMove){
   positionHistory.push(posKey());
   const _isCastle = piece&&type(piece)==='K'&&fc===4&&(tc===6||tc===2);
   const _isCap = !!captured || (piece&&type(piece)==='P'&&fc!==tc);
-  _animMove={fr,fc,tr,tc};
+  _animMove={fr,fc,tr,tc,cap:_isCap};
   renderBoard();updateSidebar();
   // Réinitialise l'état IA (fonctionne pour Stockfish ET coups du livre)
   aiThinking=false;
@@ -3588,7 +3619,7 @@ function makeMove(fr,fc,tr,tc,castleType,promo,byVoice){
   if(type(piece)==='P' || captured) halfmoveClock=0; else halfmoveClock++;
   positionHistory.push(posKey());
   const _isCap = !!captured || (type(piece)==='P' && fc!==tc);
-  _animMove={fr,fc,tr,tc};
+  _animMove={fr,fc,tr,tc,cap:_isCap};
   renderBoard();updateSidebar();
   const st=checkGameState();
   try{ if(st.over) playSound('end'); else if(st.check) playSound('check'); else if(castleType) playSound('castle'); else if(_isCap) playSound('capture'); else playSound('move'); }catch(e){}
@@ -4227,6 +4258,22 @@ function updateCapturedDisplay(){
   }catch(e){}
 }
 
+// Effets visuels d'une capture : nuage de poussière + gerbe d'étoiles sur la case
+function _spawnCaptureFX(cell){
+  if(!cell) return;
+  // Poussière
+  const dust=document.createElement('div');
+  dust.className='dysc-dust';
+  cell.appendChild(dust);
+  setTimeout(()=>{ try{ dust.remove(); }catch(e){} }, 700);
+  // Étoiles (niveau moyen)
+  const burst=document.createElement('div');
+  burst.className='dysc-burst';
+  burst.textContent='⭐✨💫';
+  cell.appendChild(burst);
+  setTimeout(()=>{ try{ burst.remove(); }catch(e){} }, 700);
+}
+
 function renderBoard(){
   const el=document.getElementById('board');
   const flip = playerColor==='b';
@@ -4298,8 +4345,23 @@ function renderBoard(){
     const _tcl=el.querySelector('.cell[data-r="'+m.tr+'"][data-c="'+m.tc+'"]');
     const _pe=_tcl&&_tcl.querySelector('.board-piece');
     if(_fcl&&_tcl&&_pe){ const a=_fcl.getBoundingClientRect(),b=_tcl.getBoundingClientRect(); const dx=a.left-b.left,dy=a.top-b.top;
-      if(dx||dy){ _pe.style.transition='none'; _pe.style.transform='translate('+dx+'px,'+dy+'px)'; _pe.style.zIndex='6';
-        requestAnimationFrame(()=>requestAnimationFrame(()=>{ _pe.style.transition='transform .19s cubic-bezier(.22,.68,.32,1)'; _pe.style.transform='translate(0,0)'; setTimeout(()=>{ try{_pe.style.zIndex='';_pe.style.transition='';}catch(e){} },230); })); } }
+      if(m.cap){
+        // ── CAPTURE : bond écraseur + poussière + étoiles ──
+        _pe.style.transition='none'; _pe.style.transform='translate('+dx+'px,'+dy+'px)'; _pe.style.zIndex='8';
+        requestAnimationFrame(()=>requestAnimationFrame(()=>{
+          _pe.style.animation='dyscPounce .42s cubic-bezier(.4,0,.5,1) forwards';
+          _pe.style.setProperty('--dx', dx+'px');
+          _pe.style.setProperty('--dy', dy+'px');
+          setTimeout(()=>{ try{ _pe.style.zIndex='';_pe.style.transition='';_pe.style.animation='';_pe.style.transform=''; }catch(e){} }, 460);
+        }));
+        // Effets à l'impact (poussière + étoiles) au centre de la case d'arrivée
+        try{ _spawnCaptureFX(_tcl); }catch(e){}
+      } else if(dx||dy){
+        // Déplacement simple : glissement
+        _pe.style.transition='none'; _pe.style.transform='translate('+dx+'px,'+dy+'px)'; _pe.style.zIndex='6';
+        requestAnimationFrame(()=>requestAnimationFrame(()=>{ _pe.style.transition='transform .19s cubic-bezier(.22,.68,.32,1)'; _pe.style.transform='translate(0,0)'; setTimeout(()=>{ try{_pe.style.zIndex='';_pe.style.transition='';}catch(e){} },230); }));
+      }
+    }
   }catch(e){} }
   // Bandeaux joueur + pièces capturées (style mobile)
   try{ updatePlayerBars(); updateCapturedDisplay(); }catch(e){}
