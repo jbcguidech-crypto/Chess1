@@ -1359,7 +1359,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN54</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN56</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -1493,7 +1493,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
         <div class="glossary-body" id="glossaryBody" style="display:none;">
           <div class="gloss-group">
             <div class="gloss-head">♟ Jouer un coup</div>
-            <div class="gloss-row"><span class="gloss-ex">« pion e4 »</span><span class="gloss-desc">avancer un pion (dites toujours « pion »)</span></div>
+            <div class="gloss-row"><span class="gloss-ex">« e4 » ou « pion e4 »</span><span class="gloss-desc">avancer un pion</span></div>
             <div class="gloss-row"><span class="gloss-ex">« cavalier f3 »</span><span class="gloss-desc">déplacer une pièce</span></div>
             <div class="gloss-row"><span class="gloss-ex">« dame prend dame »</span><span class="gloss-desc">capturer</span></div>
             <div class="gloss-row"><span class="gloss-ex">« petit roque » / « grand roque »</span><span class="gloss-desc">roquer</span></div>
@@ -3585,6 +3585,21 @@ function askPromotion(colorLetter, cb){
     wrap.appendChild(d);
   });
   ov.classList.add('show');
+  // Mémorise le callback pour permettre un choix VOCAL (mains-libres)
+  _pendingPromo = cb;
+  // Invite vocale (si le son n'est pas coupé ou en mains-libres)
+  try{ _voiceSay(currentLang==='fr'
+    ? 'En quoi voulez-vous promouvoir votre pion ?'
+    : 'What do you want to promote your pawn to?'); }catch(e){}
+}
+// Choix de promotion en attente (callback), pour le pilotage vocal
+let _pendingPromo = null;
+function _resolvePromoVoice(letter){
+  if(!_pendingPromo) return false;
+  const cb = _pendingPromo; _pendingPromo = null;
+  const ov = document.getElementById('promoOverlay'); if(ov) ov.classList.remove('show');
+  cb(letter);
+  return true;
 }
 
 function makeMove(fr,fc,tr,tc,castleType,promo,byVoice){
@@ -4682,6 +4697,18 @@ function startListening(){
 
     // Si l'IA parle, on IGNORE TOUT (le micro pourrait capter sa voix → faux coup)
     if(aiSpeaking){ return; }
+    // Si une promotion attend un choix, on intercepte « dame / tour / fou / cavalier » en priorité
+    if(_pendingPromo){
+      const txt = ' ' + candidates.join(' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'') + ' ';
+      let letter = null;
+      if(/\b(dame|reine|queen)\b/.test(txt)) letter='Q';
+      else if(/\b(tour|rook)\b/.test(txt)) letter='R';
+      else if(/\b(fou|bishop)\b/.test(txt)) letter='B';
+      else if(/\b(cavalier|cheval|knight)\b/.test(txt)) letter='N';
+      if(letter){ _resolvePromoVoice(letter); return; }
+      // Sinon on attend toujours le choix (on n'interprète pas comme un coup)
+      return;
+    }
     // Pendant le tour de l'IA ou juste après un coup : on N'ÉCOUTE QUE l'annulation
     // et les commandes informatives/de contrôle (état, indice, abandon, aide…).
     const aiBusy = (gameMode==='ai' && turn!==playerColor);
@@ -5294,10 +5321,6 @@ function _parseStrict(text){
     else if(/\b(aleatoire|hasard|au hasard|random|peu importe)\b/.test(_n)) col='r';
     return {kind:'newgame', elo: lvl ? parseInt(lvl[1]) : null, color: col};
   }
-  // Répéter / décrire la position
-  if(/\b(repete|repeter|repete la position|la position|ou en est|ou en sommes|etat|situation|describe|repeat|position)\b/.test(_n)) return {kind:'state', what:'position'};
-  // Suis-je en échec ?
-  if(/\b(echec|en echec|suis je en echec|am i in check|in check)\b/.test(_n) && !/echec et mat|mat/.test(_n)) return {kind:'state', what:'check'};
   // Quel est le dernier coup ?
   if(/\b(dernier coup|qu a joue|qu as tu joue|qu a t il joue|last move|what did|adversaire a joue)\b/.test(_n)) return {kind:'state', what:'last'};
   // À qui le tour ?
@@ -5529,6 +5552,13 @@ function executeVoiceAction(act, verbose){
       return true;
     case 'move':
       if(verbose) setStatus((currentLang==='fr'?'✓ Joué en ':'✓ Played to ')+String.fromCharCode(97+act.tc)+(8-act.tr),'success');
+      // Promotion : si le coup amène un pion sur la dernière rangée et qu'aucune pièce
+      // n'a été précisée à la voix, on DEMANDE en quoi promouvoir (au lieu de forcer la dame).
+      if(_isPromotion(act.fr,act.fc,act.tr,act.tc) && !act.promo){
+        const col = color(board[act.fr][act.fc]);
+        askPromotion(col, (letter)=>makeMove(act.fr,act.fc,act.tr,act.tc,null,letter,true));
+        return true;
+      }
       makeMove(act.fr,act.fc,act.tr,act.tc,null,act.promo,true); // true = coup vocal → confirmation parlée
       return true;
     case 'ambiguous': {
@@ -5586,12 +5616,6 @@ function _voiceState(what){
     _voiceSay(currentLang==='fr'?('C\'est '+colName+' de jouer.'):('It is '+colName+' to move.'));
     return;
   }
-  if(what==='check'){
-    const inCk = isInCheck(board, turn);
-    _voiceSay(inCk ? (currentLang==='fr'?'Oui, vous êtes en échec.':'Yes, you are in check.')
-                   : (currentLang==='fr'?'Non, pas d\'échec.':'No, no check.'));
-    return;
-  }
   if(what==='last'){
     const last = history.length ? history[history.length-1] : null;
     if(last && last.spoken) _voiceSay((currentLang==='fr'?'Dernier coup : ':'Last move: ')+last.spoken);
@@ -5601,12 +5625,10 @@ function _voiceState(what){
   }
   if(what==='help'){
     _voiceSay(currentLang==='fr'
-      ? 'Dites un coup comme « e4 » ou « cavalier f3 ». Vous pouvez dire : annule, indice, abandonne, nouvelle partie, suis-je en échec, dernier coup, ou répète la position.'
-      : 'Say a move like "e4" or "knight f3". You can also say: undo, hint, resign, new game, am I in check, last move, or repeat the position.');
+      ? 'Dites un coup comme « e4 » ou « cavalier f3 ». Vous pouvez dire : annule, indice, abandonne, nouvelle partie, ou dernier coup.'
+      : 'Say a move like "e4" or "knight f3". You can also say: undo, hint, resign, new game, or last move.');
     return;
   }
-  // what==='position' → décrit la position pièce par pièce (résumé)
-  _voiceDescribePosition();
 }
 
 // Décrit la position : compte et localise les pièces de chaque camp (résumé parlé)
