@@ -596,12 +596,22 @@ html[data-theme="dark"] .settings-preview img {
 
 /* ── BOARD ───────────────────────────────────── */
 .board-container {
-  background:var(--surface);
-  border-radius:14px;padding:8px;
+  background:linear-gradient(165deg,var(--surface-hi),var(--surface));
+  border-radius:18px;padding:10px;
   border:1px solid var(--border);
   box-sizing:border-box;width:100%;
-  box-shadow:0 10px 28px rgba(0,0,0,.18), 0 2px 6px rgba(0,0,0,.10);
+  box-shadow:
+    0 18px 44px rgba(0,0,0,.28),
+    0 4px 12px rgba(0,0,0,.16),
+    inset 0 1px 0 rgba(255,255,255,.05);
+  position:relative;
 }
+/* Fin liseré doré intérieur autour de l'échiquier (touche premium) */
+.board-container::after{
+  content:'';position:absolute;inset:6px;border-radius:13px;pointer-events:none;
+  box-shadow:inset 0 0 0 1px var(--border-gold);opacity:.5;
+}
+#board { border-radius:8px;overflow:hidden;position:relative;z-index:1; }
 .coord-col, .coords-bottom { display:none !important; }
 
 /* ── BARRE DE CONTRÔLES (moderne, type Lichess) ── */
@@ -610,21 +620,25 @@ html[data-theme="dark"] .settings-preview img {
 }
 .gc-btn {
   flex:1;display:flex;align-items:center;justify-content:center;gap:7px;
-  padding:11px 10px;border-radius:10px;cursor:pointer;
-  font-family:'Manrope',system-ui,sans-serif;font-weight:700;font-size:.84rem;
-  background:var(--surface-hi);color:var(--text-light);
+  padding:12px 10px;border-radius:12px;cursor:pointer;
+  font-family:'Manrope',system-ui,sans-serif;font-weight:800;font-size:.84rem;
+  background:linear-gradient(180deg,var(--surface-hi),var(--surface));
+  color:var(--text-light);
   border:1px solid var(--border);
-  transition:background .15s, border-color .15s, transform .08s;
+  box-shadow:0 2px 6px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.05);
+  transition:background .15s, border-color .15s, transform .08s, box-shadow .15s;
   -webkit-tap-highlight-color:transparent;
 }
 .gc-btn svg { width:18px;height:18px;flex-shrink:0; }
-.gc-btn:hover { background:rgba(91,141,239,.14);border-color:var(--border-hi); }
+.gc-btn:hover { border-color:var(--border-hi);box-shadow:0 4px 12px rgba(0,0,0,.18); }
 .gc-btn:active { transform:scale(.97); }
 .gc-btn:disabled { opacity:.4;cursor:not-allowed; }
 .gc-btn.gc-primary {
-  background:var(--gold);color:var(--text-dark);border-color:var(--gold);
+  background:linear-gradient(180deg,var(--gold-light),var(--gold));
+  color:#fff;border-color:var(--gold-dark);
+  box-shadow:0 4px 14px rgba(91,141,239,.4), inset 0 1px 0 rgba(255,255,255,.25);
 }
-.gc-btn.gc-primary:hover { background:var(--gold-light);border-color:var(--gold-light); }
+.gc-btn.gc-primary:hover { background:linear-gradient(180deg,#8FB4F7,var(--gold-light));box-shadow:0 6px 18px rgba(91,141,239,.5); }
 
 /* ── BARRE DE REVUE ── */
 .review-bar {  display:flex;align-items:center;justify-content:center;gap:4px;
@@ -847,26 +861,44 @@ html[data-theme="dark"] .settings-preview img {
 /* ── BANDEAUX JOUEUR (compacts, style mobile, design original) ── */
 .player-bar {
   display:flex;align-items:center;justify-content:space-between;gap:8px;
-  background:transparent;border:none;
-  border-radius:8px;padding:1px 4px;width:100%;box-sizing:border-box;
+  background:linear-gradient(180deg,var(--surface-hi),var(--surface));
+  border:1px solid var(--border);
+  border-radius:12px;padding:7px 12px;width:100%;box-sizing:border-box;
+  transition:border-color .25s, box-shadow .25s, transform .15s;
+}
+.player-bar.active {
+  border-color:var(--border-gold);
+  box-shadow:0 0 0 1px var(--border-gold), 0 4px 18px rgba(91,141,239,.18);
 }
 .player-bar.active .pb-name { color:var(--gold-light); }
-.player-bar.active .pb-dot { box-shadow:0 0 0 2px var(--border-gold); }
-.pb-left { display:flex;align-items:center;gap:7px;min-width:0; }
-.pb-dot { width:9px;height:9px;border-radius:50%;flex-shrink:0;border:1px solid var(--border-hi); }
+.player-bar.active .pb-ava {
+  border-color:var(--border-gold);
+  box-shadow:0 0 10px rgba(91,141,239,.4);
+}
+.player-bar.active .pb-dot {
+  box-shadow:0 0 0 2px var(--border-gold);
+  animation:pbPulse 1.8s ease-in-out infinite;
+}
+@keyframes pbPulse {
+  0%,100%{ box-shadow:0 0 0 2px var(--border-gold), 0 0 0 0 rgba(91,141,239,.5); }
+  50%{ box-shadow:0 0 0 2px var(--border-gold), 0 0 8px 2px rgba(91,141,239,.55); }
+}
+.pb-left { display:flex;align-items:center;gap:9px;min-width:0; }
+.pb-dot { width:9px;height:9px;border-radius:50%;flex-shrink:0;border:1px solid var(--border-hi);transition:box-shadow .25s; }
 .pb-dot.w { background:#f4f4ee; }
 .pb-dot.b { background:#33373e; }
 .pb-ava {
-  width:20px;height:20px;border-radius:5px;flex-shrink:0;overflow:hidden;
-  display:flex;align-items:center;justify-content:center;font-size:.8rem;
-  background:var(--surface-hi);border:1px solid var(--border);
+  width:34px;height:34px;border-radius:9px;flex-shrink:0;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;font-size:1.25rem;
+  background:linear-gradient(160deg,var(--surface-hi),var(--surface));
+  border:1px solid var(--border);transition:border-color .25s, box-shadow .25s;
 }
 .pb-ava img { width:100%;height:100%;object-fit:cover; }
-.pb-meta { min-width:0;display:flex;align-items:baseline;gap:5px; }
-.pb-name { font-weight:700;font-size:.76rem;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px; }
-.pb-elo { font-size:.64rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;flex-shrink:0; }
-.pb-captured { display:flex;align-items:center;flex-wrap:nowrap;justify-content:flex-end;min-height:15px; }
-.cap-pc { width:15px;height:15px;object-fit:contain;margin-left:-3px; }
+.pb-meta { min-width:0;display:flex;flex-direction:column;gap:1px; }
+.pb-name { font-weight:800;font-size:.86rem;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;line-height:1.1;transition:color .25s; }
+.pb-elo { font-size:.7rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;flex-shrink:0;line-height:1.1; }
+.pb-captured { display:flex;align-items:center;flex-wrap:nowrap;justify-content:flex-end;min-height:18px; }
+.cap-pc { width:17px;height:17px;object-fit:contain;margin-left:-3px;opacity:.85; }
 .cap-pc:first-child { margin-left:0; }
 .cap-adv { margin-left:5px;font-weight:800;font-size:.72rem;color:var(--gold-light);font-family:'JetBrains Mono',monospace; }
 .board-mid { display:flex;align-items:stretch; }
@@ -1373,7 +1405,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN61</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN63</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -3750,6 +3782,24 @@ function makeMove(fr,fc,tr,tc,castleType,promo,byVoice){
     posLen: positionHistory.length
   });
   const piece=board[fr][fc],captured=board[tr][tc],moveStr=toAlg(fr,fc,tr,tc,piece,captured,promo);
+  // Ambiguïté : une AUTRE pièce du même type (hors pion) pouvait-elle aussi aller en (tr,tc) ?
+  // Si oui, l'annonce vocale précisera la colonne (ou la rangée) de départ. Calculé AVANT modif.
+  let _disambig = null;
+  if(type(piece)!=='P'){
+    const others=[];
+    for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+      if(r===fr&&c===fc) continue;
+      const p=board[r][c];
+      if(p && color(p)===color(piece) && type(p)===type(piece)){
+        if(legalMoves(r,c).some(([mr,mc])=>mr===tr&&mc===tc)) others.push([r,c]);
+      }
+    }
+    if(others.length){
+      // Convention échecs : on précise la colonne si elle distingue, sinon la rangée.
+      const sameCol = others.some(([r,c])=>c===fc);
+      _disambig = sameCol ? {type:'rank', val:(8-fr)} : {type:'file', val:'abcdefgh'[fc]};
+    }
+  }
   updateCastlingRights(fr,fc,piece);enPassant=null;
   if(type(piece)==='P'&&Math.abs(tr-fr)===2)enPassant=[(fr+tr)/2,fc];
   board=applyMove(board,fr,fc,tr,tc);
@@ -3760,8 +3810,8 @@ function makeMove(fr,fc,tr,tc,castleType,promo,byVoice){
   if(type(piece)==='P' && (tr===0||tr===7)){ board[tr][tc]=color(piece)+(promo||'Q'); }
   lastMove=[fr,fc,tr,tc];history.push({move:moveStr,color:turn});
   { const _pr=(type(piece)==='P'&&(tr===0||tr===7))?((promo||'Q').toLowerCase()):null; moveHistoryUCI.push(toUCI(fr,fc,tr,tc,_pr)); }
-  const humanSpoken = toSpeech(fr,fc,tr,tc,piece,captured,castleType);          // version complète (historique)
-  const humanSpokenShort = toSpeech(fr,fc,tr,tc,piece,captured,castleType,true); // version courte (annonce du joueur)
+  const humanSpoken = toSpeech(fr,fc,tr,tc,piece,captured,castleType,false,_disambig);          // version complète (historique)
+  const humanSpokenShort = toSpeech(fr,fc,tr,tc,piece,captured,castleType,true,_disambig); // version courte (annonce du joueur)
   if(history.length){ history[history.length-1].spoken = humanSpoken; history[history.length-1].from=[fr,fc]; history[history.length-1].ptype=type(piece); }
   turn=turn==='w'?'b':'w';selected=null;possibleMoves=[];
   if(type(piece)==='P' || captured) halfmoveClock=0; else halfmoveClock++;
@@ -3862,7 +3912,7 @@ function _checkSuffix(fr,fc,tr,tc,piece,promo){
   return hasMove ? '+' : '#';
 }
 
-function toSpeech(fr,fc,tr,tc,piece,captured,castleType,short){
+function toSpeech(fr,fc,tr,tc,piece,captured,castleType,short,disambig){
   const f='abcdefgh';
   const t=type(piece);
   const isFR = currentLang==='fr';
@@ -3874,6 +3924,8 @@ function toSpeech(fr,fc,tr,tc,piece,captured,castleType,short){
     : {K:'King',Q:'Queen',R:'Rook',B:'Bishop',N:'Knight',P:'pawn'};
   const dest = f[tc]+(8-tr);
   const sep = short ? ' ' : (isFR ? ' en ' : ' to ');
+  // Précision de départ en cas d'ambiguïté : « Cavalier a c3 » (colonne) ou « Cavalier 1 c3 » (rangée)
+  const disTxt = disambig ? (' '+disambig.val) : '';
 
   // Roque
   if(castleType==='castle-k') return isFR?'Petit roque':'Kingside castle';
@@ -3886,13 +3938,13 @@ function toSpeech(fr,fc,tr,tc,piece,captured,castleType,short){
                : {K:'le Roi',Q:'la Dame',R:'la Tour',B:'le Fou',N:'le Cavalier',P:'le Pion'})
       : {K:'King',Q:'Queen',R:'Rook',B:'Bishop',N:'Knight',P:'pawn'};
     const vname = victims[type(captured)]||'';
-    if(isFR) return (names[t]||(short?'Pion':'le Pion'))+' prend '+vname+sep+dest;
-    return (names[t]||'pawn')+' takes '+vname+' on '+dest;
+    if(isFR) return (names[t]||(short?'Pion':'le Pion'))+disTxt+' prend '+vname+sep+dest;
+    return (names[t]||'pawn')+disTxt+' takes '+vname+' on '+dest;
   }
 
   // Mouvement normal
-  if(isFR) return (names[t]||(short?'Pion':'le Pion'))+sep+dest;
-  return (names[t]||'pawn')+' to '+dest;
+  if(isFR) return (names[t]||(short?'Pion':'le Pion'))+disTxt+sep+dest;
+  return (names[t]||'pawn')+disTxt+' to '+dest;
 }
 
 // Clé de position (placement + trait + roques + prise en passant) pour la répétition
