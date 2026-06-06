@@ -1456,7 +1456,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">♟ Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN72</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN73</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -3354,7 +3354,7 @@ function isLegalUCI(uci){
 function initStockfish(){
   sfReady = false;
   const dbg = document.getElementById('debugVoice');
-  if(dbg){ dbg.style.display='block'; dbg.textContent='⏳ Chargement du moteur IA…'; }
+  if(dbg){ dbg.style.display='none'; dbg.textContent=''; }
 
   // Détecte si les en-têtes COOP/COEP sont présents (cross-origin isolation)
   // Si oui → Stockfish 16 NNUE multi-thread (très fort)
@@ -3394,7 +3394,7 @@ function initStockfish(){
   async function tryLoad(i){
     if(i >= ENGINES.length){
       stockfish = null;
-      if(dbg) dbg.textContent='⚠️ Moteur IA non chargé (coups de secours)';
+      if(dbg) dbg.textContent='';
       return;
     }
     const eng = ENGINES[i];
@@ -3452,7 +3452,7 @@ function initStockfish(){
           }
           worker.postMessage('setoption name Ponder value false');
           console.log('✅ Moteur chargé:', eng.name);
-          if(dbg) dbg.textContent='✅ Moteur IA prêt ('+eng.name+(isolated?' fort':'')+')';
+          if(dbg) dbg.textContent='';
         }
         // Capte le score d'évaluation (pour la jauge) — lignes "info ... score cp/mate ..."
         if(line.startsWith('info') && line.includes('score')){
@@ -3549,7 +3549,7 @@ function askStockfish(){
     aiThinking=true;
     document.getElementById('aiSpinner').classList.add('show');
     const dbg=document.getElementById('debugVoice');
-    if(dbg){ dbg.style.display='block'; dbg.textContent='📖 Coup d\'ouverture: '+bookMv; }
+    if(dbg){ dbg.style.display='none'; dbg.textContent=''; }
     const _bookGen = aiGen; // mémorise la génération : annulée si on fait "annuler" entre-temps
     setTimeout(()=>{
       if(_bookGen !== aiGen){ aiThinking=false; return; } // annulé → on ne joue pas le coup fantôme
@@ -3584,9 +3584,8 @@ function askStockfish(){
   // Diagnostic visible
   const dbg = document.getElementById('debugVoice');
   if(dbg){
-    const skill = Math.max(0, Math.min(20, Math.round((currentElo-400)/2600*20)));
-    dbg.style.display='block';
-    dbg.textContent='🤖 ELO '+currentElo+' · profondeur '+sfDepth+' · skill '+skill+' · '+moveTime+'ms';
+    dbg.style.display='none';
+    dbg.textContent='';
   }
   // Timeout de sécurité : la réflexion est plafonnée à 2 s, on laisse une marge
   setTimeout(()=>{
@@ -4976,7 +4975,7 @@ function startListening(){
     if(displayHeard){
       setStatus('👂 ' + displayHeard, 'heard');
       const dbg=document.getElementById('debugVoice');
-      if(dbg){ dbg.style.display='block'; dbg.textContent='Entendu : "'+candidates.join('" / "')+'"'; }
+      if(dbg){ dbg.style.display='none'; dbg.textContent=''; }
     }
 
     // Nettoie les mots de réveil en tête + teste chaque candidat
