@@ -1253,16 +1253,21 @@ input[type=range]::-webkit-slider-thumb {
 
 /* ── GAME OVER ───────────────────────────────── */
 /* Fin de partie : bannière compacte en bas, l'échiquier reste visible */
-#gameOver { display:none;position:fixed;left:0;right:0;bottom:0;top:auto;z-index:400;background:transparent;backdrop-filter:none;align-items:flex-end;justify-content:center;padding:0 12px calc(12px + env(safe-area-inset-bottom)); pointer-events:none; }
+#gameOver { display:none;position:fixed;inset:0;z-index:400;background:transparent;backdrop-filter:none;align-items:center;justify-content:center;padding:12px; pointer-events:none; }
 #gameOver.show { display:flex;animation:go-fade .25s ease; }
 @keyframes go-fade { from{opacity:0;} to{opacity:1;} }
 .go-modal-box {
   background:linear-gradient(165deg,#2C313A,#21252c);
-  border:1px solid var(--border);border-radius:20px;padding:18px 22px 16px;text-align:center;
-  width:100%;max-width:380px;box-shadow:0 12px 40px rgba(0,0,0,.5);
+  border:1px solid var(--border-gold);border-radius:20px;padding:14px 18px 16px;text-align:center;
+  width:100%;max-width:300px;box-shadow:0 18px 50px rgba(0,0,0,.6),var(--glow-blue);
   animation:go-pop .35s cubic-bezier(.2,1.3,.4,1); pointer-events:auto;
-  display:flex;align-items:center;gap:16px;text-align:left;
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  position:relative;cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none;
 }
+.go-modal-box.dragging { cursor:grabbing;transition:none; }
+/* Poignée de déplacement */
+.go-handle { width:36px;height:4px;border-radius:3px;background:var(--border-hi);margin:-2px auto 2px;flex:0 0 auto; }
+.go-hint { font-size:.64rem;color:var(--text-muted);font-weight:600;opacity:.8;margin-top:-2px; }
 html[data-theme="light"] .go-modal-box { background:linear-gradient(165deg,#FFFFFF,#EEF2F8); }
 @keyframes go-pop { from{ transform:scale(.85) translateY(20px);opacity:0; } to{ transform:scale(1) translateY(0);opacity:1; } }
 .go-icon {
@@ -1274,13 +1279,13 @@ html[data-theme="light"] .go-modal-box { background:linear-gradient(165deg,#FFFF
 .go-icon.win  { background:linear-gradient(160deg,#FFE08A,#F5B53A);box-shadow:0 8px 24px rgba(245,181,58,.45); }
 .go-icon.lose { background:linear-gradient(160deg,#4a5160,#363c47);box-shadow:0 8px 24px rgba(0,0,0,.4); }
 .go-icon.draw { background:linear-gradient(160deg,#8FB4F7,#5B8DEF);box-shadow:0 8px 24px rgba(91,141,239,.4); }
-.go-info { flex:1;min-width:0; }
+.go-info { width:100%;min-width:0; }
 .go-title {
-  font-family:'Manrope',system-ui,sans-serif;font-size:1.05rem;font-weight:800;
+  font-family:'Manrope',system-ui,sans-serif;font-size:1.15rem;font-weight:800;
   color:var(--text-light);margin-bottom:2px;line-height:1.2;
 }
-.go-sub { font-size:.78rem;color:var(--text-muted);margin-bottom:10px;font-weight:600; }
-.go-btns { display:flex;gap:8px;justify-content:flex-start; }
+.go-sub { font-size:.8rem;color:var(--text-muted);margin-bottom:2px;font-weight:600; }
+.go-btns { display:flex;gap:8px;justify-content:center;width:100%; }
 .go-btn {
   padding:8px 18px;border-radius:50px;cursor:pointer;flex:0 1 auto;
   font-family:'Manrope',system-ui,sans-serif;font-size:.82rem;font-weight:700;
@@ -1477,7 +1482,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN76</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN77</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -1799,16 +1804,18 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 
 <!-- ══ GAME OVER ══════════════════════════════════════ -->
 <div id="gameOver">
-  <div class="go-modal-box">
+  <div class="go-modal-box" id="goBox">
+    <div class="go-handle"></div>
     <div class="go-icon" id="goIcon"></div>
-    <div class="go-info">
+    <div class="go-info" style="text-align:center;">
       <div class="go-title" id="gameOverText">Échec et mat !</div>
       <div class="go-sub" id="goSub"></div>
-      <div class="go-btns">
-        <button class="go-btn primary" onclick="endGameSave(true)">Sauvegarder</button>
-        <button class="go-btn secondary" onclick="endGameSave(false)">Ne pas sauvegarder</button>
-      </div>
     </div>
+    <div class="go-btns">
+      <button class="go-btn primary" onclick="endGameSave(true)">Sauvegarder</button>
+      <button class="go-btn secondary" onclick="endGameSave(false)">Ne pas sauvegarder</button>
+    </div>
+    <div class="go-hint">Glissez la fenêtre pour voir l'échiquier</div>
   </div>
 </div>
 
@@ -4355,6 +4362,35 @@ function _animateKingDeath(loserColor){
 // ═══════ HISTORIQUE DES PARTIES (sauvegarde locale + relecture) ═══════
 const _SAVED_KEY = 'dysc-saved-games';
 let _pendingArchive = null; // issue de la partie en attente de décision (sauvegarder ou non)
+// Rend la fenêtre de fin déplaçable au doigt (pour voir l'échiquier derrière)
+function _makeEndBoxDraggable(){
+  const box=document.getElementById('goBox');
+  if(!box || box._dragBound){ if(box&&box._resetPos)box._resetPos(); return; }
+  box._dragBound=true;
+  let startX=0,startY=0,curX=0,curY=0,dragging=false;
+  const onDown=(e)=>{
+    if(e.target.closest('.go-btn')) return; // pas de drag sur les boutons
+    dragging=true; box.classList.add('dragging');
+    const p=e.touches?e.touches[0]:e;
+    startX=p.clientX-curX; startY=p.clientY-curY;
+  };
+  const onMove=(e)=>{
+    if(!dragging) return;
+    const p=e.touches?e.touches[0]:e;
+    curX=p.clientX-startX; curY=p.clientY-startY;
+    box.style.animation='none';
+    box.style.transform='translate('+curX+'px,'+curY+'px)';
+    if(e.cancelable) e.preventDefault();
+  };
+  const onUp=()=>{ dragging=false; box.classList.remove('dragging'); };
+  box.addEventListener('touchstart',onDown,{passive:true});
+  box.addEventListener('touchmove',onMove,{passive:false});
+  box.addEventListener('touchend',onUp);
+  box.addEventListener('mousedown',onDown);
+  window.addEventListener('mousemove',onMove);
+  window.addEventListener('mouseup',onUp);
+  box._resetPos=()=>{ curX=0;curY=0;box.style.transform=''; };
+}
 // Décision de fin de partie : sauvegarde (ou non) puis retour au splash
 function endGameSave(save){
   try{ if(save && _pendingArchive){ _archiveGame(_pendingArchive.outcome, _pendingArchive.subtitle); } }catch(e){}
@@ -4412,6 +4448,7 @@ function _showEndBanner(msg, result, mate, outcome){
   // Mémorise l'issue pour une éventuelle sauvegarde (proposée à l'utilisateur)
   _pendingArchive = { outcome: outcome==='mate'?'win':outcome, subtitle: subtitle };
   banner.classList.add('show');
+  try{ _makeEndBoxDraggable(); }catch(e){}
 }
 
 function checkGameState(){
