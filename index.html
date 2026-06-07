@@ -1482,7 +1482,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN77</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN78</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -1865,10 +1865,10 @@ try { const saved = localStorage.getItem('dysc_pieceset'); if(saved) pieceSet = 
 // ── THÈMES D'ÉCHIQUIER ──────────────────────────────
 // Couleurs CSS (rapides) + textures Lichess (jpg)
 const BOARD_THEMES = [
-  // Couleurs unies uniquement (aperçu instantané, fiable) — un seul bois, les plus populaires
+  // Couleurs unies uniquement (aperçu instantané, fiable) — bleu par défaut (logo bleu)
+  {id:'blue',    name:'Bleu',    type:'css', light:'#dde7f5', dark:'#6f93cf'},
   {id:'green',   name:'Vert',    type:'css', light:'#eeeed2', dark:'#769656'}, // Chess.com
   {id:'brown',   name:'Bois',    type:'css', light:'#f0d9b5', dark:'#b58863'}, // le bois classique (Lichess)
-  {id:'blue',    name:'Bleu',    type:'css', light:'#dee3e6', dark:'#8ca2ad'},
   {id:'blue3',   name:'Azur',    type:'css', light:'#d9e0e6', dark:'#4d7399'},
   {id:'grey',    name:'Gris',    type:'css', light:'#dcdcdc', dark:'#888888'},
   {id:'purple',  name:'Violet',  type:'css', light:'#e6dcf5', dark:'#9075b8'},
@@ -1878,7 +1878,7 @@ const BOARD_THEMES = [
 
 const BOARD_CDN = 'https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/images/board/';
 
-let boardTheme = 'green';
+let boardTheme = 'blue';
 try { const sv = localStorage.getItem('dysc_board'); if(sv) boardTheme = sv; } catch(e){}
 
 // Migration unique : impose les nouveaux défauts (Merida + plateau Vert façon Chess.com)
@@ -1887,7 +1887,7 @@ try { const sv = localStorage.getItem('dysc_board'); if(sv) boardTheme = sv; } c
 try {
   if(localStorage.getItem('dysc_defaults_v3') !== '1'){
     pieceSet = 'merida';  localStorage.setItem('dysc_pieceset','merida');
-    boardTheme = 'green';  localStorage.setItem('dysc_board','green');
+    boardTheme = 'blue';  localStorage.setItem('dysc_board','blue');
     localStorage.setItem('dysc_defaults_v3','1');
   }
 } catch(e){}
@@ -1897,7 +1897,7 @@ function getBoardTheme(){ return BOARD_THEMES.find(t=>t.id===boardTheme) || BOAR
 // Sécurité : si le thème ou le set mémorisé n'existe plus dans les listes (après mise à
 // jour des choix proposés), on retombe sur un défaut valide pour éviter un aperçu figé.
 try{
-  if(!BOARD_THEMES.find(t=>t.id===boardTheme)){ boardTheme='green'; localStorage.setItem('dysc_board','green'); }
+  if(!BOARD_THEMES.find(t=>t.id===boardTheme)){ boardTheme='blue'; localStorage.setItem('dysc_board','blue'); }
   if(!PIECE_SETS.find(s=>s.id===pieceSet)){ pieceSet='merida'; localStorage.setItem('dysc_pieceset','merida'); }
 }catch(e){}
 
