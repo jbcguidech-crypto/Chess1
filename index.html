@@ -1506,7 +1506,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN88</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN89</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -3341,6 +3341,26 @@ function _pickHumanMove(){
   else if(elo <= 2400) tau = 12;
   else                 tau = 7;
   const b2 = cands[0].cp;
+  // ── ANTI VA-ET-VIENT (anti-shuffle) ──
+  // Empêche l'IA de défaire son propre coup précédent sans raison (ex. sortir la dame
+  // d'une case puis la remettre). On repère le dernier coup joué par l'IA elle-même
+  // (avant-dernier demi-coup) et on écarte le candidat qui en est l'inverse exact,
+  // sauf s'il est nettement le meilleur (écart minime avec une vraie alternative).
+  try{
+    if(moveHistoryUCI.length >= 2){
+      const myPrev = moveHistoryUCI[moveHistoryUCI.length - 2]; // dernier coup de l'IA
+      if(myPrev && myPrev.length >= 4){
+        const reverse = myPrev.slice(2,4) + myPrev.slice(0,2); // inverse: arrivée→départ
+        const others = cands.filter(c => c.move.slice(0,4) !== reverse);
+        // On retire le coup-retour seulement s'il reste au moins une alternative correcte
+        // (perte < ~120 cp par rapport au meilleur), pour ne pas se priver d'un coup forcé.
+        if(others.length){
+          const bestOther = Math.max(...others.map(c=>c.cp));
+          if(b2 - bestOther <= 120){ cands = others; }
+        }
+      }
+    }
+  }catch(e){}
   // Poids = exp(-perte/tau) : le meilleur coup a poids 1, les autres décroissent
   const weights = cands.map(c => Math.exp(-Math.max(0, b2 - c.cp)/tau));
   const total = weights.reduce((a,b)=>a+b,0);
