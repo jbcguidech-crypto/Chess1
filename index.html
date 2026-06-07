@@ -1507,7 +1507,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN90</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN92</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -3453,6 +3453,30 @@ function isLegalUCI(uci){
   return moves.some(([mr,mc])=>mr===tr&&mc===tc);
 }
 
+// Vérifie qu'une action de coup/roque est réellement jouable sur la position actuelle.
+// Sert à privilégier, parmi les interprétations vocales, celle qui donne un coup légal.
+function _isActionLegal(a){
+  if(!a) return false;
+  if(a.kind==='castle'){
+    // Un roque est un déplacement du roi de 2 cases : on le cherche dans ses coups légaux.
+    for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+      const p=board[r][c];
+      if(p && color(p)===turn && type(p)==='K'){
+        const tcCol = a.side==='K' ? c+2 : c-2;
+        return legalMoves(r,c).some(([mr,mc])=>mr===r && mc===tcCol);
+      }
+    }
+    return false;
+  }
+  if(a.kind==='move'){
+    if(a.fr==null||a.fc==null||a.tr==null||a.tc==null) return false;
+    const p=board[a.fr] && board[a.fr][a.fc];
+    if(!p || color(p)!==turn) return false;
+    return legalMoves(a.fr,a.fc).some(([mr,mc])=>mr===a.tr && mc===a.tc);
+  }
+  return false;
+}
+
 function initStockfish(){
   sfReady = false;
   const dbg = document.getElementById('debugVoice');
@@ -5093,7 +5117,9 @@ function startListening(){
   recognition.onresult = (e) => {
 
     // Rassemble TOUS les candidats : chaque alternative de chaque résultat (final + intermédiaire)
-    const candidates = [];
+    // On garde le texte, l'indice d'alternative (rang Chrome) et le score de confiance.
+    const candidates = [];      // string[] (compat avec le code existant)
+    const candMeta = [];        // {text, rank, conf} — pour le scoring unifié
     let displayHeard = '';
     let anyFinal = false;
     for(let i = e.resultIndex; i < e.results.length; i++){
@@ -5101,7 +5127,11 @@ function startListening(){
       if(res.isFinal) anyFinal = true;
       for(let a=0; a<res.length; a++){
         const tr = res[a].transcript.toLowerCase().trim();
-        if(tr){ candidates.push(tr); if(a===0 && !displayHeard) displayHeard = tr; }
+        if(tr){
+          candidates.push(tr);
+          candMeta.push({ text:tr, rank:a, conf:(typeof res[a].confidence==='number' && res[a].confidence>0)?res[a].confidence:null });
+          if(a===0 && !displayHeard) displayHeard = tr;
+        }
       }
     }
     if(displayHeard){
@@ -5185,6 +5215,62 @@ function startListening(){
       }
       _lastInterimSig = sig; // mémorise pour le prochain passage
     }
+    // ── SCORING UNIFIÉ (cœur de la reconnaissance) ──
+    // On combine TROIS signaux pour choisir le coup, au lieu de prendre le 1er candidat :
+    //   • légalité (un coup jouable l'emporte toujours sur un coup impossible)
+    //   • confiance + rang de Chrome (à quel point il "croit" à cette interprétation)
+    //   • distance phonétique entre ce que Chrome a entendu et chaque coup légal
+    // → corrige les confusions de sons proches ET repêche les "non compris".
+    if(anyFinal){
+      const scored = _scoreLegalMoves(candMeta);
+      if(scored && scored.length){
+        const top = scored[0];
+        const second = scored[1];
+        // Coup en tête nettement détaché → on le joue. "Nettement" = le 2e fait moins de
+        // 70% du score du 1er (et un écart minimal). Sinon coude-à-coude → on ne devine pas.
+        const decisive = !second || (second.score <= top.score*0.70) || (top.score - second.score >= 0.5);
+        if(top.act && (top.act.kind==='move'||top.act.kind==='castle') && _isActionLegal(top.act)){
+          if(_interimPlayed) return;
+          if(top.act.kind==='move' && _isPromotion(top.act.fr,top.act.fc,top.act.tr,top.act.tc) && !top.act.promo){
+            // promotion sans pièce précisée → laisser le flux de promotion gérer
+          } else if(decisive){
+            _pendingAmbiguous=null;
+            moveJustPlayed=true; setTimeout(()=>{ moveJustPlayed=false; }, 1200);
+            executeVoiceAction(top.act, true);
+            return;
+          }
+        }
+      }
+      // Pas de coup tranché par le scoring → on tente les commandes (non-coups) par légalité.
+      let bestAct=null;
+      for(let ci=0; ci<candidates.length; ci++){
+        const cleaned = candidates[ci].replace(WAKE,'').trim() || candidates[ci];
+        const a = parseVoiceToAction(cleaned);
+        if(!a) continue;
+        if((a.kind==='move'||a.kind==='castle') && _isActionLegal(a)){
+          if(_interimPlayed) return;
+          _pendingAmbiguous=null;
+          moveJustPlayed=true; setTimeout(()=>{ moveJustPlayed=false; }, 1200);
+          executeVoiceAction(a, true);
+          return;
+        }
+        if(!bestAct && (a.kind==='ambiguous' || a.kind==='reset' || a.kind==='resign'
+            || a.kind==='newgame' || a.kind==='state' || a.kind==='hint' || a.kind==='mute'
+            || a.kind==='menu' || a.kind==='review' || a.kind==='toggle')){
+          bestAct=a;
+        }
+      }
+      if(bestAct){
+        if(bestAct.kind!=='move' && bestAct.kind!=='castle'){
+          if(_cmdLock) return;
+          _cmdLock=true; setTimeout(()=>{ _cmdLock=false; }, 2500);
+        }
+        _pendingAmbiguous = (bestAct.kind==='ambiguous') ? null : _pendingAmbiguous;
+        executeVoiceAction(bestAct, true);
+        return;
+      }
+    }
+
     for(const raw of candidates){
       const cleaned = raw.replace(WAKE,'').trim() || raw;
       // Désambiguïsation parlée : si un coup ambigu attend, on tente de le résoudre
@@ -5514,6 +5600,91 @@ function _phonTokens(text){
 
 function phoneticNormalize(text){
   return _phonTokens(text).join(' ');
+}
+
+// ── SCORING UNIFIÉ DES COUPS LÉGAUX ──
+// Pour chaque coup légal de la position, calcule un score combinant :
+//   • la confiance Chrome (et le rang) du/des candidats qui désignent ce coup
+//   • la correspondance phonétique entre les tokens entendus et la notation du coup
+// Renvoie une liste triée {act, score} (meilleur d'abord). Cœur de la reconnaissance.
+function _scoreLegalMoves(candMeta){
+  if(!candMeta || !candMeta.length) return null;
+  const files=['a','b','c','d','e','f','g','h'];
+  // 1) Génère tous les coups légaux du trait, avec leur notation utile
+  const legal=[];
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+    const p=board[r][c];
+    if(!p || color(p)!==turn) continue;
+    const pt=type(p);
+    for(const [tr,tc] of legalMoves(r,c)){
+      legal.push({
+        fr:r, fc:c, tr, tc, ptype:pt,
+        destFile:files[tc], destRank:String(8-tr),
+        fromFile:files[c], fromRank:String(8-r),
+        isCapture: !!(board[tr][tc] && color(board[tr][tc])!==turn)
+      });
+    }
+  }
+  if(!legal.length) return null;
+
+  // 2) Pré-calcule, pour chaque candidat, les tokens phonétiques + un poids de confiance.
+  //    Poids = confiance Chrome si dispo, sinon dégressif selon le rang de l'alternative.
+  const parsed = candMeta.map(m=>{
+    const toks = _phonTokens((m.text||'').replace(/^(ok|okay|hey|chess|echecs?|joue|jouer|play|allez|aller|go)\s+/,''));
+    const w = (m.conf!=null && m.conf>0) ? (0.4 + 0.6*m.conf) : Math.max(0.25, 1 - 0.13*(m.rank||0));
+    // Détecte un nom de pièce mentionné dans ce candidat
+    let piece=null;
+    for(const t of toks){ if(['cavalier','tour','fou','dame','roi','pion'].includes(t)){
+      piece = {cavalier:'N',tour:'R',fou:'B',dame:'Q',roi:'K',pion:'P'}[t]; break; } }
+    // Cases complètes (lettre+chiffre adjacents) mentionnées dans l'ordre
+    const sqs=[];
+    for(let i=0;i<toks.length-1;i++){
+      if(/^[a-h]$/.test(toks[i]) && /^[1-8]$/.test(toks[i+1])) sqs.push(toks[i]+toks[i+1]);
+    }
+    // Lettres et chiffres isolés (pour matcher partiellement)
+    const lettersOnly = toks.filter(t=>/^[a-h]$/.test(t));
+    const ranksOnly   = toks.filter(t=>/^[1-8]$/.test(t));
+    return { w, piece, sqs, lettersOnly, ranksOnly };
+  });
+
+  // 3) Note chaque coup légal en agrégeant les contributions de tous les candidats
+  const out = legal.map(mv=>{
+    const dest = mv.destFile+mv.destRank;
+    let score=0;
+    for(const cand of parsed){
+      let s=0;
+      // (a) case de destination exacte mentionnée → fort
+      if(cand.sqs.includes(dest)) s += 1.0;
+      else {
+        // (b) bonne colonne + bonne rangée présentes séparément → moyen
+        const hasFile = cand.lettersOnly.includes(mv.destFile);
+        const hasRank = cand.ranksOnly.includes(mv.destRank);
+        if(hasFile && hasRank) s += 0.7;
+        else if(hasFile) s += 0.18;
+        else if(hasRank) s += 0.12;
+      }
+      // (c) bon type de pièce mentionné → bonus ; mauvais type → léger malus
+      if(cand.piece){
+        if(cand.piece===mv.ptype) s += 0.35;
+        else s -= 0.25;
+      } else {
+        // pas de pièce nommée : convention "case seule = pion" → petit bonus aux pions
+        if(mv.ptype==='P') s += 0.05;
+      }
+      // (d) case de DÉPART mentionnée (désambiguïsation "cavalier b d2") → bonus
+      if(cand.lettersOnly.includes(mv.fromFile) && cand.sqs.length<=1) s += 0.10;
+      if(s>0) score += s * cand.w;
+    }
+    return { mv, score };
+  }).filter(x=>x.score>0);
+
+  if(!out.length) return null;
+  out.sort((a,b)=>b.score-a.score);
+  // Convertit en actions exploitables
+  return out.map(x=>({
+    score: x.score,
+    act: { kind:'move', fr:x.mv.fr, fc:x.mv.fc, tr:x.mv.tr, tc:x.mv.tc, promo:null }
+  }));
 }
 
 // Appariement flou : exploite l'adjacence lettre→chiffre et les coups légaux
