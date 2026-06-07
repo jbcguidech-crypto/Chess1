@@ -1506,7 +1506,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN86</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN88</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -2449,6 +2449,25 @@ function goHome(){
   }
 }
 
+// Geste/bouton "retour" d'Android : en partie → confirmation d'abandon ;
+// hors partie mais hors splash → retour au splash ; au splash → quitter.
+window.addEventListener('popstate', function(){
+  const splash = document.getElementById('splash');
+  const splashVisible = splash && splash.style.display !== 'none' && splash.style.visibility !== 'hidden';
+  if(splashVisible){
+    // Déjà au splash : on ne fait rien, le prochain "retour" quittera l'app.
+    return;
+  }
+  if(gameActive){
+    // Partie en cours → on NE quitte PAS : on ré-empile l'entrée et on demande confirmation
+    try{ history.pushState({page:'game'}, '', location.href); }catch(e){}
+    try{ document.getElementById('quitModal').classList.add('show'); }catch(e){}
+  } else {
+    // Hors partie (ex. revue) → retour direct au splash
+    try{ showSplash(true); }catch(e){}
+  }
+});
+
 function updateNavLeft(){
   const el = document.getElementById('navLeft');
   if(!el) return;
@@ -2549,8 +2568,14 @@ function parseSplashCommand(text){
   return false;
 }
 
-function showSplash(){
+function showSplash(fromPopState){
   document.body.classList.remove('playing'); // débloque le défilement hors partie
+  // Si on revient au splash autrement que par le geste "retour" (bouton maison, fin de
+  // partie…), on resynchronise l'historique : l'entrée "game" empilée par hideSplash
+  // est retirée, pour qu'un futur "retour" depuis le splash quitte bien l'app.
+  if(!fromPopState){
+    try{ if(history.state && history.state.page==='game'){ history.back(); } }catch(e){}
+  }
   const s = document.getElementById('splash');
   if(s){
     s.classList.remove('out');
@@ -2609,6 +2634,9 @@ function confirmQuit(yes){
 }
 
 function hideSplash() {
+  // Empile une entrée d'historique pour que le geste "retour" d'Android revienne
+  // au splash (intercepté par popstate) au lieu de quitter l'application.
+  try{ history.pushState({page:'game'}, '', location.href); }catch(e){}
   const s = document.getElementById('splash');
   if(s){
     s.style.pointerEvents='none';
