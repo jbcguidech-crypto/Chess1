@@ -1507,7 +1507,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN93</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN94</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -5566,6 +5566,72 @@ function _classifyWord(w){
   return null;
 }
 
+// Découpe un mot collé/marmonné en tokens (pièce, colonne a-h, rangée 1-8).
+// Ex. "foucésisse" → ['fou','c','6'] ; "toura1" → ['tour','a','1'] ; "cécinq" → ['c','5'].
+// Recherche par backtracking : on cherche un découpage qui consomme TOUT le mot en
+// [pièce?] + (colonne + chiffre)…, en essayant les fragments du plus long au plus court.
+function _segmentGlued(word){
+  if(!word || word.length<3) return null;
+  const s0 = word.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+
+  const PIECE = {
+    cavalier:'cavalier',cavalie:'cavalier',caval:'cavalier',cheval:'cavalier',chevalier:'cavalier',
+    tour:'tour',tor:'tour', fou:'fou',fous:'fou',faux:'fou',
+    dame:'dame',dam:'dame',reine:'dame',rene:'dame', roi:'roi',roy:'roi', pion:'pion',pian:'pion'
+  };
+  const FILE = {
+    alpha:'a',bravo:'b',charlie:'c',delta:'d',echo:'e',foxtrot:'f',golf:'g',hotel:'h',
+    ces:'c',ci:'c',ce:'c',se:'c',ca:'c',
+    be:'b',bee:'b',bay:'b', des:'d',dai:'d',de:'d',
+    eu:'e',heu:'e',ai:'e',et:'e', eff:'f',ef:'f',fe:'f',
+    ge:'g',je:'g',ze:'g', ash:'h',ache:'h',
+    a:'a',b:'b',c:'c',d:'d',e:'e',f:'f',g:'g',h:'h'
+  };
+  const RANK = {
+    cisse:'6',sisse:'6',sixe:'6',six:'6',sis:'6',
+    sept:'7',sete:'7',cet:'7',set:'7',
+    huit:'8',wite:'8',wit:'8',uit:'8',hui:'8',
+    cinq:'5',cinqu:'5',sink:'5',sain:'5',sank:'5',sang:'5',sin:'5',
+    quatre:'4',quat:'4',cate:'4',cat:'4', trois:'3',troi:'3',trwa:'3',
+    deux:'2',deu:'2',do:'2', une:'1',un:'1',in:'1',
+    '1':'1','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7','8':'8'
+  };
+  const keysByLen = (obj)=>Object.keys(obj).sort((a,b)=>b.length-a.length);
+  const FK=keysByLen(FILE), RK=keysByLen(RANK), PK=keysByLen(PIECE);
+
+  // Cherche un découpage de `s` en une suite de cases (colonne+chiffre). Renvoie tokens ou null.
+  function parseSquares(s){
+    if(!s) return [];
+    for(const fk of FK){
+      if(!s.startsWith(fk)) continue;
+      const afterFile = s.slice(fk.length);
+      for(const rk of RK){
+        if(!afterFile.startsWith(rk)) continue;
+        const rest = afterFile.slice(rk.length);
+        const tail = parseSquares(rest);
+        if(tail!==null) return [FILE[fk], RANK[rk], ...tail];
+      }
+    }
+    return s.length ? null : [];
+  }
+
+  // Optionnellement une pièce en tête, puis au moins une case.
+  let best=null;
+  // sans pièce
+  let sq = parseSquares(s0);
+  if(sq && sq.length>=2) best = sq;
+  // avec pièce
+  if(!best){
+    for(const pk of PK){
+      if(!s0.startsWith(pk)) continue;
+      const rest = s0.slice(pk.length);
+      const sq2 = parseSquares(rest);
+      if(sq2 && sq2.length>=2){ best = [PIECE[pk], ...sq2]; break; }
+    }
+  }
+  return best;
+}
+
 // Renvoie une LISTE de tokens classés ('a'..'h', '1'..'8', noms de pièce, ou mot brut)
 function _phonTokens(text){
   let raw = text.toLowerCase()
@@ -5599,8 +5665,12 @@ function _phonTokens(text){
       if(lc && /^[a-h]$/.test(lc)){ out.push(lc); out.push(mm[1]); continue; }
     }
     const cls=_classifyWord(w);
-    if(cls!==null) out.push(cls);
-    else out.push(w); // mot inconnu conservé (peut être un nom de pièce déjà propre)
+    if(cls!==null){ out.push(cls); continue; }
+    // Mot collé / marmonné non reconnu (ex. "foucésisse" = fou + c + 6) :
+    // on tente de le SEGMENTER en pièce / lettre / chiffre.
+    const seg = _segmentGlued(w);
+    if(seg && seg.length){ for(const s of seg) out.push(s); continue; }
+    out.push(w); // vraiment inconnu : conservé tel quel
   }
   // Aide à la reconnaissance : la lettre « D » (« dé ») est souvent captée par Chrome
   // comme le chiffre 2 (« deux »). Or « 2 » suivi d'un chiffre de rangée (1-8) est
