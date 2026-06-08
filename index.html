@@ -1507,7 +1507,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN100</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN101</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -6052,8 +6052,19 @@ function _parseStrict(text){
        knight:'N',rook:'R',bishop:'B',queen:'Q',king:'K',pawn:'P'}
     : {knight:'N',rook:'R',bishop:'B',queen:'Q',king:'K',pawn:'P'};
   let mentionedType = null;
-  for(const [word, ptype] of Object.entries(pieceMap)){
-    if(norm.includes(word)){ mentionedType = ptype; break; }
+  // Variantes fréquentes mal captées par Chrome pour les noms de pièces (FR)
+  if(currentLang==='fr'){
+    if(/\b(fou|fous|foux|food|foot|fouf)\b/.test(norm)) mentionedType='B';
+    else if(/\b(cavalier|chevalier|cheval|caval)\b/.test(norm)) mentionedType='N';
+    else if(/\b(tour|tours|tour de)\b/.test(norm)) mentionedType='R';
+    else if(/\b(dame|reine|dames)\b/.test(norm)) mentionedType='Q';
+    else if(/\b(roi|rois|roy)\b/.test(norm)) mentionedType='K';
+    else if(/\b(pion|pions|pian)\b/.test(norm)) mentionedType='P';
+  }
+  if(!mentionedType){
+    for(const [word, ptype] of Object.entries(pieceMap)){
+      if(norm.includes(word)){ mentionedType = ptype; break; }
+    }
   }
 
   // --- 1 case détectée : notation algébrique naturelle ("e4", "cavalier f3") ---
@@ -6235,17 +6246,33 @@ function executeVoiceAction(act, verbose){
     case 'ambiguous': {
       // Mémorise les candidats pour permettre une désambiguïsation PARLÉE au tour suivant
       _pendingAmbiguous = act;
-      const names = {K:currentLang==='fr'?'Roi':'King',Q:currentLang==='fr'?'Dame':'Queen',R:currentLang==='fr'?'Tour':'Rook',B:currentLang==='fr'?'Fou':'Bishop',N:currentLang==='fr'?'Cavalier':'Knight',P:currentLang==='fr'?'Pion':'Pawn'};
-      const pieceName = names[act.pieceType];
+      const names = {K:currentLang==='fr'?'roi':'king',Q:currentLang==='fr'?'dame':'queen',R:currentLang==='fr'?'tour':'rook',B:currentLang==='fr'?'fou':'bishop',N:currentLang==='fr'?'cavalier':'knight',P:currentLang==='fr'?'pion':'pawn'};
       const sq = String.fromCharCode(97+act.tc)+(8-act.tr);
-      const fcs = act.candidates.map(c=>c.fc);
-      const sameCol = fcs.every(f=>f===fcs[0]);
-      const list = sameCol
-        ? act.candidates.map(c=>(8-c.fr)).join(' ou ')
-        : act.candidates.map(c=>String.fromCharCode(97+c.fc)).join(' ou ');
-      const q = currentLang==='fr'
-        ? ('Quel '+pieceName.toLowerCase()+' vers '+sq+' ? Celui en '+list+' ?')
-        : ('Which '+pieceName.toLowerCase()+' to '+sq+'? The one on '+list+'?');
+      // Les candidats sont-ils tous du MÊME type de pièce ?
+      const types = act.candidates.map(c=>type(c.piece));
+      const sameType = types.every(t=>t===types[0]);
+      let q;
+      if(sameType){
+        const pieceName = names[act.pieceType] || names[types[0]];
+        const fcs = act.candidates.map(c=>c.fc);
+        const sameCol = fcs.every(f=>f===fcs[0]);
+        const list = sameCol
+          ? act.candidates.map(c=>(8-c.fr)).join(currentLang==='fr'?' ou ':' or ')
+          : act.candidates.map(c=>String.fromCharCode(97+c.fc)).join(currentLang==='fr'?' ou ':' or ');
+        q = currentLang==='fr'
+          ? ('Quel '+pieceName+' vers '+sq+' ? Celui en '+list+' ?')
+          : ('Which '+pieceName+' to '+sq+'? The one on '+list+'?');
+      } else {
+        // Types DIFFÉRENTS (ex. fou OU dame peuvent aller à la case car le mot pièce n'a pas
+        // été capté) → on nomme chaque pièce par son type + sa case de départ.
+        const list = act.candidates.map(c=>{
+          const sqFrom = String.fromCharCode(97+c.fc)+(8-c.fr);
+          return names[type(c.piece)]+' '+sqFrom;
+        }).join(currentLang==='fr'?' ou ':' or ');
+        q = currentLang==='fr'
+          ? ('Quelle pièce vers '+sq+' ? '+list.charAt(0).toUpperCase()+list.slice(1)+' ?')
+          : ('Which piece to '+sq+'? '+list.charAt(0).toUpperCase()+list.slice(1)+'?');
+      }
       if(verbose) setStatus(q,'error');
       _voiceSay(q);
       return false;
