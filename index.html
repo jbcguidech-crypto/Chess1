@@ -1507,7 +1507,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN98</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN100</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -5224,59 +5224,20 @@ function startListening(){
       }
       _lastInterimSig = sig; // mémorise pour le prochain passage
     }
-    // ── SCORING UNIFIÉ (cœur de la reconnaissance) ──
-    // On combine TROIS signaux pour choisir le coup, au lieu de prendre le 1er candidat :
-    //   • légalité (un coup jouable l'emporte toujours sur un coup impossible)
-    //   • confiance + rang de Chrome (à quel point il "croit" à cette interprétation)
-    //   • distance phonétique entre ce que Chrome a entendu et chaque coup légal
-    // → corrige les confusions de sons proches ET repêche les "non compris".
+    // ── SÉLECTION SIMPLE ET FIABLE ──
+    // On teste les interprétations de Chrome dans l'ordre et on joue le PREMIER coup légal.
+    // Comportement direct et prévisible (pas de scoring qui hésite). Sur résultat FINAL seulement.
     if(anyFinal){
-      try{
-        const scored = _scoreLegalMoves(candMeta);
-        if(scored && scored.length){
-          const top = scored[0];
-          const second = scored[1];
-          const decisive = !second || (second.score <= top.score*0.80) || (top.score - second.score >= 0.4);
-          if(top.act && (top.act.kind==='move'||top.act.kind==='castle') && _isActionLegal(top.act)){
-            if(_interimPlayed) return;
-            if(top.act.kind==='move' && _isPromotion(top.act.fr,top.act.fc,top.act.tr,top.act.tc) && !top.act.promo){
-              // promotion sans pièce précisée → laisser le flux de promotion gérer
-            } else if(decisive){
-              _pendingAmbiguous=null;
-              moveJustPlayed=true; setTimeout(()=>{ moveJustPlayed=false; }, 1200);
-              executeVoiceAction(top.act, true);
-              return;
-            }
-          }
-        }
-      }catch(scoreErr){ /* le scoring ne doit jamais bloquer : on retombe sur le parsing classique */ }
-      // Pas de coup tranché par le scoring → on tente les commandes (non-coups) par légalité.
-      let bestAct=null;
       for(let ci=0; ci<candidates.length; ci++){
         const cleaned = candidates[ci].replace(WAKE,'').trim() || candidates[ci];
         const a = parseVoiceToAction(cleaned);
-        if(!a) continue;
-        if((a.kind==='move'||a.kind==='castle') && _isActionLegal(a)){
+        if(a && (a.kind==='move'||a.kind==='castle') && _isActionLegal(a)){
           if(_interimPlayed) return;
           _pendingAmbiguous=null;
           moveJustPlayed=true; setTimeout(()=>{ moveJustPlayed=false; }, 1200);
           executeVoiceAction(a, true);
           return;
         }
-        if(!bestAct && (a.kind==='ambiguous' || a.kind==='reset' || a.kind==='resign'
-            || a.kind==='newgame' || a.kind==='state' || a.kind==='hint' || a.kind==='mute'
-            || a.kind==='menu' || a.kind==='review' || a.kind==='toggle')){
-          bestAct=a;
-        }
-      }
-      if(bestAct){
-        if(bestAct.kind!=='move' && bestAct.kind!=='castle'){
-          if(_cmdLock) return;
-          _cmdLock=true; setTimeout(()=>{ _cmdLock=false; }, 2500);
-        }
-        _pendingAmbiguous = (bestAct.kind==='ambiguous') ? null : _pendingAmbiguous;
-        executeVoiceAction(bestAct, true);
-        return;
       }
     }
 
@@ -5307,7 +5268,7 @@ function startListening(){
       }
     }
 
-    // Aucun coup clair. Si c'est un résultat FINAL, on donne un retour.
+    // Aucun coup clair. Si c'est un résultat FINAL, retour visuel uniquement (jamais vocal).
     if(anyFinal){
       const best = (candidates[0]||'').replace(WAKE,'').trim();
       if(best){
@@ -5317,16 +5278,7 @@ function startListening(){
           undoLock = true;
           setTimeout(()=>{ undoLock=false; }, 1500);
         }
-        if(act){
-          // act existe (ambiguïté, illégal, pion à préciser…) → retour spécifique (visuel/buzzer)
-          executeVoiceAction(act, true);
-        } else {
-          // RIEN compris du tout (aucune case ni commande) → on demande de répéter.
-          // Ne se déclenche JAMAIS quand un coup était jouable (ce cas a déjà fait return plus haut).
-          _voiceAskRepeat();
-        }
-      } else {
-        _voiceAskRepeat();
+        if(act){ executeVoiceAction(act, true); } // ambiguïté / illégal / pion → retour spécifique
       }
     }
   };
@@ -5672,11 +5624,9 @@ function _phonTokens(text){
     }
     const cls=_classifyWord(w);
     if(cls!==null){ out.push(cls); continue; }
-    // Mot collé / marmonné non reconnu (ex. "foucésisse" = fou + c + 6) :
-    // on tente de le SEGMENTER en pièce / lettre / chiffre.
-    const seg = _segmentGlued(w);
-    if(seg && seg.length){ for(const s of seg) out.push(s); continue; }
-    out.push(w); // vraiment inconnu : conservé tel quel
+    // (Segmenteur de mots collés désactivé : il pouvait hacher des mots normaux en
+    //  fausses cases et nuire à la fluidité. On conserve le mot tel quel.)
+    out.push(w); // inconnu : conservé tel quel
   }
   // Aide à la reconnaissance : la lettre « D » (« dé ») est souvent captée par Chrome
   // comme le chiffre 2 (« deux »). Or « 2 » suivi d'un chiffre de rangée (1-8) est
@@ -6321,25 +6271,6 @@ function executeVoiceAction(act, verbose){
       if(verbose) setStatus((currentLang==='fr'?'Pas compris — essayez "e4" ou "cavalier f3"':'Not understood — try "e4" or "knight f3"'),'error');
       return false;
   }
-}
-
-// Demande de répéter, UNIQUEMENT quand rien n'a pu être interprété (ni coup, ni commande,
-// ni même une case). Ne se déclenche jamais si un coup légal était trouvable.
-let _lastAskRepeat = 0;
-function _voiceAskRepeat(){
-  if(!gameActive) return;
-  if(gameMode==='ai' && turn!==playerColor) return;     // pas pendant le tour de l'IA
-  if(aiSpeaking || aiThinking) return;
-  if(typeof voiceMuted!=='undefined' && voiceMuted) return;
-  const now = Date.now();
-  if(now - _lastAskRepeat < 3000) return;               // anti-répétition
-  _lastAskRepeat = now;
-  const phrasesFR = ['Pouvez-vous répéter ?', "Je n'ai pas bien entendu."];
-  const phrasesEN = ['Could you repeat?', "I didn't quite catch that."];
-  const arr = (currentLang==='fr') ? phrasesFR : phrasesEN;
-  const msg = arr[Math.floor(Math.random()*arr.length)];
-  try{ setStatus(msg, 'error'); }catch(e){}
-  _voiceSay(msg);
 }
 
 // Buzzer court (coup impossible) — généré via Web Audio, sans fichier externe.
