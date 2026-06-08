@@ -1507,7 +1507,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN102</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN103</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -3457,9 +3457,10 @@ function isLegalUCI(uci){
 // Pour chaque candidat, on tente des substitutions ciblées et on renvoie le 1er coup LÉGAL.
 // N'agit qu'en dernier recours (aucun coup légal trouvé normalement) → ne casse jamais un coup correct.
 function _tryLetterConfusions(candidates){
+  const _WAKE = /^(ok|okay|ko|hey|chess|échecs|echec|échec|joue|jouer|play|allez|aller|go)\s+/;
   const SUBS = [['d','e'],['e','d'],['b','p'],['p','b'],['c','d'],['d','c'],['c','t'],['t','c'],['g','j'],['j','g'],['a','h'],['h','a'],['b','d'],['d','b']];
   for(const raw of (candidates||[])){
-    const norm = phoneticNormalize((raw||'').replace(WAKE,'').trim() || raw);
+    const norm = phoneticNormalize((raw||'').replace(_WAKE,'').trim() || raw);
     const m = norm.match(/\b([a-h])\s*([1-8])\b/);
     if(!m) continue;
     for(const [from,to] of SUBS){
