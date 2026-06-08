@@ -1507,7 +1507,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN92</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN93</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -5076,12 +5076,17 @@ function enableMicAuto(){
   if(!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return;
   voiceContinuous = true;
   userInteracted = true;
-  // NB : on NE force PAS voiceMuted ici. Si l'utilisateur a coupé le son (même en
-  // mains-libres), on respecte son choix — sinon le son se rallumerait tout seul.
-  // L'annonce de SES PROPRES coups (who==='me') passe de toute façon même son coupé.
-  // Si c'est au joueur de jouer → on écoute tout de suite.
-  // Sinon (l'IA joue en premier), l'écoute reprendra automatiquement après le coup de l'IA.
-  if(turn===playerColor && !listening){
+  try{ if(typeof updateSpeakerBtn==='function') updateSpeakerBtn(); }catch(e){} // synchronise l'icône son
+  // Coupe proprement toute écoute résiduelle (notamment celle du splash) pour repartir
+  // d'un état sain : sinon "listening" peut rester à true et bloquer le redémarrage,
+  // ce qui donnait l'impression que le micro était coupé au début de la partie.
+  try{ if(typeof stopSplashVoice==='function') stopSplashVoice(); }catch(e){}
+  try{ if(recognition){ recognition.onend=null; recognition.abort(); } }catch(e){}
+  listening = false;
+  // NB : on NE force PAS voiceMuted ici (on respecte le choix son de l'utilisateur).
+  // Si c'est au joueur de jouer → on (re)démarre l'écoute. Sinon l'écoute reprendra
+  // automatiquement après le coup de l'IA.
+  if(turn===playerColor){
     setTimeout(()=>{ try{ if(voiceContinuous && !listening) startListening(); }catch(e){} }, 1100);
   }
 }
@@ -5309,7 +5314,15 @@ function startListening(){
           undoLock = true;
           setTimeout(()=>{ undoLock=false; }, 1500);
         }
-        executeVoiceAction(act, true); // affichera ambiguïté / illégal / non compris
+        if(act){
+          executeVoiceAction(act, true); // affichera ambiguïté / illégal / non compris
+        } else {
+          // Rien compris du tout → retour vocal aléatoire (au lieu de rester muet),
+          // uniquement en cours de partie, à notre tour, et sans saturer (anti-spam).
+          _voiceNotUnderstood();
+        }
+      } else {
+        _voiceNotUnderstood();
       }
     }
   };
@@ -6230,6 +6243,25 @@ function executeVoiceAction(act, verbose){
       if(verbose) setStatus((currentLang==='fr'?'Pas compris — essayez "e4" ou "cavalier f3"':'Not understood — try "e4" or "knight f3"'),'error');
       return false;
   }
+}
+
+// Retour vocal aléatoire quand rien n'est compris (3 formulations), avec anti-spam.
+let _lastNotUnderstood = 0;
+function _voiceNotUnderstood(){
+  // Seulement en partie active, à notre tour, voix non coupée, et pas trop souvent.
+  if(!gameActive) return;
+  if(gameMode==='ai' && turn!==playerColor) return;     // pas pendant le tour de l'IA
+  if(aiSpeaking || aiThinking) return;
+  if(typeof voiceMuted!=='undefined' && voiceMuted) return;
+  const now = Date.now();
+  if(now - _lastNotUnderstood < 2500) return;            // anti-répétition
+  _lastNotUnderstood = now;
+  const phrasesFR = ['Pardon ?', 'Pouvez-vous répéter ?', "Je n'ai pas bien entendu."];
+  const phrasesEN = ['Sorry?', 'Could you repeat?', "I didn't quite catch that."];
+  const arr = (currentLang==='fr') ? phrasesFR : phrasesEN;
+  const msg = arr[Math.floor(Math.random()*arr.length)];
+  try{ setStatus(msg, 'error'); }catch(e){}
+  _voiceSay(msg);
 }
 
 // Énonce un texte à la voix (réutilise speak si dispo)
