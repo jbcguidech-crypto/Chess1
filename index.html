@@ -1507,7 +1507,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN101</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN102</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -3453,6 +3453,25 @@ function isLegalUCI(uci){
   return moves.some(([mr,mc])=>mr===tr&&mc===tc);
 }
 
+// Rattrapage des confusions de lettres de colonne par Chrome (sons proches en français).
+// Pour chaque candidat, on tente des substitutions ciblées et on renvoie le 1er coup LÉGAL.
+// N'agit qu'en dernier recours (aucun coup légal trouvé normalement) → ne casse jamais un coup correct.
+function _tryLetterConfusions(candidates){
+  const SUBS = [['d','e'],['e','d'],['b','p'],['p','b'],['c','d'],['d','c'],['c','t'],['t','c'],['g','j'],['j','g'],['a','h'],['h','a'],['b','d'],['d','b']];
+  for(const raw of (candidates||[])){
+    const norm = phoneticNormalize((raw||'').replace(WAKE,'').trim() || raw);
+    const m = norm.match(/\b([a-h])\s*([1-8])\b/);
+    if(!m) continue;
+    for(const [from,to] of SUBS){
+      if(m[1]!==from) continue;
+      const swapped = norm.replace(new RegExp('\\b'+from+'\\s*'+m[2]+'\\b'), to+' '+m[2]);
+      const a = parseVoiceToAction(swapped);
+      if(a && (a.kind==='move'||a.kind==='castle') && _isActionLegal(a)) return a;
+    }
+  }
+  return null;
+}
+
 // Vérifie qu'une action de coup/roque est réellement jouable sur la position actuelle.
 // Sert à privilégier, parmi les interprétations vocales, celle qui donne un coup légal.
 function _isActionLegal(a){
@@ -5239,6 +5258,17 @@ function startListening(){
           return;
         }
       }
+      // RATTRAPAGE confusions de lettres : Chrome confond souvent les sons proches en français
+      // (surtout « é »=E entendu « dé »=D). Si aucun candidat n'a donné de coup légal, on réessaie
+      // en substituant ces lettres — mais on ne joue QUE si le résultat est un coup LÉGAL.
+      const fixed = _tryLetterConfusions(candidates);
+      if(fixed){
+        if(_interimPlayed) return;
+        _pendingAmbiguous=null;
+        moveJustPlayed=true; setTimeout(()=>{ moveJustPlayed=false; }, 1200);
+        executeVoiceAction(fixed, true);
+        return;
+      }
     }
 
     for(const raw of candidates){
@@ -6025,7 +6055,7 @@ function _parseStrict(text){
   if(_cs) return {kind:'castle', side:_cs};
 
   const files={a:0,b:1,c:2,d:3,e:4,f:5,g:6,h:7};
-  let norm = L().normalize(text);
+  let norm = ' ' + (text||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'') + ' ';
   norm = norm
     // Lettres épelées FR → lettre de colonne
     .replace(/\bha\b/g,'a').replace(/\bash\b/g,'h').replace(/\bhache\b/g,'h')
