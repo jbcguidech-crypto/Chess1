@@ -1507,7 +1507,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN97</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN98</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -5307,7 +5307,7 @@ function startListening(){
       }
     }
 
-    // Aucun coup clair. Si c'est un résultat FINAL, donne un retour visuel (ambiguïté / non compris)
+    // Aucun coup clair. Si c'est un résultat FINAL, on donne un retour.
     if(anyFinal){
       const best = (candidates[0]||'').replace(WAKE,'').trim();
       if(best){
@@ -5317,7 +5317,16 @@ function startListening(){
           undoLock = true;
           setTimeout(()=>{ undoLock=false; }, 1500);
         }
-        if(act){ executeVoiceAction(act, true); } // affichera ambiguïté / illégal / non compris (visuel)
+        if(act){
+          // act existe (ambiguïté, illégal, pion à préciser…) → retour spécifique (visuel/buzzer)
+          executeVoiceAction(act, true);
+        } else {
+          // RIEN compris du tout (aucune case ni commande) → on demande de répéter.
+          // Ne se déclenche JAMAIS quand un coup était jouable (ce cas a déjà fait return plus haut).
+          _voiceAskRepeat();
+        }
+      } else {
+        _voiceAskRepeat();
       }
     }
   };
@@ -6312,6 +6321,25 @@ function executeVoiceAction(act, verbose){
       if(verbose) setStatus((currentLang==='fr'?'Pas compris — essayez "e4" ou "cavalier f3"':'Not understood — try "e4" or "knight f3"'),'error');
       return false;
   }
+}
+
+// Demande de répéter, UNIQUEMENT quand rien n'a pu être interprété (ni coup, ni commande,
+// ni même une case). Ne se déclenche jamais si un coup légal était trouvable.
+let _lastAskRepeat = 0;
+function _voiceAskRepeat(){
+  if(!gameActive) return;
+  if(gameMode==='ai' && turn!==playerColor) return;     // pas pendant le tour de l'IA
+  if(aiSpeaking || aiThinking) return;
+  if(typeof voiceMuted!=='undefined' && voiceMuted) return;
+  const now = Date.now();
+  if(now - _lastAskRepeat < 3000) return;               // anti-répétition
+  _lastAskRepeat = now;
+  const phrasesFR = ['Pouvez-vous répéter ?', "Je n'ai pas bien entendu."];
+  const phrasesEN = ['Could you repeat?', "I didn't quite catch that."];
+  const arr = (currentLang==='fr') ? phrasesFR : phrasesEN;
+  const msg = arr[Math.floor(Math.random()*arr.length)];
+  try{ setStatus(msg, 'error'); }catch(e){}
+  _voiceSay(msg);
 }
 
 // Buzzer court (coup impossible) — généré via Web Audio, sans fichier externe.
