@@ -1507,7 +1507,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN94</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN97</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -5006,7 +5006,11 @@ function handleClick(r,c){
     }
     makeMove(selected[0],selected[1],r,c,mv[2]);return;}}
   if(board[r][c]&&color(board[r][c])===turn){selected=[r,c];possibleMoves=legalMoves(r,c);renderBoard();}
-  else{selected=null;possibleMoves=[];renderBoard();}
+  else{
+    // Si une pièce était sélectionnée et qu'on tape une case non jouable → coup refusé : buzz.
+    if(selected && !(selected[0]===r && selected[1]===c)){ try{ _buzz(); }catch(e){} }
+    selected=null;possibleMoves=[];renderBoard();
+  }
 }
 
 function updateSidebar(){
@@ -5227,25 +5231,25 @@ function startListening(){
     //   • distance phonétique entre ce que Chrome a entendu et chaque coup légal
     // → corrige les confusions de sons proches ET repêche les "non compris".
     if(anyFinal){
-      const scored = _scoreLegalMoves(candMeta);
-      if(scored && scored.length){
-        const top = scored[0];
-        const second = scored[1];
-        // Coup en tête nettement détaché → on le joue. "Nettement" = le 2e fait moins de
-        // 70% du score du 1er (et un écart minimal). Sinon coude-à-coude → on ne devine pas.
-        const decisive = !second || (second.score <= top.score*0.70) || (top.score - second.score >= 0.5);
-        if(top.act && (top.act.kind==='move'||top.act.kind==='castle') && _isActionLegal(top.act)){
-          if(_interimPlayed) return;
-          if(top.act.kind==='move' && _isPromotion(top.act.fr,top.act.fc,top.act.tr,top.act.tc) && !top.act.promo){
-            // promotion sans pièce précisée → laisser le flux de promotion gérer
-          } else if(decisive){
-            _pendingAmbiguous=null;
-            moveJustPlayed=true; setTimeout(()=>{ moveJustPlayed=false; }, 1200);
-            executeVoiceAction(top.act, true);
-            return;
+      try{
+        const scored = _scoreLegalMoves(candMeta);
+        if(scored && scored.length){
+          const top = scored[0];
+          const second = scored[1];
+          const decisive = !second || (second.score <= top.score*0.80) || (top.score - second.score >= 0.4);
+          if(top.act && (top.act.kind==='move'||top.act.kind==='castle') && _isActionLegal(top.act)){
+            if(_interimPlayed) return;
+            if(top.act.kind==='move' && _isPromotion(top.act.fr,top.act.fc,top.act.tr,top.act.tc) && !top.act.promo){
+              // promotion sans pièce précisée → laisser le flux de promotion gérer
+            } else if(decisive){
+              _pendingAmbiguous=null;
+              moveJustPlayed=true; setTimeout(()=>{ moveJustPlayed=false; }, 1200);
+              executeVoiceAction(top.act, true);
+              return;
+            }
           }
         }
-      }
+      }catch(scoreErr){ /* le scoring ne doit jamais bloquer : on retombe sur le parsing classique */ }
       // Pas de coup tranché par le scoring → on tente les commandes (non-coups) par légalité.
       let bestAct=null;
       for(let ci=0; ci<candidates.length; ci++){
@@ -5303,9 +5307,8 @@ function startListening(){
       }
     }
 
-    // Aucun coup clair. Si c'est un résultat FINAL, donne un retour (ambiguïté / non compris)
+    // Aucun coup clair. Si c'est un résultat FINAL, donne un retour visuel (ambiguïté / non compris)
     if(anyFinal){
-      // Reprend le meilleur candidat pour le message d'aide
       const best = (candidates[0]||'').replace(WAKE,'').trim();
       if(best){
         const act = parseVoiceToAction(best);
@@ -5314,15 +5317,7 @@ function startListening(){
           undoLock = true;
           setTimeout(()=>{ undoLock=false; }, 1500);
         }
-        if(act){
-          executeVoiceAction(act, true); // affichera ambiguïté / illégal / non compris
-        } else {
-          // Rien compris du tout → retour vocal aléatoire (au lieu de rester muet),
-          // uniquement en cours de partie, à notre tour, et sans saturer (anti-spam).
-          _voiceNotUnderstood();
-        }
-      } else {
-        _voiceNotUnderstood();
+        if(act){ executeVoiceAction(act, true); } // affichera ambiguïté / illégal / non compris (visuel)
       }
     }
   };
@@ -5581,19 +5576,21 @@ function _segmentGlued(word){
   };
   const FILE = {
     alpha:'a',bravo:'b',charlie:'c',delta:'d',echo:'e',foxtrot:'f',golf:'g',hotel:'h',
-    ces:'c',ci:'c',ce:'c',se:'c',ca:'c',
-    be:'b',bee:'b',bay:'b', des:'d',dai:'d',de:'d',
-    eu:'e',heu:'e',ai:'e',et:'e', eff:'f',ef:'f',fe:'f',
-    ge:'g',je:'g',ze:'g', ash:'h',ache:'h',
+    ces:'c',ci:'c',ce:'c',se:'c',ca:'c',sai:'c',say:'c',
+    be:'b',bee:'b',bay:'b',bei:'b', des:'d',dai:'d',de:'d',dey:'d',
+    eu:'e',heu:'e',ai:'e',et:'e',ay:'e',euh:'e', eff:'f',ef:'f',fe:'f',phe:'f',
+    ge:'g',je:'g',ze:'g',jay:'g', ash:'h',ache:'h',hach:'h',
     a:'a',b:'b',c:'c',d:'d',e:'e',f:'f',g:'g',h:'h'
   };
   const RANK = {
-    cisse:'6',sisse:'6',sixe:'6',six:'6',sis:'6',
-    sept:'7',sete:'7',cet:'7',set:'7',
-    huit:'8',wite:'8',wit:'8',uit:'8',hui:'8',
-    cinq:'5',cinqu:'5',sink:'5',sain:'5',sank:'5',sang:'5',sin:'5',
-    quatre:'4',quat:'4',cate:'4',cat:'4', trois:'3',troi:'3',trwa:'3',
-    deux:'2',deu:'2',do:'2', une:'1',un:'1',in:'1',
+    cisse:'6',sisse:'6',sixe:'6',six:'6',sis:'6',siss:'6',
+    sept:'7',sete:'7',cet:'7',set:'7',sett:'7',
+    huit:'8',wite:'8',wit:'8',uit:'8',hui:'8',ouit:'8',
+    cinq:'5',cinqu:'5',sink:'5',sain:'5',sank:'5',sang:'5',sin:'5',cin:'5',saint:'5',cinque:'5',
+    quatre:'4',quat:'4',cate:'4',cat:'4',katr:'4',quattre:'4',
+    trois:'3',troi:'3',trwa:'3',troie:'3',trois:'3',
+    deux:'2',deu:'2',do:'2',deus:'2',deuh:'2',
+    une:'1',un:'1',in:'1',ein:'1',unn:'1',
     '1':'1','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7','8':'8'
   };
   const keysByLen = (obj)=>Object.keys(obj).sort((a,b)=>b.length-a.length);
@@ -6304,9 +6301,11 @@ function executeVoiceAction(act, verbose){
       return false;
     }
     case 'nopiece':
+      _buzz();
       if(verbose) setStatus((currentLang==='fr'?'Aucune pièce ne peut aller en ':'No piece can go to ')+String.fromCharCode(97+act.tc)+(8-act.tr),'error');
       return false;
     case 'illegal':
+      _buzz();
       if(verbose) setStatus(L().illegal,'error');
       return false;
     default:
@@ -6315,23 +6314,24 @@ function executeVoiceAction(act, verbose){
   }
 }
 
-// Retour vocal aléatoire quand rien n'est compris (3 formulations), avec anti-spam.
-let _lastNotUnderstood = 0;
-function _voiceNotUnderstood(){
-  // Seulement en partie active, à notre tour, voix non coupée, et pas trop souvent.
-  if(!gameActive) return;
-  if(gameMode==='ai' && turn!==playerColor) return;     // pas pendant le tour de l'IA
-  if(aiSpeaking || aiThinking) return;
-  if(typeof voiceMuted!=='undefined' && voiceMuted) return;
-  const now = Date.now();
-  if(now - _lastNotUnderstood < 2500) return;            // anti-répétition
-  _lastNotUnderstood = now;
-  const phrasesFR = ['Pardon ?', 'Pouvez-vous répéter ?', "Je n'ai pas bien entendu."];
-  const phrasesEN = ['Sorry?', 'Could you repeat?', "I didn't quite catch that."];
-  const arr = (currentLang==='fr') ? phrasesFR : phrasesEN;
-  const msg = arr[Math.floor(Math.random()*arr.length)];
-  try{ setStatus(msg, 'error'); }catch(e){}
-  _voiceSay(msg);
+// Buzzer court (coup impossible) — généré via Web Audio, sans fichier externe.
+function _buzz(){
+  try{
+    if(typeof voiceMuted!=='undefined' && voiceMuted) return; // respecte le son coupé
+    const ctx = (typeof _getAudio==='function') ? _getAudio() : null;
+    if(!ctx) return;
+    if(ctx.state==='suspended') ctx.resume();
+    const t=ctx.currentTime;
+    const osc=ctx.createOscillator(), gain=ctx.createGain();
+    osc.type='square';                       // son sec, façon buzzer
+    osc.frequency.setValueAtTime(180, t);     // grave = erreur
+    osc.frequency.linearRampToValueAtTime(120, t+0.18);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.18, t+0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t+0.22);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(t); osc.stop(t+0.24);
+  }catch(e){}
 }
 
 // Énonce un texte à la voix (réutilise speak si dispo)
