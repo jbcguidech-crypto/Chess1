@@ -324,6 +324,12 @@ html[data-theme="light"] .history-modal-box { background:linear-gradient(160deg,
 .setrow-state::after { content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3); }
 .setrow-state.on { background:var(--gold); }
 .setrow-state.on::after { transform:translateX(20px); }
+/* Rangées d'accès aux sous-menus (façon Lichess) */
+.setrow-nav .setrow-val { display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--text-muted);font-weight:600; }
+.setrow-nav .setrow-chev { font-size:1.25rem;line-height:1;color:var(--text-muted);opacity:.8; }
+.prefs-sub-header { display:flex;align-items:center;gap:6px;margin-bottom:14px; }
+.prefs-back { background:none;border:none;color:var(--gold-light);font-size:1.7rem;line-height:1;cursor:pointer;padding:0 8px 0 0;-webkit-tap-highlight-color:transparent; }
+.prefs-sub-title { font-family:'Manrope',system-ui,sans-serif;font-weight:800;font-size:1.1rem;color:var(--text-light); }
 .history-body { margin-top:12px;animation:fadeUp .2s ease; }
 .hist-empty { font-size:.8rem;color:var(--text-muted);text-align:center;padding:18px 10px;line-height:1.5; }
 .hist-item { display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;margin-bottom:8px;background:var(--surface-hi); }
@@ -1507,7 +1513,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN109</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN110</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -1619,17 +1625,19 @@ canvas#eloChart { width:100%!important;height:90px!important; }
       <button class="settings-close" onclick="closeSettings()">✕</button>
     </div>
     <div class="settings-body">
+      <div id="prefsMain">
       <!-- Aperçu en direct -->
       <div class="settings-preview" id="settingsPreview"></div>
-      <!-- Pièces -->
+      <!-- Accès aux deux sous-menus (façon Lichess) -->
       <div class="settings-section">
-        <div class="settings-section-title">Style des pièces</div>
-        <div class="pieceset-grid" id="pieceSetGrid"></div>
-      </div>
-      <!-- Échiquier -->
-      <div class="settings-section">
-        <div class="settings-section-title">Style de l'échiquier</div>
-        <div class="pieceset-grid" id="boardThemeGrid"></div>
+        <div class="setrow setrow-nav" onclick="openPrefsSub('pieces')">
+          <span class="setrow-lbl">Jeu de pièces</span>
+          <span class="setrow-val"><span id="prefPiecesHint"></span><span class="setrow-chev">›</span></span>
+        </div>
+        <div class="setrow setrow-nav" onclick="openPrefsSub('board')">
+          <span class="setrow-lbl">Échiquier</span>
+          <span class="setrow-val"><span id="prefBoardHint"></span><span class="setrow-chev">›</span></span>
+        </div>
       </div>
       <!-- Options en jeu -->
       <div class="settings-section">
@@ -1688,6 +1696,17 @@ canvas#eloChart { width:100%!important;height:90px!important; }
         <div class="history-body" id="historyBody" style="display:none;">
           <div id="historyList"></div>
         </div>
+      </div>
+      </div><!-- /#prefsMain -->
+      <!-- SOUS-MENU : Jeu de pièces -->
+      <div id="prefsPieces" class="prefs-sub" style="display:none;">
+        <div class="prefs-sub-header"><button class="prefs-back" onclick="closePrefsSub()" aria-label="Retour">‹</button><span class="prefs-sub-title">Jeu de pièces</span></div>
+        <div class="pieceset-grid" id="pieceSetGrid"></div>
+      </div>
+      <!-- SOUS-MENU : Échiquier -->
+      <div id="prefsBoard" class="prefs-sub" style="display:none;">
+        <div class="prefs-sub-header"><button class="prefs-back" onclick="closePrefsSub()" aria-label="Retour">‹</button><span class="prefs-sub-title">Échiquier</span></div>
+        <div class="pieceset-grid" id="boardThemeGrid"></div>
       </div>
     </div>
     <button class="settings-done" onclick="closeSettings()">C'est parfait !</button>
@@ -2245,11 +2264,14 @@ function attachSliderTouch(){
 function openSettings(){
   const m = document.getElementById('settingsModal');
   if(m) m.classList.add('show');
+  // On rouvre toujours sur la vue principale (au cas où on serait resté dans un sous-menu)
+  if(typeof closePrefsSub==='function') { try{ closePrefsSub(); }catch(e){} }
   // (Re)remplit les sélecteurs
   if(typeof buildPieceSetSelector==='function') buildPieceSetSelector();
   if(typeof buildBoardThemeSelector==='function') buildBoardThemeSelector();
   if(typeof buildVoiceSelector==='function') buildVoiceSelector();
   if(typeof renderSettingsPreview==='function') renderSettingsPreview('pieces');
+  if(typeof updatePrefHints==='function') updatePrefHints();
   const et=document.getElementById('evalToggle'); if(et) et.checked = evalEnabled;
   const bt=document.getElementById('blindToggle'); if(bt) bt.checked = blindfold;
   if(typeof _syncSettingsToggles==='function') _syncSettingsToggles();
@@ -2257,6 +2279,28 @@ function openSettings(){
 function closeSettings(){
   const m = document.getElementById('settingsModal');
   if(m) m.classList.remove('show');
+}
+// ===== SOUS-MENUS PRÉFÉRENCES (demande E) =====
+function _pieceSetName(id){ try{ const s=PIECE_SETS.find(x=>x.id===id); return s?s.name:''; }catch(e){ return ''; } }
+function _boardThemeName(id){ try{ const t=BOARD_THEMES.find(x=>x.id===id); return t?t.name:''; }catch(e){ return ''; } }
+function updatePrefHints(){
+  const ph=document.getElementById('prefPiecesHint'); if(ph) ph.textContent=_pieceSetName(pieceSet);
+  const bh=document.getElementById('prefBoardHint'); if(bh) bh.textContent=_boardThemeName(boardTheme);
+}
+function openPrefsSub(which){
+  const main=document.getElementById('prefsMain'), pp=document.getElementById('prefsPieces'), pb=document.getElementById('prefsBoard');
+  if(main) main.style.display='none';
+  if(pp) pp.style.display = (which==='pieces') ? 'block' : 'none';
+  if(pb) pb.style.display = (which==='board')  ? 'block' : 'none';
+  try{ if(which==='pieces') buildPieceSetSelector(); else buildBoardThemeSelector(); }catch(e){}
+}
+function closePrefsSub(){
+  const main=document.getElementById('prefsMain'), pp=document.getElementById('prefsPieces'), pb=document.getElementById('prefsBoard');
+  if(pp) pp.style.display='none';
+  if(pb) pb.style.display='none';
+  if(main) main.style.display='block';
+  try{ renderSettingsPreview('pieces'); }catch(e){}
+  updatePrefHints();
 }
 
 function toggleGlossary(){
