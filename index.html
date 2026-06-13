@@ -650,13 +650,12 @@ body.playing { overflow:hidden;height:100dvh;position:fixed;width:100%;top:0;lef
 /* Échiquier : côté limité par la hauteur restante (réserve réduite car la barre de revue
    et les 3 toggles ne sont plus affichés en jeu). */
 #page-game .board-container {
-  width:min(100%, calc(100dvh - 250px));
+  width:min(100%, calc(100dvh - 230px));
   max-width:520px;
   margin:0 auto;
   flex:0 0 auto;
-  padding:6px;border-radius:14px;
+  padding:0;border-radius:0;
 }
-#page-game .board-container::after{ inset:4px;border-radius:10px; }
 /* Bandeaux joueurs compacts */
 #page-game .player-bar { padding:5px 10px;border-radius:10px; }
 #page-game .pb-ava { width:28px;height:28px;font-size:1rem; }
@@ -683,23 +682,26 @@ body.playing { overflow:hidden;height:100dvh;position:fixed;width:100%;top:0;lef
 
 /* ── BOARD ───────────────────────────────────── */
 .board-container {
-  background:linear-gradient(165deg,var(--surface-hi),var(--surface));
-  border-radius:18px;padding:10px;
-  border:1px solid var(--border);
+  background:transparent;
+  border:none;padding:0;box-shadow:none;
   box-sizing:border-box;width:100%;
-  box-shadow:
-    0 18px 44px rgba(0,0,0,.28),
-    0 4px 12px rgba(0,0,0,.16),
-    inset 0 1px 0 rgba(255,255,255,.05);
   position:relative;
 }
-/* Fin liseré doré intérieur autour de l'échiquier (touche premium) */
-.board-container::after{
-  content:'';position:absolute;inset:6px;border-radius:13px;pointer-events:none;
-  box-shadow:inset 0 0 0 1px var(--border-gold);opacity:.5;
-}
-#board { border-radius:8px;overflow:hidden;position:relative;z-index:1; }
+.board-container::after{ content:none; }
+#board { border-radius:4px;overflow:hidden;position:relative;z-index:1; }
 .coord-col, .coords-bottom { display:none !important; }
+/* ── BANDEAU DE COUPS (haut, façon Lichess) ── */
+.move-strip {
+  display:flex;align-items:center;gap:3px;width:100%;max-width:520px;margin:0 auto 2px;
+  overflow-x:auto;white-space:nowrap;padding:4px 2px;box-sizing:border-box;
+  font-family:'Manrope',system-ui,sans-serif;font-size:.84rem;line-height:1.2;
+  scrollbar-width:none;-ms-overflow-style:none;min-height:26px;
+}
+.move-strip::-webkit-scrollbar { display:none; }
+.move-strip .ms-num { color:var(--text-muted);font-weight:700;margin-left:8px;flex:0 0 auto; }
+.move-strip .ms-num:first-child { margin-left:0; }
+.move-strip .ms-move { color:var(--text-light);font-weight:700;padding:1px 4px;border-radius:5px;flex:0 0 auto; }
+.move-strip .ms-move.ms-last { color:var(--gold-light);background:rgba(91,141,239,.18); }
 
 /* ── BARRE DE CONTRÔLES (moderne, type Lichess) ── */
 .game-controls {  display:flex;gap:8px;width:100%;max-width:420px;
@@ -1462,7 +1464,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   .splash-pieces .splash-piece{width:48px;height:48px;}
   /* Échiquier plus grand : on récupère de la largeur en réduisant les marges */
   .page{ padding:8px; }
-  .board-container{ padding:5px; }
+  .board-container{ padding:0; }
   .coord-col{ padding-right:2px; }
 }
 </style>
@@ -1499,7 +1501,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN114</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN115</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -1724,6 +1726,9 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 <div class="page active" id="page-game">
 <div class="game-layout">
 
+  <!-- COUPS JOUÉS (défilement horizontal, façon Lichess) -->
+  <div class="move-strip" id="moveStrip"></div>
+
   <!-- BANDEAU ADVERSAIRE (haut) -->
   <div class="player-bar" id="barTop">
     <div class="pb-left">
@@ -1765,12 +1770,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     </button>
   </div>
 
-  <!-- BARRE DE NAVIGATION (minimaliste) : précédent / position / suivant -->
-  <div class="review-bar" id="reviewBar">
-    <button class="rv-btn" onclick="reviewGo(-1)" aria-label="Coup précédent" title="Coup précédent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-    <span class="rv-label" id="reviewLabel">0 / 0</span>
-    <button class="rv-btn" onclick="reviewGo(1)" aria-label="Coup suivant" title="Coup suivant"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
-  </div>
+  <!-- (Barre de navigation par flèches supprimée — demande I) -->
 
   <!-- INTERRUPTEURS : déplacés dans les Préférences (voir section "En jeu") -->
   <div class="ingame-toggles" style="display:none;">
@@ -5156,6 +5156,22 @@ function updateSidebar(){
   if(!pairs.length){hist.innerHTML='<span style="color:var(--text-muted);font-size:.8rem">Aucun coup</span>';return;}
   // Fenêtre défilable : tous les coups, du plus récent au plus ancien
   pairs.slice().reverse().forEach(p=>{const d=document.createElement('div');d.className='history-move';d.innerHTML=`<span class="mn">${p.n}.</span><span class="mw">${p.w}</span><span class="mb">${p.b}</span>`;hist.appendChild(d);});
+  try{ renderMoveStrip(); }catch(e){}
+}
+
+// Bandeau de coups en haut (façon Lichess) : notation horizontale, dernier coup surligné.
+function renderMoveStrip(){
+  const strip=document.getElementById('moveStrip');
+  if(!strip) return;
+  if(!history.length){ strip.innerHTML=''; strip.style.display='none'; return; }
+  strip.style.display='flex';
+  let html='';
+  for(let i=0;i<history.length;i++){
+    if(i%2===0) html+='<span class="ms-num">'+(Math.floor(i/2)+1)+'.</span>';
+    html+='<span class="ms-move'+(i===history.length-1?' ms-last':'')+'">'+history[i].move+'</span>';
+  }
+  strip.innerHTML=html;
+  try{ strip.scrollLeft=strip.scrollWidth; }catch(e){} // défile jusqu'au dernier coup
 }
 
 function openHistoryModal(){
