@@ -443,43 +443,44 @@ html[data-theme="light"] .history-modal-box { background:linear-gradient(160deg,
 .mini-sq.d { background:var(--green-board); }
 
 .splash-diff {
-  display:flex;flex-direction:column;align-items:stretch;gap:6px;
-  width:100%;max-width:300px;padding:2px 0;
+  display:flex;flex-direction:column;align-items:stretch;gap:9px;
+  width:100%;max-width:320px;padding:13px 18px;
+  background:rgba(91,141,239,.09);border:1px solid var(--border-gold);border-radius:16px;
 }
 .splash-diff-label {
   display:flex;align-items:baseline;justify-content:center;
-  font-family:'Manrope',system-ui,sans-serif;font-weight:700;color:var(--text-muted);font-size:.8rem;
+  font-family:'Manrope',system-ui,sans-serif;font-weight:700;color:var(--text-muted);font-size:.9rem;
 }
 .splash-diff-label #splashEloTier { letter-spacing:.02em; }
-.sd-elo { color:var(--gold);font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1.05rem;font-variant-numeric:tabular-nums; }
+.sd-elo { color:var(--gold-light);font-family:'Manrope',system-ui,sans-serif;font-weight:800;font-size:1.55rem;font-variant-numeric:tabular-nums; }
 .sd-elo-unit { font-size:.62rem;color:var(--text-muted);font-weight:600;letter-spacing:.04em; }
 /* Petite icône « voix » indiquant qu'on peut dicter le choix */
 .voice-ico { width:.92em;height:.92em;vertical-align:-.12em;margin-right:.32em;opacity:.85;display:inline-block; }
-.sd-elo-niveau { font-size:.82rem;color:var(--text-muted);font-weight:600;margin-right:.15em; }
+.sd-elo-niveau { font-size:1.02rem;color:var(--text-muted);font-weight:700;margin-right:.22em; }
 .splash-diff input[type=range]{
-  width:100%;height:22px;            /* cible tactile correcte, plus compacte */
+  width:100%;height:28px;
   -webkit-appearance:none;background:transparent;outline:none;cursor:pointer;
   touch-action:none;
 }
-/* Piste fine visible (WebKit) */
+/* Piste épaisse visible (WebKit) */
 .splash-diff input[type=range]::-webkit-slider-runnable-track{
-  height:6px;border-radius:3px;
-  background:linear-gradient(to right,var(--gold) var(--pct,20%),rgba(255,255,255,.15) var(--pct,20%));
+  height:9px;border-radius:5px;
+  background:linear-gradient(to right,var(--gold) var(--pct,20%),rgba(255,255,255,.16) var(--pct,20%));
 }
 .splash-diff input[type=range]::-webkit-slider-thumb{
-  -webkit-appearance:none;width:24px;height:24px;border-radius:50%;margin-top:-9px;
+  -webkit-appearance:none;width:28px;height:28px;border-radius:50%;margin-top:-10px;
   background:radial-gradient(circle at 35% 35%,var(--gold-light),var(--gold-dark));
-  border:3px solid var(--cream);box-shadow:0 2px 8px rgba(0,0,0,.4);cursor:pointer;
+  border:3px solid var(--cream);box-shadow:0 2px 10px rgba(0,0,0,.45);cursor:pointer;
 }
-/* Piste fine visible (Firefox) */
+/* Piste épaisse visible (Firefox) */
 .splash-diff input[type=range]::-moz-range-track{
-  height:6px;border-radius:3px;background:rgba(255,255,255,.15);
+  height:9px;border-radius:5px;background:rgba(255,255,255,.16);
 }
 .splash-diff input[type=range]::-moz-range-progress{
-  height:6px;border-radius:3px;background:var(--gold);
+  height:9px;border-radius:5px;background:var(--gold);
 }
 .splash-diff input[type=range]::-moz-range-thumb{
-  width:24px;height:24px;border-radius:50%;border:3px solid var(--cream);
+  width:28px;height:28px;border-radius:50%;border:3px solid var(--cream);
   background:radial-gradient(circle at 35% 35%,var(--gold-light),var(--gold-dark));cursor:pointer;
 }
 .splash-pieceset {
@@ -782,17 +783,17 @@ body.playing { overflow:hidden;height:100dvh;position:fixed;width:100%;top:0;lef
 
 /* ── JOUER EN LIGNE ── */
 .splash-mode-toggle {
-  display:flex;gap:6px;width:100%;max-width:340px;margin:0 auto 4px;
-  background:var(--surface);border:1px solid var(--border);border-radius:50px;padding:4px;
+  display:flex;gap:5px;width:100%;max-width:228px;margin:0 auto 4px;
+  background:transparent;border:1px solid var(--border);border-radius:50px;padding:3px;opacity:.7;
 }
 .smt-btn {
-  flex:1;padding:9px;border-radius:50px;border:none;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;gap:7px;
-  font-family:'Manrope',system-ui,sans-serif;font-weight:700;font-size:.82rem;
+  flex:1;padding:6px;border-radius:50px;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  font-family:'Manrope',system-ui,sans-serif;font-weight:600;font-size:.72rem;
   background:transparent;color:var(--text-muted);transition:all .15s;-webkit-tap-highlight-color:transparent;
 }
-.smt-ico { width:16px;height:16px;flex-shrink:0;opacity:.85; }
-.smt-btn.active { background:linear-gradient(180deg,#6ea0ff,#3a6fd8);color:#fff;box-shadow:0 2px 8px rgba(58,111,216,.4); }
+.smt-ico { width:13px;height:13px;flex-shrink:0;opacity:.7; }
+.smt-btn.active { background:var(--surface-hi);color:var(--text-light);box-shadow:none; }
 .splash-online-btn {
   margin-top:14px;width:100%;max-width:340px;padding:13px;border-radius:12px;cursor:pointer;
   font-family:'Manrope',system-ui,sans-serif;font-weight:700;font-size:.92rem;
@@ -1501,7 +1502,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN116</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN117</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
