@@ -1507,7 +1507,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN108</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN109</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -3324,18 +3324,9 @@ function _pickHumanMove(){
   const best = cands[0].cp;
 
   // ── PLAFOND DE PERTE (style "target centipawn loss") ──
-  // On n'autorise que les coups dont la perte par rapport au meilleur reste sous un seuil
-  // dépendant du niveau. Empêche les bourdes catastrophiques aux niveaux moyens/hauts,
-  // tout en laissant les débutants jouer des coups franchement faibles.
-  let maxLoss;
-  if(elo <= 500)       maxLoss = 350;  // débutant : peut faire de grosses erreurs
-  else if(elo <= 800)  maxLoss = 140;
-  else if(elo <= 1100) maxLoss = 110;
-  else if(elo <= 1400) maxLoss = 85;
-  else if(elo <= 1700) maxLoss = 65;
-  else if(elo <= 2000) maxLoss = 40;
-  else if(elo <= 2400) maxLoss = 22;
-  else                 maxLoss = 12;
+  // Marge d'erreur tolérée (centipions) définie par le profil du niveau courant (demande D) :
+  // élevée en bas (vraies bourdes), quasi nulle au sommet.
+  let maxLoss = curLevelProfile().maxLoss;
   const capped = cands.filter(c => (best - c.cp) <= maxLoss);
   if(capped.length) cands = capped;
 
@@ -3738,13 +3729,13 @@ function askStockfish(){
   configureStockfishStrength();
   // MultiPV : on demande plusieurs coups candidats pour varier le jeu (anti-répétition)
   _pvCandidates = {};
-  const wantPV = _multipvForElo(currentElo);
+  const wantPV = curLevelProfile().mpv;
   if(wantPV !== _multipvCount){
     stockfish.postMessage('setoption name MultiPV value '+wantPV);
     _multipvCount = wantPV;
   }
   stockfish.postMessage('position fen '+boardToFen());
-  const moveTime = eloToTime(currentElo);
+  const moveTime = curLevelProfile().time;
   // Jeu rapide : on limite UNIQUEMENT par le temps (pas la profondeur)
   // → réponse garantie en 'moveTime' ms, comme les bots Chess.com
   stockfish.postMessage('go movetime '+moveTime);
@@ -6660,6 +6651,25 @@ let currentLevel=3; // défaut ≈ 800 Elo
 function levelToElo(n){ n=Math.max(LEVEL_MIN,Math.min(LEVEL_MAX,parseInt(n)||LEVEL_MIN)); return LEVEL_ELOS[n-1]; }
 function eloToLevel(elo){ let best=1,bd=Infinity; for(let i=0;i<LEVEL_ELOS.length;i++){ const d=Math.abs(LEVEL_ELOS[i]-elo); if(d<bd){bd=d;best=i+1;} } return best; }
 function setLevel(n){ currentLevel=Math.max(LEVEL_MIN,Math.min(LEVEL_MAX,parseInt(n)||LEVEL_MIN)); currentElo=levelToElo(currentLevel); updateEloUI(); }
+// ===== PROFIL MOTEUR PAR NIVEAU (demande D) =====
+// Courbe strictement croissante : chaque cran change AU MOINS la profondeur ET le temps.
+// mode 'skill' (bas, faiblesse + erreurs humaines) → 'uci' (milieu/haut, force prévisible) → 'full' (sommet).
+// depth/time montent ; mpv (candidats) et maxLoss (marge d'erreur tolérée, en centipions) descendent.
+const LEVEL_PROFILES=[
+  /* 1 */ {mode:'skill', val:0,  depth:2,  time:150,  mpv:6, maxLoss:500},
+  /* 2 */ {mode:'skill', val:1,  depth:3,  time:200,  mpv:6, maxLoss:350},
+  /* 3 */ {mode:'skill', val:3,  depth:4,  time:250,  mpv:5, maxLoss:250},
+  /* 4 */ {mode:'skill', val:5,  depth:5,  time:350,  mpv:5, maxLoss:160},
+  /* 5 */ {mode:'skill', val:7,  depth:7,  time:450,  mpv:4, maxLoss:110},
+  /* 6 */ {mode:'skill', val:9,  depth:8,  time:600,  mpv:4, maxLoss:80},
+  /* 7 */ {mode:'uci',   val:1700, depth:10, time:800,  mpv:3, maxLoss:55},
+  /* 8 */ {mode:'uci',   val:1950, depth:12, time:1000, mpv:3, maxLoss:40},
+  /* 9 */ {mode:'uci',   val:2200, depth:15, time:1300, mpv:2, maxLoss:28},
+  /* 10*/ {mode:'uci',   val:2500, depth:18, time:1800, mpv:2, maxLoss:18},
+  /* 11*/ {mode:'uci',   val:2850, depth:22, time:2400, mpv:1, maxLoss:12},
+  /* 12*/ {mode:'full',  val:20,   depth:30, time:3000, mpv:1, maxLoss:12},
+];
+function curLevelProfile(){ return LEVEL_PROFILES[Math.max(0,Math.min(LEVEL_MAX-1,currentLevel-1))]; }
 const ELO_TIERS=[
   {min:400,max:799,label:'Débutant',color:'#52c07c'},{min:800,max:999,label:'Novice',color:'#7ec87e'},
   {min:1000,max:1199,label:'Amateur',color:'#a0c050'},{min:1200,max:1399,label:'Intermédiaire',color:'#c9a84c'},
@@ -6690,7 +6700,7 @@ function updateEloUI(){
   const sv=document.getElementById('splashEloVal'); if(sv) sv.textContent=currentLevel;
   const st=document.getElementById('splashEloTier'); if(st){ st.textContent=tier.label; st.style.color=tier.color; }
   const ss=document.getElementById('splashEloSlider'); if(ss){ ss.value=currentLevel; ss.style.setProperty('--pct',pct+'%'); }
-  sfDepth=eloToDepth(currentElo);
+  sfDepth=curLevelProfile().depth;
 }
 function eloToTime(elo){
   // Temps de réflexion : court en bas (mais assez pour un jeu cohérent),
@@ -6708,41 +6718,22 @@ function eloToTime(elo){
 
 function configureStockfishStrength(){
   if(!stockfish) return;
-  sfDepth = eloToDepth(currentElo);
-  const elo = currentElo;
-  // Plage où UCI_Elo est fiable (SF10 ≈ 1350+, NNUE ≈ 1320+). On prend 1350 pour les deux.
-  const UCI_MIN = 1350;
-  // Au-delà de ce seuil → pleine puissance (mode "Magnus")
-  const FULL_AT = 2850;
-  if(elo >= FULL_AT){
-    // Pleine force : aucun bridage
+  const p = curLevelProfile();
+  sfDepth = p.depth;
+  if(p.mode === 'full'){
+    // Sommet : pleine force NNUE, aucun bridage.
     stockfish.postMessage('setoption name UCI_LimitStrength value false');
     stockfish.postMessage('setoption name Skill Level value 20');
-  } else if(elo >= UCI_MIN){
-    // Bridage par UCI_Elo, AVEC correction : Stockfish bridé joue plus fort que
-    // son étiquette (il ne fait pas les vraies erreurs humaines, ses blunders sont rares).
-    // Le retour des joueurs sur les autres apps montre que les bots paraissent ~200-350 Elo
-    // trop forts. On envoie donc un Elo nettement plus bas que celui affiché.
-    // Décalage progressif : -250 vers 1500, jusqu'à -380 vers 2500.
-    const offset = Math.round(250 + (elo - UCI_MIN) / (2850 - UCI_MIN) * 130);
-    const sentElo = Math.max(1320, elo - offset);
+  } else if(p.mode === 'uci'){
+    // Force prévisible via UCI_Elo (plage fiable NNUE ≈ 1320+).
+    const sentElo = Math.max(1320, p.val);
     stockfish.postMessage('setoption name UCI_LimitStrength value true');
     stockfish.postMessage('setoption name UCI_Elo value ' + sentElo);
     stockfish.postMessage('setoption name Skill Level value 20');
   } else {
-    // Sous la plage UCI_Elo → on bride par Skill Level (LimitStrength désactivé).
+    // Bas de l'échelle : Skill Level (faiblesse + erreurs humaines), LimitStrength off.
     stockfish.postMessage('setoption name UCI_LimitStrength value false');
-    // Mapping recalibré pour coller au ressenti : un "800" doit jouer comme un vrai 800,
-    // pas comme un débutant absolu. (Skill 0≈800, 4≈1100, 8≈1350 en force brute SF ;
-    // notre couche humaine retire encore un peu, d'où ces valeurs un cran au-dessus.)
-    let skill;
-    if(elo <= 450)       skill = 1;
-    else if(elo <= 650)  skill = 4;
-    else if(elo <= 850)  skill = 6;
-    else if(elo <= 1050) skill = 8;
-    else if(elo <= 1200) skill = 10;
-    else                 skill = 11;
-    stockfish.postMessage('setoption name Skill Level value ' + skill);
+    stockfish.postMessage('setoption name Skill Level value ' + p.val);
   }
 }
 
