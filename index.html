@@ -576,7 +576,7 @@ html[data-theme="dark"] .settings-preview img {
   position:sticky;top:0;z-index:100;
   display:flex;align-items:center;justify-content:space-between;
   padding:10px 16px;
-  background:transparent;
+  background:var(--bg);
 }
 .nav-logo {
   font-family:'Manrope',system-ui,sans-serif;font-size:1.15rem;
@@ -633,7 +633,7 @@ body.playing { overflow:hidden;height:100dvh;position:fixed;width:100%;top:0;lef
 .page { display:none;width:100%;max-width:1000px;margin:0 auto;padding:16px; }
 .page.active { display:block;animation:fadeUp .35s ease; }
 /* Page de JEU : hauteur FIXE = écran, aucun défilement. Tout est compressé pour tenir. */
-#page-game.page { padding:4px 10px 6px;box-sizing:border-box; }
+#page-game.page { padding:12px 10px 6px;box-sizing:border-box; }
 #page-game.page.active {
   display:flex;flex-direction:column;
   height:calc(100dvh - 56px);
@@ -649,7 +649,7 @@ body.playing { overflow:hidden;height:100dvh;position:fixed;width:100%;top:0;lef
 /* Échiquier : côté limité par la hauteur restante (réserve réduite car la barre de revue
    et les 3 toggles ne sont plus affichés en jeu). */
 #page-game .board-container {
-  width:min(100%, calc(100dvh - 276px));
+  width:min(100%, calc(100dvh - 284px));
   max-width:520px;
   margin:0 auto;
   flex:0 0 auto;
@@ -1500,7 +1500,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN128</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN129</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
