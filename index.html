@@ -1499,7 +1499,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN112</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN113</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -3348,6 +3348,18 @@ function showToast(msg, type) {
 
 // ===== STOCKFISH =====
 let stockfish=null, sfDepth=10, gameMode='ai', aiThinking=false;
+// ===== PLANCHER DE RÉFLEXION IA (demande H) =====
+// Pour un rendu plus humain : l'IA ne répond jamais instantanément. Si son calcul (ou un coup
+// du livre) a pris moins que ce plancher, on attend le reste avant d'appliquer le coup.
+// N'ajoute du temps QUE lorsque le moteur a été plus rapide que le plancher (bas niveaux, livre) ;
+// les niveaux élevés (movetime long, demande D) ne sont pas ralentis.
+let _thinkStart = 0;
+const AI_MIN_THINK = 650; // ms (un peu d'aléa ajouté)
+function _aiThinkFloorRemaining(){
+  const floor = AI_MIN_THINK + Math.floor(Math.random()*350); // 650–1000 ms
+  const elapsed = Date.now() - (_thinkStart || Date.now());
+  return Math.max(0, floor - elapsed);
+}
 // MultiPV : coups candidats collectés pendant la réflexion (index 1 = meilleur)
 let _pvCandidates = {};
 let _multipvCount = 1;
@@ -3700,10 +3712,18 @@ function initStockfish(){
           // Choix pondéré parmi les candidats (variété + naturel selon l'Elo)
           const chosen = _pickHumanMove();
           if(chosen) mv = chosen;
-          if(mv && mv!=='(none)' && mv.length>=4) applyStockfishMove(mv);
-          aiThinking = false;
-          document.getElementById('aiSpinner').classList.remove('show');
-          document.getElementById('voiceBtn').disabled = false;
+          // Réflexion naturelle (demande H) : on applique le coup après le plancher.
+          // Le spinner reste visible pendant l'attente ; applyStockfishMove remet l'UI à zéro.
+          const _g = aiGen;
+          setTimeout(()=>{
+            if(_g !== aiGen){ aiThinking=false; return; }
+            if(mv && mv!=='(none)' && mv.length>=4){ applyStockfishMove(mv); }
+            else {
+              aiThinking=false;
+              const sp=document.getElementById('aiSpinner'); if(sp) sp.classList.remove('show');
+              const vb=document.getElementById('voiceBtn'); if(vb) vb.disabled=false;
+            }
+          }, _aiThinkFloorRemaining());
         }
       };
       worker.postMessage('uci');
@@ -3750,7 +3770,8 @@ function askStockfish(){
   }
   askStockfish._retries = 0;
   aiReqGen = aiGen; // marque cette requête
-  // 📖 Livre d'ouvertures : joue instantanément un coup théorique connu
+  _thinkStart = Date.now(); // début de la « réflexion » (plancher H)
+  // 📖 Livre d'ouvertures : coup théorique connu (joué après le plancher de réflexion)
   const bookMv = getBookMove();
   if(bookMv){
     aiThinking=true;
@@ -3761,7 +3782,7 @@ function askStockfish(){
     setTimeout(()=>{
       if(_bookGen !== aiGen){ aiThinking=false; return; } // annulé → on ne joue pas le coup fantôme
       applyStockfishMove(bookMv);
-    }, 150); // petit délai pour le réalisme
+    }, _aiThinkFloorRemaining()); // réflexion naturelle (demande H)
     return;
   }
   if(!stockfish || !sfReady){
