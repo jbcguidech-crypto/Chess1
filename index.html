@@ -633,7 +633,7 @@ body.playing { overflow:hidden;height:100dvh;position:fixed;width:100%;top:0;lef
 .page { display:none;width:100%;max-width:1000px;margin:0 auto;padding:16px; }
 .page.active { display:block;animation:fadeUp .35s ease; }
 /* Page de JEU : hauteur FIXE = écran, aucun défilement. Tout est compressé pour tenir. */
-#page-game.page { padding:12px 10px 6px;box-sizing:border-box; }
+#page-game.page { padding:4px 10px 6px;box-sizing:border-box; }
 #page-game.page.active {
   display:flex;flex-direction:column;
   height:calc(100dvh - 56px);
@@ -644,12 +644,12 @@ body.playing { overflow:hidden;height:100dvh;position:fixed;width:100%;top:0;lef
   flex:1;min-height:0;
   display:flex;flex-direction:column;
   justify-content:flex-start;
-  gap:4px;
+  gap:2px;
 }
 /* Échiquier : côté limité par la hauteur restante (réserve réduite car la barre de revue
    et les 3 toggles ne sont plus affichés en jeu). */
 #page-game .board-container {
-  width:min(100%, calc(100dvh - 268px));
+  width:min(100%, calc(100dvh - 276px));
   max-width:520px;
   margin:0 auto;
   flex:0 0 auto;
@@ -657,11 +657,11 @@ body.playing { overflow:hidden;height:100dvh;position:fixed;width:100%;top:0;lef
 }
 /* Bandeaux joueurs compacts */
 #page-game .player-bar { padding:3px 2px; }
-#page-game #barTop { margin-top:auto; }   /* espace flexible au-dessus du bloc échiquier */
-#page-game .pb-ava { width:28px;height:28px;font-size:1rem; }
-#page-game .pb-name { font-size:.8rem; }
+#page-game #barTop { margin-top:0; }   /* échiquier remonté, collé à la liste des coups */
+#page-game .pb-ava { width:42px;height:42px;font-size:1.25rem; }
+#page-game .pb-name { font-size:1.2rem; }
 /* Contrôles + toggles + micro resserrés */
-#page-game .game-controls { margin:auto auto 0; }   /* pousse boutons + micro en bas (espace flexible égal) */
+#page-game .game-controls { margin:6px auto 0; }   /* boutons rapprochés du board */
 #page-game .gc-btn { padding:8px 10px;font-size:.78rem; }
 #page-game .ingame-toggles { margin:0 auto 2px;gap:5px; }
 #page-game .igt-pill { padding:6px 8px;font-size:.68rem; }
@@ -692,10 +692,10 @@ body.playing { overflow:hidden;height:100dvh;position:fixed;width:100%;top:0;lef
 .coord-col, .coords-bottom { display:none !important; }
 /* ── BANDEAU DE COUPS (haut, façon Lichess) ── */
 .move-strip {
-  display:flex;align-items:center;gap:3px;width:100%;max-width:520px;margin:0 auto 2px;flex-shrink:0;
+  display:flex;align-items:center;gap:3px;width:100%;max-width:520px;margin:0 auto 0;flex-shrink:0;
   overflow-x:auto;white-space:nowrap;padding:4px 2px;box-sizing:border-box;
   font-family:'Manrope',system-ui,sans-serif;font-size:.84rem;line-height:1.2;
-  scrollbar-width:none;-ms-overflow-style:none;min-height:26px;
+  scrollbar-width:none;-ms-overflow-style:none;min-height:22px;
 }
 .move-strip::-webkit-scrollbar { display:none; }
 .move-strip .ms-num { color:var(--text-muted);font-weight:700;margin-left:8px;flex:0 0 auto; }
@@ -976,14 +976,14 @@ body.playing { overflow:hidden;height:100dvh;position:fixed;width:100%;top:0;lef
 .pb-dot.w { background:#f4f4ee; }
 .pb-dot.b { background:#33373e; }
 .pb-ava {
-  width:34px;height:34px;border-radius:9px;flex-shrink:0;overflow:hidden;
+  width:44px;height:44px;border-radius:12px;flex-shrink:0;overflow:hidden;
   display:flex;align-items:center;justify-content:center;font-size:1.25rem;
   background:linear-gradient(160deg,var(--surface-hi),var(--surface));
   border:1px solid var(--border);transition:border-color .25s, box-shadow .25s;
 }
 .pb-ava img { width:100%;height:100%;object-fit:cover; }
 .pb-meta { min-width:0;display:flex;flex-direction:column;gap:1px; }
-.pb-name { font-weight:800;font-size:.86rem;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px;line-height:1.1;transition:color .25s; }
+.pb-name { font-weight:800;font-size:1.05rem;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px;line-height:1.1;transition:color .25s; }
 .pb-elo { font-size:.7rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;flex-shrink:0;line-height:1.1; }
 .pb-captured { display:flex;align-items:center;flex-wrap:nowrap;justify-content:flex-end;min-height:18px; }
 .cap-pc { width:17px;height:17px;object-fit:contain;margin-left:-3px;opacity:.85; }
@@ -1500,7 +1500,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN124</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN127</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -2850,6 +2850,15 @@ function AVATAR_FISHER(){
     + '<circle cx="24" cy="21" r="6.8" fill="#e7c79e"/>'
     + '<path d="M12.5 16.6 Q24 12.6 35.5 16.6 L35.5 18 Q24 16.2 12.5 18 Z" fill="#3f6dc4"/>'
     + '<path d="M17.5 16.8 Q17.5 8.4 24 8.4 Q30.5 8.4 30.5 16.8 Z" fill="#5B8DEF"/>'
+    + '</svg>';
+}
+// Hameçon argenté : avatar du joueur humain (le pêcheur qui attrape le poisson Stockfish)
+function AVATAR_HOOK(){
+  return '<svg viewBox="0 0 48 48" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" aria-hidden="true">'
+    + '<circle cx="24" cy="10.5" r="3.3" fill="none" stroke="#c2ccdc" stroke-width="2.3"/>'
+    + '<path d="M24 13.8 L24 29 Q24 36 18 36 Q12 36 12 29 L12 24.5" fill="none" stroke="#c2ccdc" stroke-width="2.8" stroke-linecap="round"/>'
+    + '<path d="M12 27 L8.6 29.2" stroke="#c2ccdc" stroke-width="2.3" stroke-linecap="round"/>'
+    + '<circle cx="12" cy="24.2" r="1.15" fill="#c2ccdc"/>'
     + '</svg>';
 }
 let userProfile = { name:'Invité', avatar:'♟', elo:1200, eloHistory:[1200], games:[], selectedAvatar:0 };
@@ -4745,7 +4754,7 @@ function updatePlayerBars(){
     const botName=document.getElementById('botName'), botElo=document.getElementById('botElo'), botAva=document.getElementById('botAva');
     if(botName) botName.textContent = (gameMode==='online' && userProfile.name && userProfile.name!=='Invité') ? userProfile.name : 'Vous';
     if(botElo) botElo.textContent = ''; // pas d'Elo affiché pour le joueur
-    if(botAva) botAva.innerHTML = AVATAR_FISHER();
+    if(botAva) botAva.innerHTML = AVATAR_HOOK();
     // Haut = adversaire
     const topName=document.getElementById('topName'), topElo=document.getElementById('topElo'), topAva=document.getElementById('topAva');
     if(gameMode==='ai'){
@@ -4755,7 +4764,7 @@ function updatePlayerBars(){
     } else {
       if(topName) topName.textContent = 'Joueur 2';
       if(topElo) topElo.textContent = '';
-      if(topAva) topAva.innerHTML = AVATAR_FISHER();
+      if(topAva) topAva.innerHTML = AVATAR_HOOK();
     }
     // Surligne le joueur au trait
     const bb=document.getElementById('barBottom'), bt=document.getElementById('barTop');
