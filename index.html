@@ -643,7 +643,7 @@ body.playing { overflow:hidden;height:100dvh;position:fixed;width:100%;top:0;lef
 #page-game .game-layout {
   flex:1;min-height:0;
   display:flex;flex-direction:column;
-  justify-content:flex-start;
+  justify-content:center;
   gap:4px;
 }
 /* Échiquier : côté limité par la hauteur restante (réserve réduite car la barre de revue
@@ -1499,7 +1499,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN121</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN122</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -1673,16 +1673,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
           </div>
         </div>
       </div>
-      <!-- Historique des parties -->
-      <div class="settings-section">
-        <button class="glossary-toggle" id="historyToggle" onclick="toggleHistory()" style="padding:14px 16px;border:1px solid var(--border-gold);border-radius:12px;background:rgba(91,141,239,.10);">
-          <span style="margin:0;font-family:'Manrope',system-ui,sans-serif;font-weight:800;font-size:1.05rem;color:var(--gold-light);">Historique des parties</span>
-          <span class="glossary-chevron" id="historyChevron" style="font-size:1.2rem;">▾</span>
-        </button>
-        <div class="history-body" id="historyBody" style="display:none;">
-          <div id="historyList"></div>
-        </div>
-      </div>
+      <!-- (Section « Historique des parties » retirée — sauvegarde des parties désactivée) -->
       </div><!-- /#prefsMain -->
       <!-- SOUS-MENU : Jeu de pièces -->
       <div id="prefsPieces" class="prefs-sub" style="display:none;">
@@ -4615,29 +4606,8 @@ function _loadSavedGames(){
 function _saveSavedGames(arr){
   try{ localStorage.setItem(_SAVED_KEY, JSON.stringify(arr)); }catch(e){}
 }
-// Enregistre la partie qui vient de se terminer
-function _archiveGame(outcome, subtitle){
-  try{
-    if(!moveHistoryUCI || moveHistoryUCI.length<2) return; // partie trop courte, on ignore
-    const games=_loadSavedGames();
-    const entry={
-      id: Date.now(),
-      date: Date.now(),
-      moves: moveHistoryUCI.slice(),
-      spoken: history.map(h=>h.spoken||h.move||''),
-      outcome: outcome,
-      subtitle: subtitle||'',
-      playerColor: playerColor,
-      elo: (gameMode==='ai') ? currentElo : null,
-      mode: gameMode,
-      pinned: false
-    };
-    games.unshift(entry);
-    const pinned=games.filter(g=>g.pinned);
-    let rest=games.filter(g=>!g.pinned).slice(0, 50);
-    _saveSavedGames([...pinned, ...rest].sort((a,b)=>b.date-a.date));
-  }catch(e){}
-}
+// Sauvegarde des parties désactivée (demande L) : ne rien enregistrer.
+function _archiveGame(outcome, subtitle){ return; }
 
 function _showEndBanner(msg, result, mate, outcome){
   const banner=document.getElementById('gameOver');
