@@ -651,16 +651,17 @@ body.playing { overflow:hidden;height:100dvh;position:fixed;width:100%;top:0;lef
 #page-game .board-container {
   width:min(100%, calc(100dvh - 268px));
   max-width:520px;
-  margin:auto;
+  margin:0 auto;
   flex:0 0 auto;
   padding:0;border-radius:0;
 }
 /* Bandeaux joueurs compacts */
 #page-game .player-bar { padding:3px 2px; }
+#page-game #barTop { margin-top:auto; }   /* espace flexible au-dessus du bloc échiquier */
 #page-game .pb-ava { width:28px;height:28px;font-size:1rem; }
 #page-game .pb-name { font-size:.8rem; }
 /* Contrôles + toggles + micro resserrés */
-#page-game .game-controls { margin:2px auto 0; }
+#page-game .game-controls { margin:auto auto 0; }   /* pousse boutons + micro en bas (espace flexible égal) */
 #page-game .gc-btn { padding:8px 10px;font-size:.78rem; }
 #page-game .ingame-toggles { margin:0 auto 2px;gap:5px; }
 #page-game .igt-pill { padding:6px 8px;font-size:.68rem; }
@@ -1499,7 +1500,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN123</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN124</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
