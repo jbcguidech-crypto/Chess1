@@ -576,8 +576,7 @@ html[data-theme="dark"] .settings-preview img {
   position:sticky;top:0;z-index:100;
   display:flex;align-items:center;justify-content:space-between;
   padding:10px 16px;
-  background:var(--bg);
-  border-bottom:2px solid rgba(91,141,239,.35);
+  background:transparent;
 }
 .nav-logo {
   font-family:'Manrope',system-ui,sans-serif;font-size:1.15rem;
@@ -650,7 +649,7 @@ body.playing { overflow:hidden;height:100dvh;position:fixed;width:100%;top:0;lef
 /* Échiquier : côté limité par la hauteur restante (réserve réduite car la barre de revue
    et les 3 toggles ne sont plus affichés en jeu). */
 #page-game .board-container {
-  width:min(100%, calc(100dvh - 230px));
+  width:min(100%, calc(100dvh - 268px));
   max-width:520px;
   margin:0 auto;
   flex:0 0 auto;
@@ -692,7 +691,7 @@ body.playing { overflow:hidden;height:100dvh;position:fixed;width:100%;top:0;lef
 .coord-col, .coords-bottom { display:none !important; }
 /* ── BANDEAU DE COUPS (haut, façon Lichess) ── */
 .move-strip {
-  display:flex;align-items:center;gap:3px;width:100%;max-width:520px;margin:0 auto 2px;
+  display:flex;align-items:center;gap:3px;width:100%;max-width:520px;margin:0 auto 2px;flex-shrink:0;
   overflow-x:auto;white-space:nowrap;padding:4px 2px;box-sizing:border-box;
   font-family:'Manrope',system-ui,sans-serif;font-size:.84rem;line-height:1.2;
   scrollbar-width:none;-ms-overflow-style:none;min-height:26px;
@@ -1500,7 +1499,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN119</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN121</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
