@@ -441,7 +441,7 @@ html[data-theme="light"] .history-modal-box { background:linear-gradient(160deg,
   width:100%;max-width:300px;padding:2px 0;
 }
 .splash-diff-label {
-  display:flex;align-items:baseline;justify-content:space-between;
+  display:flex;align-items:baseline;justify-content:center;
   font-family:'Manrope',system-ui,sans-serif;font-weight:700;color:var(--text-muted);font-size:.8rem;
 }
 .splash-diff-label #splashEloTier { letter-spacing:.02em; }
@@ -1507,7 +1507,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN103</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN106</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -1557,11 +1557,10 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <!-- Difficulté sur l'écran d'accueil (compact, sans boîte lourde) -->
   <div class="splash-diff">
     <div class="splash-diff-label">
-      <span id="splashEloTier">Novice</span>
-      <span class="sd-elo"><svg class="voice-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4c1.6 1.8 2.5 4.2 2.5 8s-.9 6.2-2.5 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M9.5 6c1 1.3 1.6 2.8 1.6 6s-.6 4.7-1.6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5.5 8.5c.6.8 1 1.7 1 3.5s-.4 2.7-1 3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="sd-elo-niveau">niveau</span> <span id="splashEloVal">800</span> <span class="sd-elo-unit">Elo</span></span>
+      <span class="sd-elo"><svg class="voice-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4c1.6 1.8 2.5 4.2 2.5 8s-.9 6.2-2.5 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M9.5 6c1 1.3 1.6 2.8 1.6 6s-.6 4.7-1.6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5.5 8.5c.6.8 1 1.7 1 3.5s-.4 2.7-1 3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="sd-elo-niveau">niveau</span> <span id="splashEloVal">3</span></span>
     </div>
-    <input type="range" id="splashEloSlider" min="400" max="3000" step="50" value="800"
-      oninput="onSplashEloSlide(this.value)" onchange="onSplashEloSlide(this.value)"
+    <input type="range" id="splashEloSlider" min="1" max="12" step="1" value="3"
+      oninput="onSplashLevelSlide(this.value)" onchange="onSplashLevelSlide(this.value)"
       style="touch-action:none;position:relative;z-index:10;">
   </div>
   <!-- Choix du mode : vs IA ou 2 joueurs -->
@@ -2201,29 +2200,25 @@ function buildSplash() {
 }
 
 
-function onSplashEloSlide(val) {
-  currentElo = parseInt(val);
-  const tier = getTier(currentElo);
-  const pct = ((currentElo-400)/2600*100).toFixed(1);
-  document.getElementById('splashEloVal').textContent = currentElo;
-  document.getElementById('splashEloTier').textContent = tier.label;
-  document.getElementById('splashEloTier').style.color = tier.color;
-  document.getElementById('splashEloSlider').style.setProperty('--pct', pct+'%');
-  // Sync avec sidebar
-  const s = document.getElementById('eloSlider');
-  if(s) s.value = currentElo;
+function onSplashLevelSlide(level) {
+  currentLevel = Math.max(LEVEL_MIN, Math.min(LEVEL_MAX, parseInt(level)||LEVEL_MIN));
+  currentElo = levelToElo(currentLevel);
   updateEloUI();
+}
+// Compat : certains appels historiques passent encore un Elo → on le convertit en niveau.
+function onSplashEloSlide(val) {
+  onSplashLevelSlide(eloToLevel(parseInt(val)||800));
 }
 function setSplashElo(elo) {
   document.getElementById('splashEloSlider').value = elo;
   onSplashEloSlide(elo);
 }
 
-// Gestionnaire tactile explicite : calcule l'ELO depuis la position du doigt
+// Gestionnaire tactile explicite : calcule le NIVEAU (1–12) depuis la position du doigt
 function attachSliderTouch(){
   const sl = document.getElementById('splashEloSlider');
   if(!sl) return;
-  const MIN = 400, MAX = 3000, STEP = 50;
+  const MIN = 1, MAX = 12, STEP = 1; // niveaux (littéraux : appelé au chargement, avant les const LEVEL_*)
   function valueFromTouch(clientX){
     const rect = sl.getBoundingClientRect();
     let ratio = (clientX - rect.left) / rect.width;
@@ -2237,7 +2232,7 @@ function attachSliderTouch(){
     if(t.clientX === undefined) return;
     const val = valueFromTouch(t.clientX);
     sl.value = val;
-    onSplashEloSlide(val);
+    onSplashLevelSlide(val);
     e.preventDefault();
   }
   sl.addEventListener('touchstart', handle, {passive:false});
@@ -2323,7 +2318,7 @@ function renderHistoryList(){
     const res = labels[g.outcome]||'';
     const dot = dots[g.outcome]||'#8893a3';
     const n = g.moves ? g.moves.length : 0;
-    const eloTxt = g.elo ? (' · '+g.elo+' Elo') : '';
+    const eloTxt = g.elo ? (' · '+(currentLang==='fr'?'niveau ':'level ')+eloToLevel(g.elo)) : '';
     return '<div class="hist-item" data-id="'+g.id+'">'
       + '<div class="hist-main" onclick="replaySavedGame('+g.id+')">'
       +   '<span class="hist-dot" style="background:'+dot+'"></span>'
@@ -2547,10 +2542,13 @@ function startSplashListening(){
 // Interprète une commande vocale du splash → renvoie true si une action a été lancée
 function parseSplashCommand(text){
   const t = ' '+text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()+' ';
-  // Niveau / Elo : "niveau 1500", "contre 1500", "1500"
-  const lvl = t.match(/\b(\d{3,4})\b/);
+  // Niveau parlé : "niveau 5" (1–12) ; à défaut, un Elo dicté (3–4 chiffres) → converti en niveau.
   let levelSet = false;
-  if(lvl){ const v=Math.max(400,Math.min(3000,parseInt(lvl[1]))); try{ onSplashEloSlide(v); const sl=document.getElementById('splashEloSlider'); if(sl) sl.value=v; }catch(e){} _splashStatus((currentLang==='fr'?'Niveau réglé : ':'Level set: ')+v+(currentLang==='fr'?'. Dites la couleur pour jouer.':'. Say a color to start.')); levelSet=true; }
+  let targetLevel = null;
+  const mLvl = t.match(/\bniveau\s+(\d{1,2})\b/);
+  if(mLvl){ targetLevel = Math.max(LEVEL_MIN, Math.min(LEVEL_MAX, parseInt(mLvl[1]))); }
+  else { const mElo = t.match(/\b(\d{3,4})\b/); if(mElo){ targetLevel = eloToLevel(parseInt(mElo[1])); } }
+  if(targetLevel!=null){ try{ onSplashLevelSlide(targetLevel); }catch(e){} _splashStatus((currentLang==='fr'?'Niveau réglé : ':'Level set: ')+targetLevel+(currentLang==='fr'?'. Dites la couleur pour jouer.':'. Say a color to start.')); levelSet=true; }
   // Réglages / personnaliser
   if(/\b(reglage|reglages|parametre|parametres|personnaliser|configuration|settings)\b/.test(t)){ stopSplashVoice(); openSettings(); return true; }
   // Thème clair / sombre
@@ -6223,7 +6221,7 @@ function executeVoiceAction(act, verbose){
       _showEndBanner(currentLang==='fr'?'Abandon':'Resigned', null, false, 'lose');
       return true;
     case 'newgame': {
-      if(act.elo){ try{ currentElo=Math.max(400,Math.min(3000,act.elo)); userProfile.elo=currentElo; }catch(e){} }
+      if(act.elo){ try{ currentElo=Math.max(400,Math.min(3000,act.elo)); userProfile.elo=currentElo; currentLevel=eloToLevel(currentElo); }catch(e){} }
       // Couleur : 'w'/'b' si précisée, sinon tirage au sort (cas par défaut et 'r')
       let newCol;
       if(act.color==='w' || act.color==='b') newCol = act.color;
@@ -6630,6 +6628,15 @@ document.addEventListener('touchend', onUserInteract);
 
 // ===== ELO SYSTEM =====
 let currentElo=800;
+// ===== NIVEAUX (1–12, façon Lichess) =====
+// L'Elo reste la "force" interne qui pilote le moteur ; chaque niveau y est mappé.
+// (Courbe précise affinée plus tard — demande D.)
+const LEVEL_ELOS=[400,600,800,1000,1250,1500,1750,2000,2250,2500,2750,3000]; // idx 0 = niveau 1
+const LEVEL_MIN=1, LEVEL_MAX=12;
+let currentLevel=3; // défaut ≈ 800 Elo
+function levelToElo(n){ n=Math.max(LEVEL_MIN,Math.min(LEVEL_MAX,parseInt(n)||LEVEL_MIN)); return LEVEL_ELOS[n-1]; }
+function eloToLevel(elo){ let best=1,bd=Infinity; for(let i=0;i<LEVEL_ELOS.length;i++){ const d=Math.abs(LEVEL_ELOS[i]-elo); if(d<bd){bd=d;best=i+1;} } return best; }
+function setLevel(n){ currentLevel=Math.max(LEVEL_MIN,Math.min(LEVEL_MAX,parseInt(n)||LEVEL_MIN)); currentElo=levelToElo(currentLevel); updateEloUI(); }
 const ELO_TIERS=[
   {min:400,max:799,label:'Débutant',color:'#52c07c'},{min:800,max:999,label:'Novice',color:'#7ec87e'},
   {min:1000,max:1199,label:'Amateur',color:'#a0c050'},{min:1200,max:1399,label:'Intermédiaire',color:'#c9a84c'},
@@ -6652,14 +6659,14 @@ function eloToDepth(elo){
 function onEloSlide(val){currentElo=parseInt(val);updateEloUI();}
 function setElo(elo){currentElo=elo;const s=document.getElementById('eloSlider');if(s)s.value=elo;updateEloUI();}
 function updateEloUI(){
-  const tier=getTier(currentElo);const pct=((currentElo-400)/2600*100).toFixed(1);
+  const tier=getTier(currentElo);const pct=((currentLevel-LEVEL_MIN)/(LEVEL_MAX-LEVEL_MIN)*100).toFixed(1);
   const disp=document.getElementById('eloDisplay'); if(disp) disp.textContent=currentElo;
   const t=document.getElementById('eloTier'); if(t){ t.textContent=tier.label;t.style.color=tier.color;t.style.borderColor=tier.color; }
   const sl=document.getElementById('eloSlider'); if(sl) sl.style.setProperty('--pct',pct+'%');
-  // Synchronise aussi l'affichage du splash si présent
-  const sv=document.getElementById('splashEloVal'); if(sv) sv.textContent=currentElo;
+  // Splash : on affiche le NIVEAU (1–12) + le libellé descriptif
+  const sv=document.getElementById('splashEloVal'); if(sv) sv.textContent=currentLevel;
   const st=document.getElementById('splashEloTier'); if(st){ st.textContent=tier.label; st.style.color=tier.color; }
-  const ss=document.getElementById('splashEloSlider'); if(ss){ ss.value=currentElo; ss.style.setProperty('--pct',pct+'%'); }
+  const ss=document.getElementById('splashEloSlider'); if(ss){ ss.value=currentLevel; ss.style.setProperty('--pct',pct+'%'); }
   sfDepth=eloToDepth(currentElo);
 }
 function eloToTime(elo){
@@ -7056,7 +7063,7 @@ function resetGame(){
 
 
 initBoard(); renderBoard();
-try{ onSplashEloSlide(document.getElementById('splashEloSlider')?.value || 800); }catch(e){} updateSidebar(); initStockfish(); updateEloUI(); applyLang(); try{ initTheme(); }catch(e){} try{ updateSpeakerBtn(); }catch(e){} try{ updateSplashAuth((window._auth&&window._auth.auth&&window._auth.auth.currentUser)||null); }catch(e){}
+try{ onSplashLevelSlide(document.getElementById('splashEloSlider')?.value || 3); }catch(e){} updateSidebar(); initStockfish(); updateEloUI(); applyLang(); try{ initTheme(); }catch(e){} try{ updateSpeakerBtn(); }catch(e){} try{ updateSplashAuth((window._auth&&window._auth.auth&&window._auth.auth.currentUser)||null); }catch(e){}
 try{ const _eg=document.getElementById('evalGauge'); if(_eg) _eg.style.display = evalEnabled ? 'flex' : 'none'; }catch(e){}
 try{ const _bb=document.getElementById('board'); if(_bb && blindfold) _bb.classList.add('blindfold'); }catch(e){}
 try{ const a=document.getElementById('evalToggleGame'); if(a) a.checked=evalEnabled; const b=document.getElementById('blindToggleGame'); if(b) b.checked=blindfold; const p=document.getElementById('premoveToggleGame'); if(p) p.checked=premoveEnabled; const s=document.getElementById('speakSelfToggle'); if(s) s.checked=speakSelf; }catch(e){}
