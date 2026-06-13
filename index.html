@@ -1501,7 +1501,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN115</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN116</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -5128,6 +5128,7 @@ function handleClick(r,c){
 }
 
 function updateSidebar(){
+  try{ renderMoveStrip(); }catch(e){} // bandeau de coups : en premier, indépendant du reste
   const _undo=document.getElementById('gcUndo');
   if(_undo) _undo.disabled = (typeof undoStack==='undefined' || !undoStack || !undoStack.length);
   try{ _updateReviewUI(); }catch(e){}
@@ -5151,12 +5152,12 @@ function updateSidebar(){
     if(history.length){ lastMoveBtn.textContent = history[history.length-1].move + ' · ' + history.length + ' coup' + (history.length>1?'s':''); }
     else { lastMoveBtn.textContent = '—'; }
   }
+  // Bandeau de coups dessiné en tête de fonction (indépendant de #history).
   if(!hist) return;
   hist.innerHTML='';
   if(!pairs.length){hist.innerHTML='<span style="color:var(--text-muted);font-size:.8rem">Aucun coup</span>';return;}
   // Fenêtre défilable : tous les coups, du plus récent au plus ancien
   pairs.slice().reverse().forEach(p=>{const d=document.createElement('div');d.className='history-move';d.innerHTML=`<span class="mn">${p.n}.</span><span class="mw">${p.w}</span><span class="mb">${p.b}</span>`;hist.appendChild(d);});
-  try{ renderMoveStrip(); }catch(e){}
 }
 
 // Bandeau de coups en haut (façon Lichess) : notation horizontale, dernier coup surligné.
