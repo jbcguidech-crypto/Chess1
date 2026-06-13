@@ -1500,7 +1500,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN127</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN128</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -2661,13 +2661,14 @@ function confirmQuit(yes){
   if(yes){
     // Abandon en ligne : quitter proprement la partie réseau
     if(gameMode==='online'){ try{ leaveOnlineGame(); }catch(e){} }
-    // Abandonner = terminer la partie comme une DÉFAITE, puis proposer la sauvegarde
-    // via la fenêtre de fin (ne PAS renvoyer directement au splash).
+    // Quitter la partie = retour DIRECT au menu (pas de bannière de fin :
+    // celle-ci est réservée aux vraies fins de partie — mat, pat, nulle).
     gameActive=false;
     try{ if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e){}
     try{ if(stockfish) stockfish.postMessage('stop'); }catch(e){}
     aiThinking=false; aiSpeaking=false;
-    _showEndBanner(currentLang==='fr'?'Abandon':'Resigned', null, false, 'lose');
+    try{ document.getElementById('gameOver').classList.remove('show'); }catch(e){}
+    try{ showSplash(); }catch(e){}
   }
 }
 
