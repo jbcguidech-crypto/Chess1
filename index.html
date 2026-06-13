@@ -1500,7 +1500,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN129</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN130</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -5143,7 +5143,7 @@ function updateSidebar(){
 function renderMoveStrip(){
   const strip=document.getElementById('moveStrip');
   if(!strip) return;
-  if(!history.length){ strip.innerHTML=''; strip.style.display='none'; return; }
+  if(!history.length){ strip.innerHTML=''; strip.style.display='flex'; return; }
   strip.style.display='flex';
   let html='';
   for(let i=0;i<history.length;i++){
