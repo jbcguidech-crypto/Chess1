@@ -1499,7 +1499,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN111</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN112</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -5363,6 +5363,7 @@ function startListening(){
     // Aucun coup clair. Si c'est un résultat FINAL, retour visuel uniquement (jamais vocal).
     if(anyFinal){
       const best = (candidates[0]||'').replace(WAKE,'').trim();
+      let acted = false;
       if(best){
         const act = parseVoiceToAction(best);
         if(act && act.kind==='undo'){
@@ -5370,7 +5371,16 @@ function startListening(){
           undoLock = true;
           setTimeout(()=>{ undoLock=false; }, 1500);
         }
-        if(act){ executeVoiceAction(act, true); } // ambiguïté / illégal / pion → retour spécifique
+        if(act){ executeVoiceAction(act, true); acted = true; } // ambiguïté / illégal / pion → retour spécifique
+      }
+      // DIAGNOSTIC (demande G) : si rien n'a été reconnu comme coup ou commande, on affiche ce
+      // que Chrome a réellement entendu. But : enrichir les dictionnaires sur des cas RÉELS,
+      // pas sur des suppositions. N'altère EN RIEN la sélection des coups (cas d'échec uniquement).
+      if(!acted){
+        const heard = [...new Set(candidates.map(c=>c.replace(WAKE,'').trim()).filter(Boolean))].slice(0,4);
+        if(heard.length){
+          setStatus((currentLang==='fr'?'❓ entendu : ':'❓ heard: ')+heard.map(h=>'« '+h+' »').join(', '), 'error');
+        }
       }
     }
   };
