@@ -1499,7 +1499,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN113</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN114</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -3354,11 +3354,23 @@ let stockfish=null, sfDepth=10, gameMode='ai', aiThinking=false;
 // N'ajoute du temps QUE lorsque le moteur a été plus rapide que le plancher (bas niveaux, livre) ;
 // les niveaux élevés (movetime long, demande D) ne sont pas ralentis.
 let _thinkStart = 0;
-const AI_MIN_THINK = 650; // ms (un peu d'aléa ajouté)
-function _aiThinkFloorRemaining(){
-  const floor = AI_MIN_THINK + Math.floor(Math.random()*350); // 650–1000 ms
+// Réflexion plus courte pour les coups évidents (livre, reprises), plus posée sinon.
+function _aiThinkFloorRemaining(fast){
+  const base = fast ? 160 : 340;
+  const jit  = fast ? 140 : 380;   // → évident : 160–300 ms · normal : 340–720 ms
+  const floor = base + Math.floor(Math.random()*jit);
   const elapsed = Date.now() - (_thinkStart || Date.now());
   return Math.max(0, floor - elapsed);
+}
+// Un coup est « évident » si l'IA reprend sur la case que le joueur vient de jouer
+// (reprise directe) → joué rapidement, comme un humain.
+function _isObviousMove(uciMove){
+  try{
+    if(!uciMove || uciMove.length<4 || !Array.isArray(lastMove) || lastMove.length<4) return false;
+    const destCol = 'abcdefgh'.indexOf(uciMove[2]);
+    const destRow = 8 - parseInt(uciMove[3]);
+    return destRow===lastMove[2] && destCol===lastMove[3];
+  }catch(e){ return false; }
 }
 // MultiPV : coups candidats collectés pendant la réflexion (index 1 = meilleur)
 let _pvCandidates = {};
@@ -3723,7 +3735,7 @@ function initStockfish(){
               const sp=document.getElementById('aiSpinner'); if(sp) sp.classList.remove('show');
               const vb=document.getElementById('voiceBtn'); if(vb) vb.disabled=false;
             }
-          }, _aiThinkFloorRemaining());
+          }, _aiThinkFloorRemaining(_isObviousMove(mv)));
         }
       };
       worker.postMessage('uci');
@@ -3782,7 +3794,7 @@ function askStockfish(){
     setTimeout(()=>{
       if(_bookGen !== aiGen){ aiThinking=false; return; } // annulé → on ne joue pas le coup fantôme
       applyStockfishMove(bookMv);
-    }, _aiThinkFloorRemaining()); // réflexion naturelle (demande H)
+    }, _aiThinkFloorRemaining(true)); // livre = coup évident → réflexion courte (H affiné)
     return;
   }
   if(!stockfish || !sfReady){
