@@ -1507,7 +1507,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN107</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN108</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -2790,6 +2790,29 @@ if(typeof attachSliderTouch==='function') attachSliderTouch();
 
 // ===== USER PROFILE & STATS =====
 const AVATARS = ['♔','♕','♖','♗','♘','♙','♚','♛','♜','♝'];
+// ===== AVATARS SVG (demande C) =====
+// IA : poisson stylisé (clin d'œil à Stockfish). Humain : pêcheur.
+// SVG inline → aucune dépendance CDN, rendu net dans la tuile 34×34.
+function AVATAR_FISH(){
+  return '<svg viewBox="0 0 48 48" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" aria-hidden="true">'
+    + '<path d="M12 24 C12 17.5 19 14 26 14 C32.5 14 38 18 40 24 C38 30 32.5 34 26 34 C19 34 12 30.5 12 24 Z" fill="#5B8DEF"/>'
+    + '<path d="M12.5 24 L5 18 L8.5 24 L5 30 Z" fill="#3f6dc4"/>'
+    + '<path d="M23 14.2 Q27 8 31 13.6 Z" fill="#3f6dc4"/>'
+    + '<path d="M27 16.5 Q25 24 27 31.5" stroke="#bcd0f5" stroke-width="1.6" fill="none" stroke-linecap="round"/>'
+    + '<circle cx="32.6" cy="22" r="2.6" fill="#fff"/>'
+    + '<circle cx="33.2" cy="22" r="1.2" fill="#14203a"/>'
+    + '</svg>';
+}
+function AVATAR_FISHER(){
+  return '<svg viewBox="0 0 48 48" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" aria-hidden="true">'
+    + '<line x1="34" y1="40" x2="44" y2="8" stroke="#a07b4a" stroke-width="1.8" stroke-linecap="round"/>'
+    + '<path d="M44 8 q3 4.5 0.4 9" stroke="#bcd0f5" stroke-width="1" fill="none"/>'
+    + '<path d="M11 41 C11 33 17.5 30 24 30 C30.5 30 37 33 37 41 Z" fill="#cdd8ea"/>'
+    + '<circle cx="24" cy="21" r="6.8" fill="#e7c79e"/>'
+    + '<path d="M12.5 16.6 Q24 12.6 35.5 16.6 L35.5 18 Q24 16.2 12.5 18 Z" fill="#3f6dc4"/>'
+    + '<path d="M17.5 16.8 Q17.5 8.4 24 8.4 Q30.5 8.4 30.5 16.8 Z" fill="#5B8DEF"/>'
+    + '</svg>';
+}
 let userProfile = { name:'Invité', avatar:'♟', elo:1200, eloHistory:[1200], games:[], selectedAvatar:0 };
 let selectedAv = 0;
 
@@ -4680,17 +4703,17 @@ function updatePlayerBars(){
     const botName=document.getElementById('botName'), botElo=document.getElementById('botElo'), botAva=document.getElementById('botAva');
     if(botName) botName.textContent = (gameMode==='online' && userProfile.name && userProfile.name!=='Invité') ? userProfile.name : 'Vous';
     if(botElo) botElo.textContent = ''; // pas d'Elo affiché pour le joueur
-    if(botAva) botAva.innerHTML = KING(youColor);
+    if(botAva) botAva.innerHTML = AVATAR_FISHER();
     // Haut = adversaire
     const topName=document.getElementById('topName'), topElo=document.getElementById('topElo'), topAva=document.getElementById('topAva');
     if(gameMode==='ai'){
       if(topName) topName.textContent = 'Stockfish '+(currentLang==='fr'?'niveau ':'level ')+currentLevel;
       if(topElo) topElo.textContent = ''; // échelle de niveaux : plus d'Elo brut affiché
-      if(topAva) topAva.innerHTML = KING(oppColor);
+      if(topAva) topAva.innerHTML = AVATAR_FISH();
     } else {
       if(topName) topName.textContent = 'Joueur 2';
       if(topElo) topElo.textContent = '';
-      if(topAva) topAva.innerHTML = KING(oppColor);
+      if(topAva) topAva.innerHTML = AVATAR_FISHER();
     }
     // Surligne le joueur au trait
     const bb=document.getElementById('barBottom'), bt=document.getElementById('barTop');
