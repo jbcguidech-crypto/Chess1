@@ -1500,7 +1500,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN131</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN132</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -5301,10 +5301,11 @@ function startListening(){
       }
       return;
     }
-    // ── JEU ANTICIPÉ (fluidité, mode prudent) : on ne joue avant le "final" QUE si le
-    // même coup légal et clair est vu DEUX fois de suite (stabilité), pour éviter de jouer
-    // sur une transcription fugace. Sinon on attend le résultat final comme avant.
-    if(!anyFinal && !_interimPlayed && !moveJustPlayed && !_pendingAmbiguous && !_pendingPromo){
+    // ── JEU ANTICIPÉ (interim) DÉSACTIVÉ ──
+    // Jouer avant le résultat « final » provoquait parfois des coups fantômes (bruit / écho
+    // de la voix de l'app captés en transcription fugace). On exige désormais le résultat FINAL.
+    const ALLOW_INTERIM_PLAY = false;
+    if(ALLOW_INTERIM_PLAY && !anyFinal && !_interimPlayed && !moveJustPlayed && !_pendingAmbiguous && !_pendingPromo){
       let candidateMove = null;
       for(const raw of candidates){
         const cleaned = raw.replace(WAKE,'').trim() || raw;
