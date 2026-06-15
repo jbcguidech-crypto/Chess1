@@ -1500,7 +1500,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN132</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN133</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -3783,6 +3783,11 @@ function askStockfish(){
   askStockfish._retries = 0;
   aiReqGen = aiGen; // marque cette requête
   _thinkStart = Date.now(); // début de la « réflexion » (plancher H)
+  // 🔇 Micro COUPÉ pendant TOUT le tour de l'IA (réflexion + jeu + annonce) pour éviter
+  // que le micro capte le bruit / l'écho et enchaîne des coups fantômes.
+  try{ if(recognition && listening){ recognition.abort(); } }catch(e){}
+  listening = false;
+  try{ const _vb=document.getElementById('voiceBtn'); if(_vb) _vb.classList.remove('listening'); }catch(e){}
   // 📖 Livre d'ouvertures : coup théorique connu (joué après le plancher de réflexion)
   const bookMv = getBookMove();
   if(bookMv){
@@ -6670,7 +6675,15 @@ function speak(text, onEnd, who){
   // car c'est là qu'elle est indispensable pour jouer sans regarder l'écran.
   // En jeu tactile avec son coupé, on respecte le silence total.
   const handsFree = (typeof voiceContinuous!=='undefined' && voiceContinuous && typeof listening!=='undefined' && listening);
-  if(voiceMuted && !(who==='me' && handsFree)){ if(onEnd) setTimeout(onEnd, 50); return; }
+  if(voiceMuted && !(who==='me' && handsFree)){
+    if(onEnd) setTimeout(onEnd, 50);
+    // Le micro a été coupé pour le tour de l'IA : on le rétablit pour le tour du joueur,
+    // même quand la voix de l'IA est muette (sinon le micro resterait éteint).
+    if(who==='ai' && voiceContinuous && !aiThinking && !aiSpeaking){
+      setTimeout(()=>{ if(!aiSpeaking && !aiThinking && !listening) startListening(); }, 1000);
+    }
+    return;
+  }
   if(!userInteracted){
     pendingSpeech = text;
     if(onEnd) setTimeout(onEnd, 1500);
@@ -6702,7 +6715,7 @@ function speak(text, onEnd, who){
         if(onEnd) onEnd();
         // Reprend l'écoute continue APRÈS un délai de sécurité (le son du HP doit s'être éteint)
         if(voiceContinuous && !listening && !aiThinking && !aiSpeaking) startListening();
-      }, 800);
+      }, 1100);
     };
     u.onerror = ()=>{
       aiSpeaking = false;
