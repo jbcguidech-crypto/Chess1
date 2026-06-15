@@ -1500,7 +1500,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN133</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN134</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -3921,6 +3921,7 @@ let _interimPlayed=false; // un coup a été joué dès l'intermédiaire → on 
 let _lastInterimSig=null; // dernière signature de coup vue en intermédiaire (pour exiger une confirmation stable)
 let listening=false,recognition=null;
 let aiSpeaking=false; // vrai pendant que l'IA parle (pour autoriser "annuler" sans déclencher de coup)
+let _aiAnnounceEnd=0;  // horodatage de fin de la dernière annonce vocale de l'IA (garde anti-écho)
 let speechEpoch=0; // incrémenté pour invalider toute parole programmée (ex: retour au menu)
 let gameActive=false; // vrai uniquement pendant une partie en cours (aucun coup/voix sur le splash)
 let gameStartElo=1200;
@@ -5269,6 +5270,9 @@ function startListening(){
 
     // Si l'IA parle, on IGNORE TOUT (le micro pourrait capter sa voix → faux coup)
     if(aiSpeaking){ return; }
+    // 🔇 Garde anti-écho : juste après une annonce de l'IA (ex. recapture de dame), le micro
+    // vient de reprendre et peut capter l'écho de sa voix → on ignore tout pendant un court instant.
+    if(_aiAnnounceEnd && (Date.now() - _aiAnnounceEnd) < 1700){ return; }
     // Si une promotion attend un choix, on intercepte « dame / tour / fou / cavalier » en priorité
     if(_pendingPromo){
       const txt = ' ' + candidates.join(' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'') + ' ';
@@ -6711,6 +6715,7 @@ function speak(text, onEnd, who){
     u.volume = 1;
     u.onend = ()=>{
       aiSpeaking = false;
+      _aiAnnounceEnd = Date.now();
       setTimeout(()=>{
         if(onEnd) onEnd();
         // Reprend l'écoute continue APRÈS un délai de sécurité (le son du HP doit s'être éteint)
@@ -6719,6 +6724,7 @@ function speak(text, onEnd, who){
     };
     u.onerror = ()=>{
       aiSpeaking = false;
+      _aiAnnounceEnd = Date.now();
       if(onEnd) setTimeout(onEnd, 300);
       if(voiceContinuous && !listening && !aiThinking) setTimeout(()=>{ if(!aiSpeaking) startListening(); }, 800);
     };
