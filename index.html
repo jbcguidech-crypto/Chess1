@@ -1500,7 +1500,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN136</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN137</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -7237,6 +7237,48 @@ initFirebase();
 /* Service Worker DÉSACTIVÉ : il causait des blocages (ancienne version servie depuis
    le cache → écran vide après mise à jour). On désinscrit tout SW existant et on vide
    ses caches pour repartir proprement. L'app fonctionne très bien sans (chargement direct). */
+/* ══ MISE À JOUR PWA ══════════════════════════════════
+   L'app connaît sa version (APP_VERSION). Au démarrage (et au retour au premier plan),
+   elle va lire la version réellement en ligne (fetch no-store) et, si elle diffère,
+   affiche un bandeau « Mise à jour disponible ». Un appui vide les caches, met à jour
+   le service worker et recharge — plus besoin de vider le cache à la main. */
+const APP_VERSION = 'v20260603-CLEAN137';
+let _updLastCheck = 0;
+function _updBanner(remoteV){
+  if(document.getElementById('updBanner')) return;
+  const b=document.createElement('button');
+  b.id='updBanner';
+  b.innerHTML='⬇️ Mise à jour disponible — <b>appuyer pour recharger</b>';
+  b.style.cssText='position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:2147483000;'
+    +'background:#16202f;color:#e8eef8;border:1px solid #5B8DEF;border-radius:14px;'
+    +'padding:12px 18px;font:700 .92rem Manrope,system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.45);'
+    +'cursor:pointer;max-width:92vw;';
+  b.onclick=async function(){
+    b.disabled=true; b.innerHTML='⏳ Mise à jour…';
+    try{ const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); }catch(e){}
+    try{ const rs=await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r=>r.update())); }catch(e){}
+    try{ location.reload(); }catch(e){ location.href=location.pathname+'?v='+Date.now(); }
+  };
+  document.body.appendChild(b);
+}
+async function checkForUpdate(){
+  if(location.protocol!=='https:' && location.protocol!=='http:') return;
+  const now=Date.now();
+  if(now-_updLastCheck < 5*60*1000) return; // au plus une fois toutes les 5 min
+  _updLastCheck=now;
+  try{
+    const r=await fetch('index.html',{cache:'no-store'});
+    if(!r.ok) return;
+    const t=await r.text();
+    const m=t.match(/v20260603-CLEAN\d+/);
+    if(m && m[0]!==APP_VERSION) _updBanner(m[0]);
+  }catch(e){}
+}
+window.addEventListener('load', function(){ setTimeout(checkForUpdate, 2500); });
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState==='visible') checkForUpdate();
+});
+
 /* Service Worker : enregistrement d'un SW "réseau d'abord" qui rend l'app installable
    (PWA) tout en évitant le bug d'écran vide (il sert toujours la version en ligne quand
    le réseau est dispo, et ne tombe sur le cache que hors-ligne). */
