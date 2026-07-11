@@ -1,39 +1,39 @@
-/* Service Worker minimal et SÛR pour "Do You Speak Chess?"
-   But : rendre l'app installable (PWA) SANS le bug d'écran vide lié au cache obsolète.
-   Stratégie : "réseau d'abord" — on sert toujours la dernière version en ligne quand le
-   réseau est disponible, et on ne tombe sur le cache QUE si l'utilisateur est hors-ligne. */
-
-const CACHE = 'dysc-v1';
-
-self.addEventListener('install', (e) => { self.skipWaiting(); });
-
-self.addEventListener('activate', (e) => {
-  e.waitUntil((async () => {
-    const names = await caches.keys();
-    await Promise.all(names.filter(n => n !== CACHE).map(n => caches.delete(n)));
-    await self.clients.claim();
-  })());
+// swimrun — service worker
+const CACHE = 'swimrun-v6';
+const SHELL = [
+  './','./index.html','./swim.html','./run.html','./position.html','./endurance.html',
+  './manifest.webmanifest','./favicon.svg','./icon-192.png','./icon-512.png','./apple-touch-icon.png'
+];
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(CACHE)
+      .then((c) => Promise.allSettled(SHELL.map((u) => c.add(u)))) // un fichier manquant ne casse plus l'install
+      .then(() => self.skipWaiting())
+  );
 });
-
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
+});
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
-  const url = new URL(req.url);
-  if (url.origin !== self.location.origin) return;
-  e.respondWith((async () => {
-    try {
-      const fresh = await fetch(req);
-      const cache = await caches.open(CACHE);
-      cache.put(req, fresh.clone());
-      return fresh;
-    } catch (err) {
-      const cached = await caches.match(req);
-      if (cached) return cached;
-      if (req.mode === 'navigate') {
-        const fallback = await caches.match('./index.html') || await caches.match('./');
-        if (fallback) return fallback;
-      }
-      throw err;
-    }
-  })());
+  if (req.mode === 'navigate') {
+    e.respondWith(
+      fetch(req).then((res) => { caches.open(CACHE).then((c) => c.put(req, res.clone())); return res; })
+        .catch(() => caches.match(req).then((r) => r || caches.match('./index.html')))
+    );
+    return;
+  }
+  e.respondWith(
+    caches.match(req).then((cached) =>
+      cached || fetch(req).then((res) => {
+        if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }
+        return res;
+      }).catch(() => cached)
+    )
+  );
 });
