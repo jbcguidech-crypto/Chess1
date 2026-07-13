@@ -330,20 +330,6 @@ html[data-theme="light"] .history-modal-box { background:linear-gradient(160deg,
 .prefs-sub-header { display:flex;align-items:center;gap:6px;margin-bottom:14px; }
 .prefs-back { background:none;border:none;color:var(--gold-light);font-size:1.7rem;line-height:1;cursor:pointer;padding:0 8px 0 0;-webkit-tap-highlight-color:transparent; }
 .prefs-sub-title { font-family:'Manrope',system-ui,sans-serif;font-weight:800;font-size:1.1rem;color:var(--text-light); }
-.history-body { margin-top:12px;animation:fadeUp .2s ease; }
-.hist-empty { font-size:.8rem;color:var(--text-muted);text-align:center;padding:18px 10px;line-height:1.5; }
-.hist-item { display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;margin-bottom:8px;background:var(--surface-hi); }
-.hist-main { flex:1;display:flex;align-items:center;gap:10px;cursor:pointer;min-width:0; }
-.hist-dot { width:10px;height:10px;border-radius:50%;flex:0 0 auto; }
-.hist-info { min-width:0; }
-.hist-res { font-weight:800;font-size:.86rem;color:var(--text-light);display:flex;align-items:baseline;gap:8px;flex-wrap:wrap; }
-.hist-meta { font-weight:600;font-size:.72rem;color:var(--text-muted); }
-.hist-date { font-size:.72rem;color:var(--text-muted);margin-top:1px; }
-.hist-actions { display:flex;gap:4px;flex:0 0 auto; }
-.hist-btn { width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:.95rem;color:var(--text-muted);transition:all .12s;-webkit-tap-highlight-color:transparent; }
-.hist-btn:hover { border-color:var(--border-hi); }
-.hist-btn.pinned { color:var(--gold-light);border-color:var(--border-gold); }
-.hist-btn.del:hover { color:#C0566A;border-color:#C0566A; }
 .gloss-group { display:flex;flex-direction:column;gap:5px; }
 .gloss-head { font-family:'Manrope',system-ui,sans-serif;font-weight:700;font-size:.78rem;color:var(--gold-light);margin-bottom:2px; }
 .gloss-row { display:flex;flex-direction:column;gap:1px;padding:5px 8px;border-radius:8px;background:rgba(255,255,255,.04); }
@@ -1500,7 +1486,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN138</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN140</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -2321,102 +2307,7 @@ function _syncSettingsToggles(){
   });
 }
 
-// ─── Onglet Historique des parties ───
-function toggleHistory(){
-  const body = document.getElementById('historyBody');
-  const chev = document.getElementById('historyChevron');
-  if(!body) return;
-  const open = body.style.display === 'none';
-  body.style.display = open ? 'block' : 'none';
-  if(chev) chev.classList.toggle('open', open);
-  if(open) renderHistoryList();
-}
-
-function _fmtGameDate(ts){
-  try{
-    const d=new Date(ts);
-    const j=d.toLocaleDateString(currentLang==='fr'?'fr-FR':'en-US',{day:'2-digit',month:'short'});
-    const h=d.toLocaleTimeString(currentLang==='fr'?'fr-FR':'en-US',{hour:'2-digit',minute:'2-digit'});
-    return j+' · '+h;
-  }catch(e){ return ''; }
-}
-
-function renderHistoryList(){
-  const wrap=document.getElementById('historyList');
-  if(!wrap) return;
-  const games=_loadSavedGames();
-  if(!games.length){
-    wrap.innerHTML='<div class="hist-empty">'+(currentLang==='fr'
-      ? 'Aucune partie enregistrée pour l\'instant. Les parties terminées apparaîtront ici.'
-      : 'No saved games yet. Finished games will appear here.')+'</div>';
-    return;
-  }
-  const labels = {
-    win:  currentLang==='fr'?'Victoire':'Win',
-    lose: currentLang==='fr'?'Défaite':'Loss',
-    draw: currentLang==='fr'?'Nulle':'Draw',
-    mate: currentLang==='fr'?'Victoire':'Win'
-  };
-  const dots = { win:'#3DA35D', mate:'#3DA35D', lose:'#C0566A', draw:'#5B8DEF' };
-  wrap.innerHTML = games.map(g=>{
-    const res = labels[g.outcome]||'';
-    const dot = dots[g.outcome]||'#8893a3';
-    const n = g.moves ? g.moves.length : 0;
-    const eloTxt = g.elo ? (' · '+(currentLang==='fr'?'niveau ':'level ')+eloToLevel(g.elo)) : '';
-    return '<div class="hist-item" data-id="'+g.id+'">'
-      + '<div class="hist-main" onclick="replaySavedGame('+g.id+')">'
-      +   '<span class="hist-dot" style="background:'+dot+'"></span>'
-      +   '<div class="hist-info">'
-      +     '<div class="hist-res">'+res+'<span class="hist-meta">'+n+(currentLang==='fr'?' coups':' moves')+eloTxt+'</span></div>'
-      +     '<div class="hist-date">'+_fmtGameDate(g.date)+'</div>'
-      +   '</div>'
-      + '</div>'
-      + '<div class="hist-actions">'
-      +   '<button class="hist-btn'+(g.pinned?' pinned':'')+'" onclick="togglePinGame('+g.id+')" title="'+(g.pinned?'Ne plus garder':'Garder')+'">'+(g.pinned?'★':'☆')+'</button>'
-      +   '<button class="hist-btn del" onclick="deleteSavedGame('+g.id+')" title="Supprimer">🗑</button>'
-      + '</div>'
-      + '</div>';
-  }).join('');
-}
-
-function deleteSavedGame(id){
-  let games=_loadSavedGames();
-  games=games.filter(g=>g.id!==id);
-  _saveSavedGames(games);
-  renderHistoryList();
-}
-
-function togglePinGame(id){
-  const games=_loadSavedGames();
-  const g=games.find(x=>x.id===id);
-  if(g){ g.pinned=!g.pinned; _saveSavedGames(games); }
-  renderHistoryList();
-}
-
-// Relit une partie sauvegardée : charge ses coups et entre en mode revue depuis le début
-function replaySavedGame(id){
-  const games=_loadSavedGames();
-  const g=games.find(x=>x.id===id);
-  if(!g) return;
-  closeSettings();
-  // Prépare un plateau neuf et injecte l'historique de coups pour la navigation
-  _stopEverything && _stopEverything();
-  gameMode='replay';
-  initBoard(); turn='w'; selected=null; possibleMoves=[];
-  lastMove=null; enPassant=null; castling={wK:true,wR_k:true,wR_q:true,bK:true,bR_k:true,bR_q:true};
-  halfmoveClock=0; gameActive=false;
-  moveHistoryUCI = g.moves.slice();
-  history = (g.spoken||[]).map((s,i)=>({ spoken:s, move:s, color: i%2===0?'w':'b' }));
-  playerColor = g.playerColor || 'w';
-  try{ showPage('game'); }catch(e){}
-  try{ hideSplash(); }catch(e){}
-  buildCoords();
-  // Entre en revue au tout début (coup 0) pour rejouer pas à pas
-  reviewIndex = 0;
-  _renderReviewBoard();
-  _updateReviewUI();
-  setStatus(currentLang==='fr'?'Relecture — utilisez ◀ ▶ pour parcourir la partie':'Replay — use ◀ ▶ to step through','');
-}
+// (Système « Historique des parties » supprimé — sauvegarde désactivée en demande L)
 
 
 // Aperçu en haut du menu : mini-échiquier (colonnes a-e, rangées 1-2) avec coordonnées
@@ -3384,16 +3275,6 @@ function _isObviousMove(uciMove){
 let _pvCandidates = {};
 let _multipvCount = 1;
 
-// Combien de coups candidats demander selon l'Elo (plus bas = plus de variété/erreurs)
-function _multipvForElo(elo){
-  if(elo <= 600)  return 6;  // débutant : large choix → erreurs fréquentes
-  if(elo <= 1000) return 5;
-  if(elo <= 1500) return 4;
-  if(elo <= 2000) return 3;  // assez de candidats pour filtrer les blunders évidents
-  if(elo <= 2600) return 2;
-  return 1; // sommet : on veut le meilleur coup
-}
-
 // Choisit un coup parmi les candidats avec un hasard pondéré dépendant de l'Elo.
 // Haut Elo → quasi toujours le meilleur. Bas Elo → variété + erreurs réalistes.
 function _pickHumanMove(){
@@ -3571,12 +3452,12 @@ function _tryLetterConfusions(candidates){
 function _isActionLegal(a){
   if(!a) return false;
   if(a.kind==='castle'){
-    // Un roque est un déplacement du roi de 2 cases : on le cherche dans ses coups légaux.
+    // Le roque est identifié par son tag dans les coups légaux du roi (valable en standard ET en 960).
+    const want = a.side==='K' ? 'castle-k' : 'castle-q';
     for(let r=0;r<8;r++) for(let c=0;c<8;c++){
       const p=board[r][c];
       if(p && color(p)===turn && type(p)==='K'){
-        const tcCol = a.side==='K' ? c+2 : c-2;
-        return legalMoves(r,c).some(([mr,mc])=>mr===r && mc===tcCol);
+        return legalMoves(r,c).some(m=>m[2]===want);
       }
     }
     return false;
@@ -3862,23 +3743,36 @@ function applyStockfishMove(uciMove){
   const fc=files[uciMove[0]],fr=8-parseInt(uciMove[1]),tc=files[uciMove[2]],tr=8-parseInt(uciMove[3]);
   const promo=uciMove[4];
   const promoU=promo?({q:'Q',r:'R',b:'B',n:'N'}[promo]||'Q'):null;
-  const piece=board[fr][fc],captured=board[tr][tc];
-  const moveStr=toAlg(fr,fc,tr,tc,piece,captured,promoU);
+  const piece=board[fr][fc];
+  let captured=board[tr][tc];
+  // Roque Fischer (UCI_Chess960) : Stockfish encode le roque « roi prend sa propre tour »
+  const _frcSide = (is960 && piece && type(piece)==='K' && captured && color(captured)===color(piece) && type(captured)==='R')
+    ? (tc>fc ? 'k' : 'q') : null;
+  if(_frcSide) captured=null;
+  const moveStr=_frcSide ? (_frcSide==='k'?'O-O':'O-O-O') : toAlg(fr,fc,tr,tc,piece,captured,promoU);
   updateCastlingRights(fr,fc,piece);
+  if(captured && type(captured)==='R') _clearRookRightAt(tr,tc);
   enPassant=null;
   if(piece&&type(piece)==='P'&&Math.abs(tr-fr)===2)enPassant=[(fr+tr)/2,fc];
-  board=applyMove(board,fr,fc,tr,tc);
-  if(piece&&type(piece)==='P'&&fc!==tc&&!captured)board[fr][tc]=null;
-  if(piece&&type(piece)==='K'){if(fc===4&&tc===6){board[fr][5]=board[fr][7];board[fr][7]=null;}if(fc===4&&tc===2){board[fr][3]=board[fr][0];board[fr][0]=null;}}
-  if(promo){board[tr][tc]=color(piece)+(promoU||'Q');}
+  if(_frcSide){
+    const kTo=_frcSide==='k'?6:2, rTo=_frcSide==='k'?5:3;
+    board = board.map(r0=>r0.slice());
+    board[fr][fc]=null; board[fr][tc]=null;
+    board[fr][kTo]=piece; board[fr][rTo]=color(piece)+'R';
+  } else {
+    board=applyMove(board,fr,fc,tr,tc);
+    if(piece&&type(piece)==='P'&&fc!==tc&&!captured)board[fr][tc]=null;
+    if(piece&&type(piece)==='K'){if(fc===4&&tc===6){board[fr][5]=board[fr][7];board[fr][7]=null;}if(fc===4&&tc===2){board[fr][3]=board[fr][0];board[fr][0]=null;}}
+    if(promo){board[tr][tc]=color(piece)+(promoU||'Q');}
+  }
   lastMove=[fr,fc,tr,tc];history.push({move:moveStr,color:turn});
   moveHistoryUCI.push(uciMove);
   turn=turn==='w'?'b':'w';selected=null;possibleMoves=[];
   if(type(piece)==='P' || captured) halfmoveClock=0; else halfmoveClock++;
   positionHistory.push(posKey());
-  const _isCastle = piece&&type(piece)==='K'&&fc===4&&(tc===6||tc===2);
+  const _isCastle = _frcSide!==null || (piece&&type(piece)==='K'&&fc===4&&(tc===6||tc===2));
   const _isCap = !!captured || (piece&&type(piece)==='P'&&fc!==tc);
-  _animMove={fr,fc,tr,tc,cap:_isCap};
+  _animMove={fr,fc,tr,tc:(_frcSide?(_frcSide==='k'?6:2):tc),cap:_isCap};
   renderBoard();updateSidebar();
   // Réinitialise l'état IA (fonctionne pour Stockfish ET coups du livre)
   aiThinking=false;
@@ -3909,9 +3803,15 @@ function boardToFen(){
   for(let r=0;r<8;r++){let e=0;for(let c=0;c<8;c++){if(board[r][c]){if(e){fen+=e;e=0;}fen+=pm[board[r][c]]||'?';}else e++;}if(e)fen+=e;if(r<7)fen+='/';}
   fen+=' '+(turn==='w'?'w':'b')+' ';
   let cast='';
-  if(castling.wK&&castling.wR_k)cast+='K';if(castling.wK&&castling.wR_q)cast+='Q';
-  if(castling.bK&&castling.bR_k)cast+='k';if(castling.bK&&castling.bR_q)cast+='q';
-  fen+=(cast||'-')+' '+(enPassant?String.fromCharCode(97+enPassant[1])+(8-enPassant[0]):'-')+' 0 '+Math.floor(history.length/2+1);
+  if(is960 && fr960){
+    const F='abcdefgh';
+    if(castling.wK&&castling.wR_k)cast+=F[fr960.rkCol].toUpperCase();if(castling.wK&&castling.wR_q)cast+=F[fr960.rqCol].toUpperCase();
+    if(castling.bK&&castling.bR_k)cast+=F[fr960.rkCol];if(castling.bK&&castling.bR_q)cast+=F[fr960.rqCol];
+  } else {
+    if(castling.wK&&castling.wR_k)cast+='K';if(castling.wK&&castling.wR_q)cast+='Q';
+    if(castling.bK&&castling.bR_k)cast+='k';if(castling.bK&&castling.bR_q)cast+='q';
+  }
+  fen+=(cast||'-')+' '+(enPassant?String.fromCharCode(97+enPassant[1])+(8-enPassant[0]):'-')+' '+halfmoveClock+' '+Math.floor(history.length/2+1);
   return fen;
 }
 
@@ -3921,6 +3821,16 @@ let board=[],turn='w',selected=null,possibleMoves=[],history=[],lastMove=null,en
 let castling={wK:true,wR_k:true,wR_q:true,bK:true,bR_k:true,bR_q:true};
 let is960=false;          // mode Chess960 (Fischer Random) activé ?
 let startBackRank=null;   // rangée de départ générée pour le 960 (ex: ['N','R','B',...]) ou null = standard
+let fr960=null;           // colonnes de départ 960 : {kCol, rkCol (tour côté roi), rqCol (tour côté dame)}
+// Plateau après un roque Fischer : roi (row,kFrom) et tour (row,rFrom) → cases standard g/f ou c/d.
+function _frCastleBoard(bd,row,kFrom,rFrom,side){
+  const nb=bd.map(r0=>r0.slice());
+  const col=color(nb[row][kFrom]);
+  nb[row][kFrom]=null; nb[row][rFrom]=null;
+  nb[row][side==='k'?6:2]=col+'K';
+  nb[row][side==='k'?5:3]=col+'R';
+  return nb;
+}
 // Génère une rangée de fond Chess960 valide : fous de couleurs opposées, roi entre les deux tours.
 function generate960BackRank(){
   const slots=new Array(8).fill(null);
@@ -3973,11 +3883,61 @@ function applyMove(b,fr,fc,tr,tc){const nb=b.map(row=>[...row]),piece=nb[fr][fc]
 function legalMoves(r,c){
   const piece=board[r][c];if(!piece)return[];const col=color(piece);
   const legal=rawMoves(board,r,c).filter(([tr,tc])=>!isInCheck(applyMove(board,r,c,tr,tc),col));
-  if(type(piece)==='K'&&!isInCheck(board,col)){const row=col==='w'?7:0;if(r===row&&c===4){if((col==='w'?castling.wK&&castling.wR_k:castling.bK&&castling.bR_k)&&!board[row][5]&&!board[row][6]&&!isInCheck(applyMove(board,row,4,row,5),col)&&!isInCheck(applyMove(board,row,4,row,6),col))legal.push([row,6,'castle-k']);if((col==='w'?castling.wK&&castling.wR_q:castling.bK&&castling.bR_q)&&!board[row][3]&&!board[row][2]&&!board[row][1]&&!isInCheck(applyMove(board,row,4,row,3),col)&&!isInCheck(applyMove(board,row,4,row,2),col))legal.push([row,2,'castle-q']);}}
+  if(type(piece)==='K'&&!isInCheck(board,col)){
+    const row=col==='w'?7:0;
+    if(is960 && fr960){
+      // ── Roque Fischer : le coup est représenté « roi sur sa propre tour » (convention UCI_Chess960).
+      if(r===row && c===fr960.kCol){
+        const kc=fr960.kCol;
+        const trySide=(side)=>{
+          const rf   = side==='k' ? fr960.rkCol : fr960.rqCol;   // colonne de départ de la tour
+          const kTo  = side==='k' ? 6 : 2, rTo = side==='k' ? 5 : 3;
+          const right= col==='w'
+            ? (side==='k' ? castling.wK&&castling.wR_k : castling.wK&&castling.wR_q)
+            : (side==='k' ? castling.bK&&castling.bR_k : castling.bK&&castling.bR_q);
+          if(!right) return;
+          if(board[row][rf]!==col+'R') return;                    // la tour doit être à sa case d'origine
+          // Chemin du roi ET de la tour : toutes les cases traversées/d'arrivée doivent être
+          // vides — en ignorant le roi et la tour concernés (qui « glissent » l'un sur l'autre).
+          const clear=(a,b)=>{ for(let cc=Math.min(a,b);cc<=Math.max(a,b);cc++){ if(cc!==kc && cc!==rf && board[row][cc]) return false; } return true; };
+          if(!clear(kc,kTo) || !clear(rf,rTo)) return;
+          // Aucune case du trajet du roi (départ exclu, testé plus haut) ne doit être attaquée.
+          const step = kTo>kc ? 1 : (kTo<kc ? -1 : 0);
+          const base=board.map(r0=>r0.slice()); base[row][kc]=null; base[row][rf]=null;
+          for(let cc=kc; ; cc+=step){
+            const t=base.map(r0=>r0.slice()); t[row][cc]=col+'K';
+            if(isInCheck(t,col)) return;
+            if(cc===kTo || step===0) break;
+          }
+          legal.push([row, rf, side==='k'?'castle-k':'castle-q']);
+        };
+        trySide('k'); trySide('q');
+      }
+    } else if(r===row&&c===4){
+      if((col==='w'?castling.wK&&castling.wR_k:castling.bK&&castling.bR_k)&&!board[row][5]&&!board[row][6]&&!isInCheck(applyMove(board,row,4,row,5),col)&&!isInCheck(applyMove(board,row,4,row,6),col))legal.push([row,6,'castle-k']);
+      if((col==='w'?castling.wK&&castling.wR_q:castling.bK&&castling.bR_q)&&!board[row][3]&&!board[row][2]&&!board[row][1]&&!isInCheck(applyMove(board,row,4,row,3),col)&&!isInCheck(applyMove(board,row,4,row,2),col))legal.push([row,2,'castle-q']);
+    }
+  }
   return legal;
 }
 
-function updateCastlingRights(fr,fc,piece){if(type(piece)==='K'){if(piece==='wK'){castling.wK=false;castling.wR_k=false;castling.wR_q=false;}else{castling.bK=false;castling.bR_k=false;castling.bR_q=false;}}if(piece==='wR'){if(fr===7&&fc===7)castling.wR_k=false;if(fr===7&&fc===0)castling.wR_q=false;}if(piece==='bR'){if(fr===0&&fc===7)castling.bR_k=false;if(fr===0&&fc===0)castling.bR_q=false;}}
+function updateCastlingRights(fr,fc,piece){
+  if(type(piece)==='K'){if(piece==='wK'){castling.wK=false;castling.wR_k=false;castling.wR_q=false;}else{castling.bK=false;castling.bR_k=false;castling.bR_q=false;}}
+  if(is960 && fr960){
+    if(piece==='wR'&&fr===7){ if(fc===fr960.rkCol)castling.wR_k=false; if(fc===fr960.rqCol)castling.wR_q=false; }
+    if(piece==='bR'&&fr===0){ if(fc===fr960.rkCol)castling.bR_k=false; if(fc===fr960.rqCol)castling.bR_q=false; }
+  } else {
+    if(piece==='wR'){if(fr===7&&fc===7)castling.wR_k=false;if(fr===7&&fc===0)castling.wR_q=false;}
+    if(piece==='bR'){if(fr===0&&fc===7)castling.bR_k=false;if(fr===0&&fc===0)castling.bR_q=false;}
+  }
+}
+// Une tour CAPTURÉE sur sa case d'origine fait perdre le droit de roque correspondant
+// (sans ça : FEN illégal envoyé à Stockfish, et roque « sans tour » théoriquement possible).
+function _clearRookRightAt(r,c){
+  const cols=(is960&&fr960)?fr960:{rkCol:7,rqCol:0};
+  if(r===7){ if(c===cols.rkCol)castling.wR_k=false; if(c===cols.rqCol)castling.wR_q=false; }
+  if(r===0){ if(c===cols.rkCol)castling.bR_k=false; if(c===cols.rqCol)castling.bR_q=false; }
+}
 
 function undoMove(){
   // Si on est en train de revisualiser, on revient d'abord au direct
@@ -4115,7 +4075,9 @@ function makeMove(fr,fc,tr,tc,castleType,promo,byVoice){
     halfmove: halfmoveClock,
     posLen: positionHistory.length
   });
-  const piece=board[fr][fc],captured=board[tr][tc],moveStr=toAlg(fr,fc,tr,tc,piece,captured,promo);
+  const isFRC = is960 && (castleType==='castle-k'||castleType==='castle-q');
+  const piece=board[fr][fc],captured=isFRC?null:board[tr][tc];
+  const moveStr = isFRC ? (castleType==='castle-k'?'O-O':'O-O-O') : toAlg(fr,fc,tr,tc,piece,captured,promo);
   // Ambiguïté : une AUTRE pièce du même type (hors pion) pouvait-elle aussi aller en (tr,tc) ?
   // Si oui, l'annonce vocale précisera la colonne (ou la rangée) de départ. Calculé AVANT modif.
   let _disambig = null;
@@ -4134,12 +4096,22 @@ function makeMove(fr,fc,tr,tc,castleType,promo,byVoice){
       _disambig = sameCol ? {type:'rank', val:(8-fr)} : {type:'file', val:'abcdefgh'[fc]};
     }
   }
-  updateCastlingRights(fr,fc,piece);enPassant=null;
+  updateCastlingRights(fr,fc,piece);
+  if(captured && type(captured)==='R') _clearRookRightAt(tr,tc);
+  enPassant=null;
   if(type(piece)==='P'&&Math.abs(tr-fr)===2)enPassant=[(fr+tr)/2,fc];
-  board=applyMove(board,fr,fc,tr,tc);
-  if(type(piece)==='P'&&fc!==tc&&!captured)board[fr][tc]=null;
-  if(castleType==='castle-k'){board[fr][5]=board[fr][7];board[fr][7]=null;}
-  if(castleType==='castle-q'){board[fr][3]=board[fr][0];board[fr][0]=null;}
+  if(isFRC){
+    // Roque Fischer : (fr,fc)=roi, (tr,tc)=sa tour. On les retire puis on les pose en g/f ou c/d.
+    const kTo = castleType==='castle-k'?6:2, rTo = castleType==='castle-k'?5:3;
+    board = board.map(r0=>r0.slice());
+    board[fr][fc]=null; board[tr][tc]=null;
+    board[fr][kTo]=piece; board[fr][rTo]=color(piece)+'R';
+  } else {
+    board=applyMove(board,fr,fc,tr,tc);
+    if(type(piece)==='P'&&fc!==tc&&!captured)board[fr][tc]=null;
+    if(castleType==='castle-k'){board[fr][5]=board[fr][7];board[fr][7]=null;}
+    if(castleType==='castle-q'){board[fr][3]=board[fr][0];board[fr][0]=null;}
+  }
   // Promotion : si un pion atteint la dernière rangée, on promeut (défaut = dame)
   if(type(piece)==='P' && (tr===0||tr===7)){ board[tr][tc]=color(piece)+(promo||'Q'); }
   lastMove=[fr,fc,tr,tc];history.push({move:moveStr,color:turn});
@@ -4151,7 +4123,7 @@ function makeMove(fr,fc,tr,tc,castleType,promo,byVoice){
   if(type(piece)==='P' || captured) halfmoveClock=0; else halfmoveClock++;
   positionHistory.push(posKey());
   const _isCap = !!captured || (type(piece)==='P' && fc!==tc);
-  _animMove={fr,fc,tr,tc,cap:_isCap};
+  _animMove={fr,fc,tr,tc:(isFRC?(castleType==='castle-k'?6:2):tc),cap:_isCap};
   renderBoard();updateSidebar();
   const st=checkGameState();
   try{ if(st.over) playSound('end'); else if(st.check) playSound('check'); else if(castleType) playSound('castle'); else if(_isCap) playSound('capture'); else playSound('move'); }catch(e){}
@@ -4599,8 +4571,7 @@ function _animateKingDeath(loserColor){
   setTimeout(tryAnim, 250);
 }
 
-// ═══════ HISTORIQUE DES PARTIES (sauvegarde locale + relecture) ═══════
-const _SAVED_KEY = 'dysc-saved-games';
+// ═══════ FIN DE PARTIE (bannière) — le stockage des parties a été retiré (demande L) ═══════
 let _pendingArchive = null; // issue de la partie en attente de décision (sauvegarder ou non)
 // Rend la fenêtre de fin déplaçable au doigt (pour voir l'échiquier derrière)
 function _makeEndBoxDraggable(){
@@ -4639,12 +4610,6 @@ function endGameSave(save){
   if(save){ try{ showToast(currentLang==='fr'?'Partie sauvegardée':'Game saved','success'); }catch(e){} }
   // Retour au splash (accueil) — pas de proposition « rejouer/quitter »
   try{ goHome(); }catch(e){ try{ showSplash(); }catch(_){} }
-}
-function _loadSavedGames(){
-  try{ const j=localStorage.getItem(_SAVED_KEY); return j?JSON.parse(j):[]; }catch(e){ return []; }
-}
-function _saveSavedGames(arr){
-  try{ localStorage.setItem(_SAVED_KEY, JSON.stringify(arr)); }catch(e){}
 }
 // Sauvegarde des parties désactivée (demande L) : ne rien enregistrer.
 function _archiveGame(outcome, subtitle){ return; }
@@ -5181,15 +5146,6 @@ function renderMoveStrip(){
   }
   strip.innerHTML=html;
   try{ strip.scrollLeft=strip.scrollWidth; }catch(e){} // défile jusqu'au dernier coup
-}
-
-function openHistoryModal(){
-  const m=document.getElementById('historyModal');
-  if(m){ m.classList.add('show'); }
-}
-function closeHistoryModal(){
-  const m=document.getElementById('historyModal');
-  if(m){ m.classList.remove('show'); }
 }
 
 // ===== VOICE =====
@@ -6551,7 +6507,17 @@ function _voiceHint(){
     stockfish.postMessage('go depth 12');
   }catch(e){ _hintMode=false; }
 }
-function trycastling(side){const row=turn==='w'?7:0,tc=side==='k'?6:2;const piece=board[row][4];if(!piece||type(piece)!=='K'||color(piece)!==turn){setStatus(L().castling_fail,'error');return;}const mv=legalMoves(row,4).find(([mr,mc])=>mr===row&&mc===tc);if(!mv){setStatus(L().castling_fail,'error');return;}setStatus(L().castling_ok,'success');makeMove(row,4,row,tc,mv[2]);}
+function trycastling(side){
+  const row=turn==='w'?7:0;
+  const kc=(is960&&fr960)?fr960.kCol:4;
+  const piece=board[row][kc];
+  if(!piece||type(piece)!=='K'||color(piece)!==turn){setStatus(L().castling_fail,'error');return;}
+  const want = side==='k'?'castle-k':'castle-q';
+  const mv=legalMoves(row,kc).find(m=>m[2]===want);
+  if(!mv){setStatus(L().castling_fail,'error');return;}
+  setStatus(L().castling_ok,'success');
+  makeMove(row,kc,mv[0],mv[1],mv[2]);
+}
 function setStatus(msg,cls){const el=document.getElementById('status');el.textContent=msg;el.className=cls||'';}
 let pendingSpeech = null;
 
@@ -6811,42 +6777,7 @@ const ELO_TIERS=[
   {min:2700,max:3000,label:'Magnus Mode 😈',color:'#ff4444'},
 ];
 function getTier(elo){return ELO_TIERS.find(t=>elo>=t.min&&elo<=t.max)||ELO_TIERS[ELO_TIERS.length-1];}
-function eloToDepth(elo){
-  if(elo <= 400)  return 1;
-  if(elo <= 800)  return 3;
-  if(elo <= 1200) return 6;
-  if(elo <= 1500) return 9;
-  if(elo <= 1800) return 12;
-  if(elo <= 2200) return 16;
-  if(elo <= 2500) return 20;
-  return 30; // max / Magnus mode
-}
-function onEloSlide(val){currentElo=parseInt(val);updateEloUI();}
-function setElo(elo){currentElo=elo;const s=document.getElementById('eloSlider');if(s)s.value=elo;updateEloUI();}
-function updateEloUI(){
-  const tier=getTier(currentElo);const pct=((currentLevel-LEVEL_MIN)/(LEVEL_MAX-LEVEL_MIN)*100).toFixed(1);
-  const disp=document.getElementById('eloDisplay'); if(disp) disp.textContent=currentElo;
-  const t=document.getElementById('eloTier'); if(t){ t.textContent=tier.label;t.style.color=tier.color;t.style.borderColor=tier.color; }
-  const sl=document.getElementById('eloSlider'); if(sl) sl.style.setProperty('--pct',pct+'%');
-  // Splash : on affiche le NIVEAU (1–12) + le libellé descriptif
-  const sv=document.getElementById('splashEloVal'); if(sv) sv.textContent=currentLevel;
-  const st=document.getElementById('splashEloTier'); if(st){ st.textContent=tier.label; st.style.color=tier.color; }
-  const ss=document.getElementById('splashEloSlider'); if(ss){ ss.value=currentLevel; ss.style.setProperty('--pct',pct+'%'); }
-  sfDepth=curLevelProfile().depth;
-}
-function eloToTime(elo){
-  // Temps de réflexion : court en bas (mais assez pour un jeu cohérent),
-  // croissant jusqu'à la pleine puissance (3 s) au sommet.
-  if(elo <= 500)  return 120;
-  if(elo <= 800)  return 220;
-  if(elo <= 1100) return 350;
-  if(elo <= 1400) return 500;
-  if(elo <= 1700) return 700;
-  if(elo <= 2000) return 1000;
-  if(elo <= 2300) return 1400;
-  if(elo <= 2600) return 2000;
-  return 3000; // niveau max : pleine puissance NNUE
-}
+// (eloToDepth / eloToTime supprimées — remplacées par LEVEL_PROFILES, demande D)
 
 function configureStockfishStrength(){
   if(!stockfish) return;
@@ -7175,7 +7106,13 @@ function resetGame(){
   document.getElementById('aiSpinner').classList.remove('show');
   { const _po=document.getElementById('promoOverlay'); if(_po) _po.classList.remove('show'); }
   gameStartElo=userProfile.elo;
-  if(is960){ startBackRank=generate960BackRank(); }
+  if(gameMode==='online' && is960){ is960=false; try{ const c=document.getElementById('chk960'); if(c) c.checked=false; }catch(e){} }
+  if(is960){
+    startBackRank=generate960BackRank();
+    const kCol=startBackRank.indexOf('K');
+    const rooks=startBackRank.map((v,i)=>v==='R'?i:-1).filter(i=>i>=0);
+    fr960={ kCol, rqCol:rooks[0], rkCol:rooks[1] }; // tours triées : rooks[0] < roi < rooks[1]
+  } else { fr960=null; startBackRank=null; }
   try{ if(stockfish) stockfish.postMessage('setoption name UCI_Chess960 value '+(is960?'true':'false')); }catch(e){}
   initBoard();turn='w';selected=null;possibleMoves=[];history=[];moveHistoryUCI=[];undoStack=[];
   try{ clearPremove(); }catch(e){}
@@ -7185,9 +7122,7 @@ function resetGame(){
   gameActive=true;
   if(typeof updateNavLeft==='function') updateNavLeft();
   lastMove=null;enPassant=null;aiThinking=false;
-  castling = is960
-    ? {wK:false,wR_k:false,wR_q:false,bK:false,bR_k:false,bR_q:false}   // 960 : roque non géré (Phase 1)
-    : {wK:true,wR_k:true,wR_q:true,bK:true,bR_k:true,bR_q:true};
+  castling={wK:true,wR_k:true,wR_q:true,bK:true,bR_k:true,bR_q:true}; // roque actif aussi en 960 (Phase 2 : roque Fischer)
   halfmoveClock=0; positionHistory=[posKey()];
   // Nettoie toute animation de fin de partie résiduelle (roi allongé, etc.)
   try{
@@ -7242,7 +7177,7 @@ initFirebase();
    elle va lire la version réellement en ligne (fetch no-store) et, si elle diffère,
    affiche un bandeau « Mise à jour disponible ». Un appui vide les caches, met à jour
    le service worker et recharge — plus besoin de vider le cache à la main. */
-const APP_VERSION = 'v20260603-CLEAN138';
+const APP_VERSION = 'v20260603-CLEAN140';
 let _updLastCheck = 0;
 function _updBanner(remoteV){
   if(document.getElementById('updBanner')) return;
