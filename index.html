@@ -123,19 +123,6 @@ html[data-theme="light"] .nav-username { color:var(--text-muted); }
 }
 
 /* Bouton connexion / inscription (sur le splash) */
-.splash-auth {
-  position:absolute;top:20px;left:18px;z-index:20;
-  display:inline-flex;align-items:center;gap:8px;
-  padding:9px 15px;border-radius:50px;cursor:pointer;white-space:nowrap;
-  background:rgba(91,141,239,.10);border:1px solid var(--border-gold);
-  color:var(--gold-light);font-family:'Manrope',system-ui,sans-serif;
-  font-weight:700;font-size:.78rem;transition:all .2s;line-height:1;
-}
-.splash-auth:hover { background:rgba(91,141,239,.2);transform:translateY(-1px); }
-.splash-auth:active { transform:scale(.96); }
-.splash-auth .sa-ava { display:inline-flex;align-items:center;justify-content:center;font-size:1rem; }
-.splash-auth img { display:block;width:22px;height:22px;border-radius:50%;object-fit:cover; }
-@media (max-width:430px){ .splash-auth { font-size:.72rem;padding:8px 12px; } }
 
 * { margin:0;padding:0;box-sizing:border-box; }
 body {
@@ -876,62 +863,7 @@ body.playing { overflow:hidden;height:100dvh;position:fixed;width:100%;top:0;lef
 .splash-logo-test .rec-ring { opacity:0;transition:opacity .2s; }
 .splash-logo-test.listening .rec-ring { opacity:1;animation:recRing 1.4s ease-in-out infinite; }
 @keyframes recRing { 0%,100%{ opacity:.9; } 50%{ opacity:.35; } }
-.online-modal {
-  display:none;position:fixed;inset:0;z-index:1300;
-  background:rgba(0,0,0,.55);backdrop-filter:blur(3px);
-  align-items:center;justify-content:center;padding:20px;
-}
-.online-modal.show { display:flex;animation:fadeUp .3s ease; }
-.online-box {
-  width:100%;max-width:380px;background:var(--surface);border:1px solid var(--border);
-  border-radius:16px;overflow:hidden;box-shadow:0 16px 50px rgba(0,0,0,.4);
-}
-.online-header {
-  display:flex;align-items:center;justify-content:space-between;
-  padding:16px 20px;border-bottom:1px solid var(--border);
-}
-.online-title { font-family:'Manrope',system-ui,sans-serif;font-size:1.15rem;font-weight:800;color:var(--gold-light); }
-.online-close {
-  background:rgba(255,255,255,.08);border:none;border-radius:8px;width:32px;height:32px;
-  color:var(--cream);font-size:1rem;cursor:pointer;
-}
-.online-body { padding:20px;display:flex;flex-direction:column;gap:14px; }
-.online-hint { font-size:.85rem;color:var(--text-muted);line-height:1.5;margin:0;text-align:center; }
-.online-create {
-  padding:14px;border-radius:11px;cursor:pointer;border:none;
-  background:var(--gold);color:var(--text-dark);font-weight:800;font-size:.95rem;
-  font-family:'Manrope',system-ui,sans-serif;transition:all .15s;
-}
-.online-create:hover { background:var(--gold-light);transform:translateY(-1px); }
-.online-sep { text-align:center;color:var(--text-muted);font-size:.8rem; }
-.online-join-row { display:flex;flex-direction:column;gap:10px; }
-.online-input {
-  width:100%;box-sizing:border-box;padding:14px;border-radius:11px;border:1px solid var(--border);
-  background:var(--surface-hi);color:var(--text-light);
-  font-family:'JetBrains Mono',monospace;font-size:1.4rem;font-weight:800;
-  text-align:center;letter-spacing:6px;text-transform:uppercase;
-}
-.online-input:focus { outline:none;border-color:var(--gold); }
-.online-join {
-  width:100%;box-sizing:border-box;padding:14px;border-radius:11px;cursor:pointer;border:1px solid var(--border-gold);
-  background:rgba(91,141,239,.18);color:var(--gold-light);font-weight:800;font-size:.95rem;
-  font-family:'Manrope',system-ui,sans-serif;transition:all .15s;
-}
-.online-join:hover { background:rgba(91,141,239,.28); }
-.online-join:active { transform:scale(.98); }
-.online-banner {
-  display:flex;align-items:center;gap:10px;width:100%;max-width:420px;
-  margin:0 auto 10px;padding:9px 12px;box-sizing:border-box;
-  background:rgba(91,141,239,.12);border:1px solid var(--border-gold);border-radius:10px;
-  font-family:'Manrope',system-ui,sans-serif;
-}
-.online-banner .ob-code { font-family:'JetBrains Mono',monospace;font-weight:800;font-size:1.05rem;color:var(--gold-light);letter-spacing:2px; }
-.online-banner .ob-col { font-size:.8rem;color:var(--text-muted);flex:1; }
-.online-banner .ob-copy, .online-banner .ob-quit {
-  background:rgba(255,255,255,.08);border:none;border-radius:7px;width:30px;height:30px;
-  cursor:pointer;font-size:.85rem;color:var(--cream);
-}
-.online-banner .ob-quit { color:#e07070; }
+/* (CSS du mode en ligne retiré — Firebase supprimé) */
 
 /* ── BANDEAUX JOUEUR (compacts, style mobile, design original) ── */
 .player-bar {
@@ -1379,8 +1311,6 @@ html[data-theme="light"] .go-modal-box { background:linear-gradient(165deg,#FFFF
 .auth-card { background:var(--surface);border:1px solid var(--border-gold);border-radius:var(--r);padding:14px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap; }
 .auth-card-title { font-size:.6rem;color:var(--gold-light);text-transform:uppercase;letter-spacing:2px;font-family:'Manrope',system-ui,sans-serif;font-weight:700;margin-bottom:4px; }
 #authStatus { font-size:.72rem;color:var(--text-muted); }
-#googleAuthBtn { padding:8px 16px;border-radius:50px;border:1px solid var(--border-gold);background:transparent;color:var(--cream);font-family:'Manrope',system-ui,sans-serif;font-weight:700;font-size:.68rem;cursor:pointer;transition:all .2s; }
-#googleAuthBtn:hover { border-color:var(--gold-light);color:var(--gold-light); }
 
 .my-elo-card {
   background:linear-gradient(135deg,var(--green-dark),var(--green-mid));
@@ -1419,7 +1349,6 @@ html[data-theme="light"] .go-modal-box { background:linear-gradient(165deg,#FFFF
 /* ── LEADERBOARD ─────────────────────────────── */
 .lb-header-row { display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px; }
 .lb-title { font-family:'Manrope',system-ui,sans-serif;font-size:1.5rem;color:var(--gold-light); }
-#fbBadge { font-size:.6rem;color:var(--text-muted);padding:3px 10px;border-radius:20px;border:1px solid var(--border-gold); }
 .lb-sub { font-size:.68rem;color:var(--text-muted);margin-bottom:16px; }
 .lb-list { display:flex;flex-direction:column;gap:8px; }
 .lb-item { background:var(--surface);border:1px solid var(--border-gold);border-radius:var(--r);padding:12px 16px;display:flex;align-items:center;gap:12px;transition:all .2s;cursor:default; }
@@ -1480,13 +1409,12 @@ canvas#eloChart { width:100%!important;height:90px!important; }
 <!-- ══ FENÊTRE D'ACCUEIL : activation du pilotage vocal ══ -->
 <!-- ══ SPLASH ══════════════════════════════════════ -->
 <div id="splash">
-  <button class="splash-auth" id="splashAuthBtn" onclick="loginGoogle()" title="Se connecter avec Google"><svg viewBox="0 0 18 18" width="16" height="16" style="vertical-align:-3px;margin-right:6px;"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.02-3.7H.96v2.34A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.98 10.72a5.4 5.4 0 0 1 0-3.44V4.94H.96a9 9 0 0 0 0 8.12l3.02-2.34z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.46 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.94l3.02 2.34C4.68 5.16 6.66 3.58 9 3.58z"/></svg>Connexion avec Google</button>
-  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Mode clair" title="Mode clair / sombre"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Mode clair" title="Mode clair / sombre"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
   <button class="settings-toggle" id="settingsToggle" onclick="openSettings()" aria-label="Personnaliser" title="Personnaliser"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN140</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN142</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -1569,30 +1497,11 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   </div>
   <!-- Boutons du mode 2 joueurs (cachés par défaut, affichés via le sélecteur de mode) -->
   <button class="splash-online-btn" id="splash2pStart" style="display:none;" onclick="splashStart2P()">Jouer à 2 sur cet appareil</button>
-  <button class="splash-online-btn" id="splashOnlineBtn" style="display:none;" onclick="openOnlineModal()">🌐 Jouer en ligne avec un ami</button>
   <div class="splash-voice-status" id="splashVoiceStatus"></div>
 </div>
 
 <!-- ══ MODALE JOUER EN LIGNE ════════════════════════ -->
-<div id="onlineModal" class="online-modal">
-  <div class="online-box">
-    <div class="online-header">
-      <span class="online-title">🌐 Jouer en ligne</span>
-      <button class="online-close" onclick="closeOnlineModal()">✕</button>
-    </div>
-    <div class="online-body">
-      <p class="online-hint">Créez une partie et partagez le code à votre ami, ou entrez le code qu'il vous a donné.</p>
-      <button class="online-create" onclick="createOnlineGame()">➕ Créer une partie</button>
-      <div class="online-sep">— ou —</div>
-      <div class="online-join-row">
-        <input id="onlineCodeInput" class="online-input" maxlength="4" placeholder="CODE" autocapitalize="characters" inputmode="text" enterkeyhint="go"
-          oninput="this.value=this.value.toUpperCase(); if(this.value.length===4){ joinOnlineGame(this.value); }"
-          onkeydown="if(event.key==='Enter'){ event.preventDefault(); joinOnlineGame(this.value); }">
-        <button class="online-join" onclick="joinOnlineGame(document.getElementById('onlineCodeInput').value)">Rejoindre</button>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- (Modale « Jouer en ligne » retirée — Firebase supprimé) -->
 
 <!-- ══ NAV ═════════════════════════════════════════ -->
 <!-- ══ MODALE DE CONFIGURATION ══════════════════════ -->
@@ -2205,6 +2114,16 @@ function buildSplash() {
 }
 
 
+// Rafraîchit l'affichage du niveau (slider + « niveau N ») — remplace l'ancienne UI Elo.
+// NB : cette fonction avait été avalée par erreur lors de la purge CLEAN139 (regex trop large).
+function updateEloUI(){
+  const pct = ((currentLevel - LEVEL_MIN) / (LEVEL_MAX - LEVEL_MIN) * 100).toFixed(1);
+  const sv = document.getElementById('splashEloVal');
+  if(sv) sv.textContent = currentLevel;
+  const ss = document.getElementById('splashEloSlider');
+  if(ss){ ss.value = currentLevel; ss.style.setProperty('--pct', pct + '%'); }
+}
+
 function onSplashLevelSlide(level) {
   currentLevel = Math.max(LEVEL_MIN, Math.min(LEVEL_MAX, parseInt(level)||LEVEL_MIN));
   currentElo = levelToElo(currentLevel);
@@ -2489,11 +2408,6 @@ function parseSplashCommand(text){
   // Thème clair / sombre
   if(/\b(mode sombre|theme sombre|dark)\b/.test(t)){ try{ if(document.documentElement.getAttribute('data-theme')!=='dark') toggleTheme(); }catch(e){} return true; }
   if(/\b(mode clair|theme clair|light)\b/.test(t)){ try{ if(document.documentElement.getAttribute('data-theme')!=='light') toggleTheme(); }catch(e){} return true; }
-  // Jouer en ligne / créer / rejoindre
-  if(/\b(creer une partie|cree une partie|creer en ligne|heberger|host|create)\b/.test(t)){ stopSplashVoice(); if(typeof openOnlineModal==='function') openOnlineModal(); if(typeof createOnlineGame==='function') setTimeout(createOnlineGame,300); return true; }
-  const codeMatch = t.match(/\brejoindre\s+([a-z]{4})\b/) || t.match(/\bcode\s+([a-z]{4})\b/);
-  if(codeMatch){ stopSplashVoice(); if(typeof openOnlineModal==='function') openOnlineModal(); const code=codeMatch[1].toUpperCase(); setTimeout(()=>{ if(typeof joinOnlineGame==='function') joinOnlineGame(code); },300); return true; }
-  if(/\b(jouer en ligne|en ligne|partie en ligne|online|avec un ami)\b/.test(t)){ stopSplashVoice(); if(typeof openOnlineModal==='function') openOnlineModal(); return true; }
   // Choix de couleur → lance la partie. Dites simplement « blanc », « noir » ou « aléatoire ».
   if(/\b(blanc|blancs|blanche|blanches|white|whites)\b/.test(t)){ stopSplashVoice(); splashChooseColor('w'); return true; }
   if(/\b(noir|noirs|noire|noires|black|blacks)\b/.test(t)){ stopSplashVoice(); splashChooseColor('b'); return true; }
@@ -2527,10 +2441,6 @@ function showSplash(fromPopState){
   aiThinking = false;
   gameActive = false;            // plus aucune partie active → aucun coup/voix possible
   try{ stopSplashVoice(); }catch(e){}  // coupe l'écoute vocale du splash si active
-  // Coupe une éventuelle partie en ligne encore active
-  if(typeof onlineUnsub!=='undefined' && onlineUnsub){ try{onlineUnsub();}catch(e){} onlineUnsub=null; }
-  if(typeof onlineCode!=='undefined'){ onlineCode=null; onlineColor=null; onlineRev=0; onlineIsHost=false; onlineApplying=false; }
-  { const _ob=document.getElementById('onlineBanner'); if(_ob) _ob.remove(); }
   if(typeof updateNavLeft==='function') updateNavLeft();
   speechEpoch++;                 // invalide toute parole déjà programmée (délai de 200ms)
   aiGen++;                       // invalide tout coup d'IA en cours de calcul
@@ -2555,8 +2465,6 @@ function showSplash(fromPopState){
 function confirmQuit(yes){
   document.getElementById('quitModal').classList.remove('show');
   if(yes){
-    // Abandon en ligne : quitter proprement la partie réseau
-    if(gameMode==='online'){ try{ leaveOnlineGame(); }catch(e){} }
     // Quitter la partie = retour DIRECT au menu (pas de bannière de fin :
     // celle-ci est réservée aux vraies fins de partie — mat, pat, nulle).
     gameActive=false;
@@ -2631,7 +2539,6 @@ function splashStart2P(){
 function splashChooseColor(color) {
   userInteracted = true; // L'utilisateur a cliqué → synthèse vocale autorisée
   // Choisir une couleur sur le splash = jouer contre l'IA → quitte tout mode en ligne
-  if(gameMode==='online'){ try{ leaveOnlineGame(); }catch(e){} }
   gameMode='ai';
   // Choisit la couleur puis cache le splash
   if(color==='r'){
@@ -2778,9 +2685,7 @@ function saveProfileData() {
 
 function updateNavUser() {
   const av=document.getElementById('navAvatar'); if(av) av.textContent = userProfile.avatar;
-  // Le compte ne sert qu'au jeu en ligne : si non connecté à Google, on affiche « Vous »
-  const loggedIn = (typeof fbGetUid==='function' && fbGetUid());
-  const un=document.getElementById('navUsername'); if(un) un.textContent = loggedIn ? userProfile.name : 'Vous';
+  const un=document.getElementById('navUsername'); if(un) un.textContent = 'Vous';
 }
 
 function showProfile() {
@@ -2834,26 +2739,7 @@ function recordGameResult(result, oppElo) {
   return delta;
 }
 
-// ===== FIREBASE CONFIG =====
-// 👉 Remplacez ces valeurs par celles de votre projet Firebase
-// 1. console.firebase.google.com → Nouveau projet
-// 2. Firestore Database → Créer → mode Test
-// 3. Authentication → Fournisseurs → Google → Activer
-// 4. Paramètres projet → Vos apps → Web → Copier firebaseConfig
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyAN46rytfhXfcAsIJBfiiaWj8xDCI3v8_A",
-  authDomain: "echecs-oral.firebaseapp.com",
-  projectId: "echecs-oral",
-  storageBucket: "echecs-oral.firebasestorage.app",
-  messagingSenderId: "597396946599",
-  appId: "1:597396946599:web:a2db3a6d6c4d0b845c2582",
-  measurementId: "G-LTNJK8P57M"
-};
-
-let db = null;
-let fbReady = false;
-let lbCache = []; // cache local si Firebase indispo
-
+// ===== (Firebase supprimé — app 100 % hors-ligne ; la clé API a été révoquée) =====
 const FALLBACK_PLAYERS = [
   {name:'Magnus_Fan',avatar:'♔',elo:2340,wins:87,losses:12,draws:9},
   {name:'ChessProFR',avatar:'♕',elo:1980,wins:64,losses:28,draws:15},
@@ -2863,66 +2749,6 @@ const FALLBACK_PLAYERS = [
   {name:'LaReine_Noire',avatar:'♚',elo:1290,wins:30,losses:48,draws:10},
 ];
 
-async function initFirebase() {
-  try {
-    if (FIREBASE_CONFIG.apiKey === 'VOTRE_API_KEY') {
-      console.info('Firebase non configuré — mode démo local');
-      lbCache = [...FALLBACK_PLAYERS];
-      return;
-    }
-    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
-    const { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc, serverTimestamp, collection, getDocs, query, orderBy, limit }
-      = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-    const { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, GoogleAuthProvider, onAuthStateChanged }
-      = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
-    const app = initializeApp(FIREBASE_CONFIG);
-    db = getFirestore(app);
-    const auth = getAuth(app);
-    window._fb = { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc, serverTimestamp, collection, getDocs, query, orderBy, limit };
-    window._auth = { auth, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, GoogleAuthProvider, onAuthStateChanged };
-    fbReady = true;
-    console.info('✅ Firebase connecté');
-    setupAuthListener();
-    // Termine une connexion par redirection (mobile) et remonte une erreur claire si besoin
-    try {
-      const rr = await getRedirectResult(auth);
-      if (rr && rr.user) await _postLogin(rr.user);
-    } catch(e) {
-      if (e && e.code === 'auth/unauthorized-domain') {
-        showToast("⚠️ Domaine non autorisé dans Firebase (Authentication → Settings)", 'error');
-      }
-    }
-  } catch(e) {
-    console.warn('Firebase unavailable:', e.message);
-    lbCache = [...FALLBACK_PLAYERS];
-  }
-}
-
-async function fbSavePlayer() {
-  if (!fbReady || userProfile.name === 'Invité') return;
-  try {
-    const { doc, setDoc } = window._fb;
-    const wins  = userProfile.games.filter(g=>g.result==='win').length;
-    const losses = userProfile.games.filter(g=>g.result==='loss').length;
-    const draws  = userProfile.games.filter(g=>g.result==='draw').length;
-    const docId = fbGetUid() || userProfile.name; // use uid if logged in
-    await setDoc(doc(db, 'players', docId), {
-      name: userProfile.name, avatar: userProfile.avatar,
-      elo: userProfile.elo, wins, losses, draws,
-      updatedAt: Date.now()
-    }, { merge: true });
-  } catch(e) { console.warn('fbSavePlayer:', e.message); }
-}
-
-async function fbLoadLeaderboard() {
-  if (!fbReady) return null;
-  try {
-    const { collection, getDocs, query, orderBy, limit } = window._fb;
-    const q = query(collection(db,'players'), orderBy('elo','desc'), limit(50));
-    const snap = await getDocs(q);
-    return snap.docs.map(d => d.data());
-  } catch(e) { console.warn('fbLoadLeaderboard:', e.message); return null; }
-}
 
 function getLocalLeaderboard() {
   let lb = [...FALLBACK_PLAYERS];
@@ -2940,9 +2766,9 @@ function getLocalLeaderboard() {
   return lb.sort((a,b) => b.elo - a.elo);
 }
 
-async function addToLeaderboard() {
-  await fbSavePlayer();
-  { const _lb=document.getElementById('page-leaderboard'); if(_lb && _lb.classList.contains('active')) renderLeaderboard(); }
+function addToLeaderboard() {
+  // Classement 100 % local (Firebase supprimé)
+  const _lb=document.getElementById('page-leaderboard'); if(_lb && _lb.classList.contains('active')) renderLeaderboard();
 }
 
 // ===== PAGES =====
@@ -3067,168 +2893,14 @@ function renderLbRows(lb) {
   }).join('');
 }
 
-async function renderLeaderboard() {
+function renderLeaderboard() {
   const el = document.getElementById('lbList');
   if(!el) return; // page Classement supprimée
-  el.innerHTML = '<div style="text-align:center;padding:30px;color:#444;font-size:.8rem;">⏳ Chargement…</div>';
-  const badge = document.getElementById('fbBadge');
-  if (badge) badge.textContent = fbReady ? '🟢 Firebase connecté' : '🟡 Mode démo local';
-  const fbData = await fbLoadLeaderboard();
-  if (fbData && fbData.length > 0) {
-    lbCache = fbData;
-    renderLbRows(fbData);
-  } else {
-    renderLbRows(getLocalLeaderboard());
-  }
+  renderLbRows(getLocalLeaderboard());
 }
 
-// ===== AUTH GOOGLE =====
-function setupAuthListener() {
-  const { auth, onAuthStateChanged } = window._auth;
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      // Pré-remplir profil avec infos Google
-      if (userProfile.name === 'Invité' || !localStorage.getItem('chess_profile')) {
-        userProfile.name  = user.displayName?.split(' ')[0] || 'Joueur';
-        userProfile.avatar = '♟';
-        userProfile._photoURL = user.photoURL;
-        userProfile._uid = user.uid;
-        saveProfileData();
-        updateNavUser();
-      }
-      updateAuthUI(user);
-    } else {
-      updateAuthUI(null);
-    }
-  });
-}
+// ===== (Auth Google supprimée — plus de compte, app hors-ligne) =====
 
-function updateSplashAuth(user) {
-  const el = document.getElementById('splashAuthBtn');
-  if (!el) return;
-  if (user) {
-    const name = (user.displayName ? user.displayName.split(' ')[0] : null) || userProfile.name || 'Joueur';
-    const ava = user.photoURL
-      ? `<span class="sa-ava"><img src="${user.photoURL}" alt=""></span>`
-      : `<span class="sa-ava">👤</span>`;
-    el.innerHTML = ava + `<span class="sa-txt">${name}</span>`;
-    el.title = 'Appuyer pour se déconnecter';
-    el.onclick = function(){
-      const ok = confirm('Se déconnecter de ce compte ?');
-      if(ok){ try { logoutGoogle(); } catch(e){} }
-    };
-  } else {
-    el.innerHTML = '<svg viewBox="0 0 18 18" width="16" height="16" style="vertical-align:-3px;margin-right:6px;"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.02-3.7H.96v2.34A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.98 10.72a5.4 5.4 0 0 1 0-3.44V4.94H.96a9 9 0 0 0 0 8.12l3.02-2.34z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.46 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.94l3.02 2.34C4.68 5.16 6.66 3.58 9 3.58z"/></svg>Connexion avec Google';
-    el.title = 'Se connecter avec Google';
-    el.onclick = function(){ loginGoogle(); };
-  }
-}
-
-function updateAuthUI(user) {
-  updateSplashAuth(user);
-  const btn = document.getElementById('googleAuthBtn');
-  const avatar = document.getElementById('navAvatar');
-  const username = document.getElementById('navUsername');
-  if (!btn) return;
-  if (user) {
-    btn.textContent = '🔓 Se déconnecter';
-    btn.onclick = logoutGoogle;
-    btn.style.color = 'var(--red)';
-    btn.style.borderColor = 'var(--red)';
-    if (user.photoURL) {
-      if(avatar) avatar.innerHTML = `<img src="${user.photoURL}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">`;
-    } else {
-      if(avatar) avatar.textContent = (user.displayName||'?')[0].toUpperCase();
-    }
-    if(username) username.textContent = user.displayName?.split(' ')[0] || 'Joueur';
-    document.getElementById('authStatus').innerHTML =
-      `<span style="color:var(--green)">✓ Connecté : <b>${user.displayName}</b></span>`;
-  } else {
-    btn.textContent = '🔑 Connexion Google';
-    btn.onclick = loginGoogle;
-    btn.style.color = '';
-    btn.style.borderColor = '';
-    if(avatar) avatar.textContent = userProfile.avatar || '♟';
-    if(username) username.textContent = userProfile.name;
-    document.getElementById('authStatus').innerHTML =
-      '<span style="color:#555">Non connecté — scores sauvegardés localement</span>';
-  }
-}
-
-async function _postLogin(user) {
-  if (!user) return;
-  if (fbReady) {
-    try {
-      const { doc, getDoc } = window._fb;
-      const snap = await getDoc(doc(db, 'players', user.uid));
-      if (snap.exists()) {
-        const data = snap.data();
-        userProfile.elo = data.elo || userProfile.elo;
-        userProfile.games = data.games || userProfile.games;
-        userProfile.eloHistory = data.eloHistory || userProfile.eloHistory;
-      }
-    } catch(e) { console.warn('_postLogin load:', e.message); }
-  }
-  userProfile.name = user.displayName?.split(' ')[0] || 'Joueur';
-  userProfile._uid = user.uid;
-  userProfile._photoURL = user.photoURL;
-  saveProfileData(); updateNavUser();
-  showToast('✅ Connecté avec Google !', 'success');
-  await fbSavePlayer();
-}
-
-async function loginGoogle() {
-  if (!window._auth) {
-    showToast('⚠️ Firebase non configuré — ajoutez vos clés Firebase', 'error'); return;
-  }
-  const { auth, signInWithPopup, GoogleAuthProvider } = window._auth;
-  try {
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    await _postLogin(result.user);
-  } catch(e) {
-    // Sur mobile / popup bloqué → bascule sur la connexion par redirection
-    const popupCodes = ['auth/popup-blocked','auth/popup-closed-by-user','auth/cancelled-popup-request','auth/operation-not-supported-in-this-environment'];
-    if (e && popupCodes.includes(e.code) && window._auth.signInWithRedirect) {
-      try { await window._auth.signInWithRedirect(auth, new GoogleAuthProvider()); return; }
-      catch(e2) { e = e2; }
-    }
-    if (e && e.code === 'auth/unauthorized-domain') {
-      showToast("⚠️ Domaine non autorisé. Ajoute ton adresse dans Firebase → Authentication → Settings → Authorized domains.", 'error');
-    } else {
-      showToast('Erreur de connexion : ' + (e && e.message ? e.message : e), 'error');
-    }
-  }
-}
-
-async function logoutGoogle() {
-  if (!window._auth) return;
-  try {
-    await window._auth.signOut(window._auth.auth);
-    showToast('Déconnecté', '');
-  } catch(e) {}
-}
-
-function fbGetUid() {
-  try { return window._auth?.auth?.currentUser?.uid || null; } catch(e) { return null; }
-}
-
-// Exige une connexion Google pour le jeu en ligne. Si non connecté, propose la
-// connexion et renvoie false. Le jeu contre l'IA n'appelle jamais ceci.
-async function _requireLogin(){
-  if(fbGetUid()) return true;
-  if(!window._auth){
-    showToast(currentLang==='fr'?'⚠️ Connexion indisponible (Firebase non configuré).':'⚠️ Login unavailable.', 'error');
-    return false;
-  }
-  showToast(currentLang==='fr'?'Connexion Google requise pour jouer en ligne…':'Google sign-in required for online play…', '');
-  try{
-    await loginGoogle();
-  }catch(e){}
-  return !!fbGetUid();
-}
-
-// ===== TOAST =====
 function showToast(msg, type) {
   let toast = document.getElementById('toast');
   if (!toast) {
@@ -4059,10 +3731,6 @@ function _resolvePromoVoice(letter){
 
 function makeMove(fr,fc,tr,tc,castleType,promo,byVoice){
   if(!gameActive) return; // aucun coup hors d'une partie en cours
-  // En ligne : on ne peut jouer QUE sa propre couleur, et seulement à son tour
-  if(gameMode==='online' && !onlineApplying){
-    if(turn!==onlineColor){ setStatus(currentLang==='fr'?'Pas votre tour':'Not your turn','error'); return; }
-  }
   // Instantané AVANT modification (pour annuler)
   undoStack.push({
     board: board.map(row=>row.slice()),
@@ -4140,11 +3808,6 @@ function makeMove(fr,fc,tr,tc,castleType,promo,byVoice){
     else askStockfish();                                          // pas d'annonce → l'IA joue directement
   } else {
     if(say) speak(say, null, 'me');
-  }
-  // En ligne : si c'est MON coup (pas l'application d'un coup distant), je l'envoie
-  if(gameMode==='online' && !onlineApplying){
-    _pushOnlineState();
-    _updateOnlineStatus();
   }
   // Met à jour la jauge d'évaluation (si activée et pas au tour de l'IA)
 
@@ -4372,7 +4035,7 @@ function _pseudoTargets(r,c){
 function setPremove(fr,fc,tr,tc){
   const bd = _projectedBoard();
   const p = bd[fr][fc];
-  const myColor = (gameMode==='online') ? onlineColor : playerColor;
+  const myColor = playerColor;
   if(!p || color(p)!==myColor) return false;
   const ok = _pseudoTargetsOn(bd, fr, fc).some(([rr,cc])=>rr===tr&&cc===tc);
   if(!ok) return false;
@@ -4747,7 +4410,7 @@ function updatePlayerBars(){
     const KING = (col)=> col==='w' ? '♔' : '♚';
     // Bas = toi
     const botName=document.getElementById('botName'), botElo=document.getElementById('botElo'), botAva=document.getElementById('botAva');
-    if(botName) botName.textContent = (gameMode==='online' && userProfile.name && userProfile.name!=='Invité') ? userProfile.name : 'Vous';
+    if(botName) botName.textContent = 'Vous';
     if(botElo) botElo.textContent = ''; // pas d'Elo affiché pour le joueur
     if(botAva) botAva.innerHTML = AVATAR_HOOK();
     // Haut = adversaire
@@ -4953,10 +4616,10 @@ function _attachBoardPointer(boardEl){
     if(!hit) return;
     if(aiThinking && !premoveEnabled) return;
     // Détermine si on est en phase de PRÉ-COUP (tour adverse, option active)
-    const oppTurn = (gameMode==='ai' && turn!==playerColor) || (gameMode==='online' && turn!==onlineColor);
+    const oppTurn = (gameMode==='ai' && turn!==playerColor);
     const premovePhase = premoveEnabled && oppTurn;
     if(oppTurn && !premovePhase) return; // pas de pré-coups → on ne joue pas hors de son tour
-    const myColor = (gameMode==='online') ? onlineColor : playerColor;
+    const myColor = playerColor;
     const selBoard = premovePhase ? _projectedBoard() : board;
     const piece = selBoard[hit.r][hit.c];
     const isOwn = premovePhase ? (piece && color(piece)===myColor) : (piece && color(piece)===turn);
@@ -5038,7 +4701,7 @@ function _attachBoardPointer(boardEl){
     }
     // Pas de glissé → c'était un TAP
     if(st.premove){
-      const myColor = (gameMode==='online') ? onlineColor : playerColor;
+      const myColor = playerColor;
       // Si une pièce est déjà sélectionnée, ce tap fixe la destination du pré-coup
       if(selected && (selected[0]!==st.startR || selected[1]!==st.startC)){
         if(setPremove(selected[0], selected[1], st.startR, st.startC)){ selected=null; possibleMoves=[]; renderBoard(); _highlightPremove(); return; }
@@ -6489,7 +6152,7 @@ function _voiceDescribePosition(){
     }}
     return parts.join(' ; ');
   }
-  const meCol = (gameMode==='online') ? onlineColor : (gameMode==='ai' ? playerColor : turn);
+  const meCol = (gameMode==='ai' ? playerColor : turn);
   const oppCol = meCol==='w'?'b':'w';
   const txt = (currentLang==='fr'
     ? ('Vos pièces : '+describe(meCol)+'. Adversaire : '+describe(oppCol)+'.')
@@ -6815,7 +6478,6 @@ function _diagGameStart(){
 function setPlayerColor(color){
  try{
   // Choisir une couleur ici = jouer contre l'IA → on quitte tout mode en ligne
-  if(gameMode==='online'){ try{ leaveOnlineGame(); }catch(e){} }
   gameMode='ai';
   const _byId = (id)=>document.getElementById(id);
   if(color==='r'){
@@ -6857,233 +6519,7 @@ function toggleModeCard(){
   if(card) card.style.display = card.style.display==='none' ? 'block' : 'none';
 }
 
-// ============================================================
-//  MULTIJOUEUR EN LIGNE (Firestore) — jouer avec un ami via code
-// ============================================================
-let onlineCode = null;       // code de la partie en cours
-let onlineColor = null;      // 'w' ou 'b' : couleur que JE joue en ligne
-let onlineUnsub = null;      // fonction pour stopper l'écoute temps réel
-let onlineApplying = false;  // garde anti-boucle pendant l'application d'un coup distant
-let onlineRev = 0;           // numéro de révision local
-let onlineIsHost = false;    // suis-je le créateur de la partie ?
-
-function _genCode(){
-  const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sans I,O,0,1 ambigus
-  let s=''; for(let i=0;i<4;i++) s+=A[Math.floor(Math.random()*A.length)]; return s;
-}
-
-// Sérialise l'état courant pour Firestore (board en chaîne compacte)
-function _serializeGame(){
-  let b='';
-  for(let r=0;r<8;r++) for(let c=0;c<8;c++){ b += board[r][c] ? board[r][c] : '..'; }
-  return {
-    board: b,
-    turn: turn,
-    histUCI: moveHistoryUCI.slice(),
-    histMoves: history.map(h=>({move:h.move,color:h.color})),
-    lastMove: lastMove ? lastMove.slice() : null,
-    castling: Object.assign({}, castling),
-    enPassant: enPassant ? enPassant.slice() : null,
-    halfmove: halfmoveClock,
-    rev: onlineRev,
-    updatedAt: Date.now()
-  };
-}
-
-// Reconstruit l'état local à partir d'un doc Firestore
-function _applyRemoteState(data){
-  if(!data || !data.board) return;
-  // Si le plateau distant est identique au nôtre, ne rien refaire (évite d'effacer
-  // une sélection en cours côté mobile lors d'un snapshot sans nouveau coup).
-  try{
-    let cur='';
-    for(let r=0;r<8;r++) for(let c=0;c<8;c++){ cur += board[r][c] ? board[r][c] : '..'; }
-    if(cur===data.board && turn===data.turn){ onlineRev=data.rev||onlineRev; return; }
-  }catch(e){}
-  onlineApplying = true;
-  try{
-    const nb=Array(8).fill(null).map(()=>Array(8).fill(null));
-    let i=0;
-    for(let r=0;r<8;r++) for(let c=0;c<8;c++){
-      const tok=data.board.substr(i,2); i+=2;
-      nb[r][c] = (tok==='..') ? null : tok;
-    }
-    board=nb;
-    turn=data.turn;
-    moveHistoryUCI = Array.isArray(data.histUCI)?data.histUCI.slice():[];
-    history = Array.isArray(data.histMoves)?data.histMoves.map(h=>({move:h.move,color:h.color})):[];
-    lastMove = data.lastMove||null;
-    castling = data.castling||castling;
-    enPassant = data.enPassant||null;
-    halfmoveClock = data.halfmove||0;
-    onlineRev = data.rev||0;
-    selected=null; possibleMoves=[];
-    positionHistory=[posKey()];
-    renderBoard(); updateSidebar();
-    const st=checkGameState();
-    // Annonce vocale du coup adverse + son
-    try{
-      if(lastMove){
-        const [fr,fc,tr,tc]=lastMove;
-        if(st.over){ playSound('end'); }
-        else if(st.check){ playSound('check'); }
-        else { playSound('move'); }
-      }
-    }catch(e){}
-    _updateOnlineStatus();
-  }catch(e){ console.warn('apply remote failed',e); }
-  onlineApplying=false;
-}
-
-// Écrit l'état courant dans Firestore (appelé après chaque coup local en ligne)
-async function _pushOnlineState(){
-  if(!onlineCode || !fbReady || !db) return;
-  try{
-    const { doc, updateDoc } = window._fb;
-    onlineRev++;
-    await updateDoc(doc(db,'online_games',onlineCode), _serializeGame());
-  }catch(e){ console.warn('push failed',e); setStatus(currentLang==='fr'?'⚠️ Synchro échouée':'⚠️ Sync failed','error'); }
-}
-
-// Démarre l'écoute temps réel d'une partie
-function _listenOnline(code){
-  if(!fbReady || !db) return;
-  const { doc, onSnapshot } = window._fb;
-  if(onlineUnsub){ try{onlineUnsub();}catch(e){} onlineUnsub=null; }
-  onlineUnsub = onSnapshot(doc(db,'online_games',code), (snap)=>{
-    if(!snap.exists()) return;
-    const data=snap.data();
-    const remoteRev = data.rev||0;
-    // N'applique QUE si la révision distante est strictement plus récente (= coup de l'adversaire)
-    if(remoteRev > onlineRev){
-      _applyRemoteState(data);
-    }
-    // Notifie l'hôte quand l'adversaire rejoint
-    if(data.guestJoined && onlineIsHost && !window._guestNotified){
-      window._guestNotified=true;
-      setStatus(currentLang==='fr'?'✅ Adversaire connecté !':'✅ Opponent joined!','');
-      _updateOnlineStatus();
-    }
-  }, (err)=>{ console.warn('listen error',err); });
-}
-
-function _updateOnlineStatus(){
-  if(gameMode!=='online') return;
-  const myTurn = (turn===onlineColor);
-  const el=document.getElementById('status');
-  if(!el) return;
-  if(myTurn){ setStatus(currentLang==='fr'?'À vous de jouer':'Your turn',''); }
-  else { setStatus(currentLang==='fr'?'En attente de l\'adversaire…':'Waiting for opponent…',''); }
-  // Verrouille le micro si ce n'est pas mon tour
-  const vb=document.getElementById('voiceBtn'); if(vb) vb.disabled = !myTurn;
-}
-
-// Coupe TOUT (IA, micro, écoute online) avant de changer de mode — évite les blocages
-function _stopEverything(){
-  // Stoppe l'IA
-  try{ aiGen++; }catch(e){}
-  aiThinking=false; aiSpeaking=false; pendingSpeech=null;
-  try{ if(stockfish) stockfish.postMessage('stop'); }catch(e){}
-  // Coupe la voix
-  try{ if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e){}
-  try{ if(recognition){ recognition.abort(); } }catch(e){}
-  voiceContinuous=false; listening=false; moveJustPlayed=false; undoLock=false;
-  const sp=document.getElementById('aiSpinner'); if(sp) sp.classList.remove('show');
-  const vb=document.getElementById('voiceBtn'); if(vb){ vb.disabled=false; vb.classList.remove('listening'); }
-  // Coupe l'écoute Firestore en cours
-  if(onlineUnsub){ try{onlineUnsub();}catch(e){} onlineUnsub=null; }
-}
-
-// Crée une nouvelle partie en ligne → renvoie le code
-async function createOnlineGame(){
-  try{
-    if(!(await _requireLogin())){ showToast(currentLang==='fr'?'Connexion requise pour jouer en ligne.':'Login required.', 'error'); return; }
-    if(!fbReady || !db){ showToast(currentLang==='fr'?'Firebase non connecté. Vérifiez votre connexion.':'Firebase not connected.', 'error'); return; }
-    _stopEverything();
-    const { doc, setDoc } = window._fb;
-    let code=_genCode();
-    // Couleur du créateur tirée au hasard ; celui qui rejoint aura l'opposée
-    const hostColor = (Math.random() < 0.5) ? 'w' : 'b';
-    gameMode='online'; onlineColor=hostColor; onlineCode=code; onlineRev=0; onlineIsHost=true; window._guestNotified=false;
-    // Position initiale (les Blancs commencent toujours)
-    initBoard(); turn='w'; selected=null; possibleMoves=[]; history=[]; moveHistoryUCI=[]; undoStack=[];
-    lastMove=null; enPassant=null; castling={wK:true,wR_k:true,wR_q:true,bK:true,bR_k:true,bR_q:true};
-    halfmoveClock=0; positionHistory=[posKey()]; gameActive=true; playerColor=hostColor;
-    try{
-      await setDoc(doc(db,'online_games',code), Object.assign(_serializeGame(), {
-        createdAt: Date.now(), hostName: userProfile.name||'Hôte', guestJoined:false, hostColor: hostColor
-      }));
-    }catch(e){
-      console.error('createOnlineGame setDoc error:', e);
-      showToast((currentLang==='fr'?'Création impossible : ':'Could not create: ')+(e&&e.code?e.code:(e&&e.message?e.message:e)), 'error');
-      return;
-    }
-    _listenOnline(code);
-    closeOnlineModal();
-    userInteracted = true;
-    try{ showPage('game'); }catch(e){}
-    try{ hideSplash(); }catch(e){}
-    renderBoard(); updateSidebar(); buildCoords();
-    try{ _showOnlineBanner(code, hostColor); }catch(e){ console.warn('banner', e); }
-    _updateOnlineStatus();
-    showToast((currentLang==='fr'?'Partie créée — code : ':'Game created — code: ')+code, 'success');
-  }catch(err){
-    console.error('createOnlineGame fatal:', err);
-    showToast((currentLang==='fr'?'Erreur : ':'Error: ')+(err&&err.message?err.message:err), 'error');
-  }
-}
-
-// Rejoint une partie existante via son code
-async function joinOnlineGame(code){
-  code=(code||'').toUpperCase().trim();
-  if(code.length!==4){ alert(currentLang==='fr'?'Code à 4 caractères attendu.':'Enter a 4-character code.'); return; }
-  if(!(await _requireLogin())) return; // connexion Google obligatoire pour le jeu en ligne
-  if(!fbReady || !db){ alert(currentLang==='fr'?'Firebase non connecté.':'Firebase not connected.'); return; }
-  const { doc, getDoc, updateDoc } = window._fb;
-  let snap;
-  try{ snap = await getDoc(doc(db,'online_games',code)); }
-  catch(e){ alert(currentLang==='fr'?'Erreur de connexion.':'Connection error.'); return; }
-  if(!snap.exists()){ alert(currentLang==='fr'?'Partie introuvable. Vérifiez le code.':'Game not found.'); return; }
-  _stopEverything();
-  const data0 = snap.data();
-  const hostColor = data0.hostColor || 'w';
-  const myColor = (hostColor==='w') ? 'b' : 'w';
-  gameMode='online'; onlineColor=myColor; onlineCode=code; playerColor=myColor; onlineIsHost=false;
-  try{ await updateDoc(doc(db,'online_games',code), {guestJoined:true, guestName:userProfile.name||'Invité'}); }catch(e){}
-  _applyRemoteState(data0);
-  _listenOnline(code);
-  closeOnlineModal();
-  userInteracted = true;
-  try{ showPage('game'); }catch(e){}
-  try{ hideSplash(); }catch(e){}
-  renderBoard(); updateSidebar(); buildCoords();
-  try{ _showOnlineBanner(code, myColor); }catch(e){ console.warn('banner', e); }
-  _updateOnlineStatus();
-  showToast((currentLang==='fr'?'Partie rejointe !':'Joined game!'), 'success');
-}
-
-function leaveOnlineGame(){
-  _stopEverything();
-  onlineCode=null; onlineColor=null; onlineRev=0; onlineIsHost=false; onlineApplying=false;
-  window._guestNotified=false;
-  const b=document.getElementById('onlineBanner'); if(b) b.remove();
-  gameMode='ai';
-}
-
-// Bannière affichant le code + ma couleur
-function _showOnlineBanner(code, col){
-  let b=document.getElementById('onlineBanner');
-  if(!b){ b=document.createElement('div'); b.id='onlineBanner'; b.className='online-banner';
-    const bc=document.querySelector('.board-container'); if(bc&&bc.parentNode) bc.parentNode.insertBefore(b, bc); }
-  const colTxt = col==='w' ? (currentLang==='fr'?'Blancs':'White') : (currentLang==='fr'?'Noirs':'Black');
-  b.innerHTML = '<span class="ob-code">🔗 '+code+'</span>'
-    + '<span class="ob-col">'+(currentLang==='fr'?'Vous jouez : ':'You play: ')+colTxt+'</span>'
-    + '<button class="ob-copy" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+code+'\');this.textContent=\'✓\'">📋</button>'
-    + '<button class="ob-quit" onclick="leaveOnlineGame()">✕</button>';
-}
-
-function openOnlineModal(){ try{ userInteracted=true; }catch(e){} const m=document.getElementById('onlineModal'); if(m) m.classList.add('show'); }
-function closeOnlineModal(){ const m=document.getElementById('onlineModal'); if(m) m.classList.remove('show'); }
+// ===== (Multijoueur en ligne supprimé — Firebase retiré, app hors-ligne) =====
 
 function setMode(m){
   gameMode=m;
@@ -7106,7 +6542,6 @@ function resetGame(){
   document.getElementById('aiSpinner').classList.remove('show');
   { const _po=document.getElementById('promoOverlay'); if(_po) _po.classList.remove('show'); }
   gameStartElo=userProfile.elo;
-  if(gameMode==='online' && is960){ is960=false; try{ const c=document.getElementById('chk960'); if(c) c.checked=false; }catch(e){} }
   if(is960){
     startBackRank=generate960BackRank();
     const kCol=startBackRank.indexOf('K');
@@ -7148,7 +6583,7 @@ function resetGame(){
 
 
 initBoard(); renderBoard();
-try{ onSplashLevelSlide(document.getElementById('splashEloSlider')?.value || 3); }catch(e){} updateSidebar(); initStockfish(); updateEloUI(); applyLang(); try{ initTheme(); }catch(e){} try{ updateSpeakerBtn(); }catch(e){} try{ updateSplashAuth((window._auth&&window._auth.auth&&window._auth.auth.currentUser)||null); }catch(e){}
+try{ onSplashLevelSlide(document.getElementById('splashEloSlider')?.value || 3); }catch(e){} updateSidebar(); initStockfish(); updateEloUI(); applyLang(); try{ initTheme(); }catch(e){} try{ updateSpeakerBtn(); }catch(e){}
 try{ const _eg=document.getElementById('evalGauge'); if(_eg) _eg.style.display = evalEnabled ? 'flex' : 'none'; }catch(e){}
 try{ const _bb=document.getElementById('board'); if(_bb && blindfold) _bb.classList.add('blindfold'); }catch(e){}
 try{ const a=document.getElementById('evalToggleGame'); if(a) a.checked=evalEnabled; const b=document.getElementById('blindToggleGame'); if(b) b.checked=blindfold; const p=document.getElementById('premoveToggleGame'); if(p) p.checked=premoveEnabled; const s=document.getElementById('speakSelfToggle'); if(s) s.checked=speakSelf; }catch(e){}
@@ -7166,7 +6601,6 @@ function maybeShowVoiceWelcome(){
 // Aucun compte/pseudo n'est requis pour jouer contre l'IA : on n'affiche plus
 // la fenêtre de pseudo au démarrage. Seule la fenêtre de pilotage vocal s'affiche.
 maybeShowVoiceWelcome();
-initFirebase();
 </script>
 <script>
 /* Service Worker DÉSACTIVÉ : il causait des blocages (ancienne version servie depuis
@@ -7177,7 +6611,7 @@ initFirebase();
    elle va lire la version réellement en ligne (fetch no-store) et, si elle diffère,
    affiche un bandeau « Mise à jour disponible ». Un appui vide les caches, met à jour
    le service worker et recharge — plus besoin de vider le cache à la main. */
-const APP_VERSION = 'v20260603-CLEAN140';
+const APP_VERSION = 'v20260603-CLEAN142';
 let _updLastCheck = 0;
 function _updBanner(remoteV){
   if(document.getElementById('updBanner')) return;
