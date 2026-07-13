@@ -1500,7 +1500,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN137</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN138</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -3791,11 +3791,11 @@ function askStockfish(){
   askStockfish._retries = 0;
   aiReqGen = aiGen; // marque cette requête
   _thinkStart = Date.now(); // début de la « réflexion » (plancher H)
-  // 🔇 Micro COUPÉ pendant TOUT le tour de l'IA (réflexion + jeu + annonce) pour éviter
-  // que le micro capte le bruit / l'écho et enchaîne des coups fantômes.
-  try{ if(recognition && listening){ recognition.abort(); } }catch(e){}
-  listening = false;
-  try{ const _vb=document.getElementById('voiceBtn'); if(_vb) _vb.classList.remove('listening'); }catch(e){}
+  // 🎙 STRATÉGIE MICRO UNIFIÉE : le micro reste TOUJOURS actif (pour capter « annuler » etc.).
+  // Toute la protection anti-coups-fantômes vit dans recognition.onresult :
+  //   1) aiSpeaking → tout ignorer   2) garde anti-écho 1700ms après annonce
+  //   3) tour de l'IA → seuls annulation/commandes passent, jamais un coup.
+  // (Ne PAS réintroduire d'abort ici : onend relancerait le micro 80ms plus tard de toute façon.)
   // 📖 Livre d'ouvertures : coup théorique connu (joué après le plancher de réflexion)
   const bookMv = getBookMove();
   if(bookMv){
@@ -5464,8 +5464,9 @@ function startListening(){
   recognition.onend = () => {
     listening = false;
     moveJustPlayed = false;
-    // Toujours en écoute continue → on RELANCE même si l'IA réfléchit ou parle,
-    // pour pouvoir capter "annuler" à tout moment (le filtre onresult n'agit alors que sur l'annulation).
+    // 🎙 STRATÉGIE UNIFIÉE : écoute continue → on RELANCE toujours, même si l'IA réfléchit
+    // ou parle. C'est recognition.onresult qui filtre (aiSpeaking, anti-écho, tour de l'IA).
+    // Ne jamais « couper » le micro ailleurs : ce redémarrage annulerait la coupure de toute façon.
     if(voiceContinuous){
       setTimeout(()=>{
         if(!voiceContinuous || listening) return;
@@ -6373,7 +6374,7 @@ function executeVoiceAction(act, verbose){
         : ('New game'+(act.elo?(' versus '+act.elo):'')+'. You play '+colWord+'.'));
       resetGame();
       // Coupe le micro et parle APRÈS le reset ; l'écoute ne reprendra qu'à la fin de l'annonce
-      try{ aiSpeaking = true; if(recognition && listening){ recognition.abort(); } listening = false; }catch(e){}
+      aiSpeaking = true; /* micro laissé actif : onresult ignore tout pendant aiSpeaking (stratégie unifiée) */
       setTimeout(()=>{ _voiceSay(_msg); }, 150);
       return true;
     }
@@ -6490,7 +6491,7 @@ function _voiceSay(txt){
   try{ setStatus('🔊 '+txt, 'ai'); }catch(e){}
   // Coupe le micro IMMÉDIATEMENT (avant même le délai interne de speak) pour
   // empêcher l'app de s'entendre confirmer et de re-déclencher la commande.
-  try{ aiSpeaking = true; if(recognition && listening){ recognition.abort(); } listening = false; }catch(e){}
+  aiSpeaking = true; /* micro laissé actif : onresult ignore tout pendant aiSpeaking (stratégie unifiée) */
   try{ if(typeof speak==='function') speak(txt); }catch(e){}
 }
 
@@ -6717,10 +6718,9 @@ function speak(text, onEnd, who){
     if(onEnd) setTimeout(onEnd, 1500);
     return;
   }
-  // On COUPE le micro pendant que l'IA parle (évite le larsen : haut-parleur → micro → faux coup)
+  // 🎙 Stratégie unifiée : micro laissé actif pendant que l'IA parle.
+  // onresult ignore tout tant que aiSpeaking est vrai (+ garde anti-écho après l'annonce).
   aiSpeaking = true;
-  try{ if(recognition && listening){ recognition.abort(); } }catch(e){}
-  listening = false;
   const myEpoch = speechEpoch;
   window.speechSynthesis.cancel();
   // Petit carillon doux AVANT l'annonce de l'IA (pour distinguer sa voix de la vôtre)
@@ -7242,7 +7242,7 @@ initFirebase();
    elle va lire la version réellement en ligne (fetch no-store) et, si elle diffère,
    affiche un bandeau « Mise à jour disponible ». Un appui vide les caches, met à jour
    le service worker et recharge — plus besoin de vider le cache à la main. */
-const APP_VERSION = 'v20260603-CLEAN137';
+const APP_VERSION = 'v20260603-CLEAN138';
 let _updLastCheck = 0;
 function _updBanner(remoteV){
   if(document.getElementById('updBanner')) return;
