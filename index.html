@@ -1414,7 +1414,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN142</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN143</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -3187,6 +3187,14 @@ function initStockfish(){
     if(i >= ENGINES.length){
       stockfish = null;
       if(dbg) dbg.textContent='';
+      // ⚠️ Aucun moteur chargé : l'IA jouera des coups ALÉATOIRES. On le DIT au joueur
+      // (sinon « le niveau ne change rien ») et on réessaie dès que le réseau revient.
+      try{ showToast('⚠️ Moteur d\'échecs non chargé — l\'IA joue des coups aléatoires. Vérifiez la connexion.', 'error'); }catch(e){}
+      try{ const bn=document.getElementById('botName'); if(bn) bn.textContent='IA aléatoire (moteur non chargé)'; }catch(e){}
+      if(!initStockfish._retryHooked){
+        initStockfish._retryHooked = true;
+        window.addEventListener('online', ()=>{ if(!sfReady) initStockfish(); });
+      }
       return;
     }
     const eng = ENGINES[i];
@@ -3245,6 +3253,8 @@ function initStockfish(){
           worker.postMessage('setoption name Ponder value false');
           console.log('✅ Moteur chargé:', eng.name);
           if(dbg) dbg.textContent='';
+          // Repli « moteur allégé » (SF10 asm, sans NNUE) : plus faible aux hauts niveaux → on prévient.
+          if(/SF10/.test(eng.name)){ try{ showToast('ℹ️ Moteur allégé chargé (réseau limité) — force réduite aux hauts niveaux.', ''); }catch(e){} }
         }
         // Capte le score d'évaluation (pour la jauge) — lignes "info ... score cp/mate ..."
         if(line.startsWith('info') && line.includes('score')){
@@ -6427,8 +6437,8 @@ const LEVEL_PROFILES=[
   /* 8 */ {mode:'uci',   val:1950, depth:12, time:1000, mpv:3, maxLoss:40},
   /* 9 */ {mode:'uci',   val:2200, depth:15, time:1300, mpv:2, maxLoss:28},
   /* 10*/ {mode:'uci',   val:2500, depth:18, time:1800, mpv:2, maxLoss:18},
-  /* 11*/ {mode:'uci',   val:2850, depth:22, time:2400, mpv:1, maxLoss:12},
-  /* 12*/ {mode:'full',  val:20,   depth:30, time:3000, mpv:1, maxLoss:12},
+  /* 11*/ {mode:'uci',   val:2850, depth:22, time:3000, mpv:1, maxLoss:12},
+  /* 12*/ {mode:'full',  val:20,   depth:30, time:5000, mpv:1, maxLoss:12},
 ];
 function curLevelProfile(){ return LEVEL_PROFILES[Math.max(0,Math.min(LEVEL_MAX-1,currentLevel-1))]; }
 const ELO_TIERS=[
@@ -6611,7 +6621,7 @@ maybeShowVoiceWelcome();
    elle va lire la version réellement en ligne (fetch no-store) et, si elle diffère,
    affiche un bandeau « Mise à jour disponible ». Un appui vide les caches, met à jour
    le service worker et recharge — plus besoin de vider le cache à la main. */
-const APP_VERSION = 'v20260603-CLEAN142';
+const APP_VERSION = 'v20260603-CLEAN143';
 let _updLastCheck = 0;
 function _updBanner(remoteV){
   if(document.getElementById('updBanner')) return;
