@@ -1414,7 +1414,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN145</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN146</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -5053,16 +5053,21 @@ function startListening(){
 
     // Aucun coup clair. Si c'est un résultat FINAL, retour visuel uniquement (jamais vocal).
     if(anyFinal){
-      const best = (candidates[0]||'').replace(WAKE,'').trim();
       let acted = false;
-      if(best){
-        const act = parseVoiceToAction(best);
-        if(act && act.kind==='undo'){
+      // On balaie TOUTES les interprétations de Chrome (pas seulement la 1ʳᵉ) : « annuler »
+      // ou une autre commande est parfois en 2ᵉ/3ᵉ position derrière une transcription farfelue.
+      for(const raw of candidates){
+        const cleaned = raw.replace(WAKE,'').trim();
+        if(!cleaned) continue;
+        const act = parseVoiceToAction(cleaned);
+        if(!act) continue;
+        if(act.kind==='undo'){
           if(undoLock) return;
           undoLock = true;
           setTimeout(()=>{ undoLock=false; }, 1500);
         }
-        if(act){ executeVoiceAction(act, true); acted = true; } // ambiguïté / illégal / pion → retour spécifique
+        executeVoiceAction(act, true); acted = true; // ambiguïté / illégal / pion → retour spécifique
+        break;
       }
       // DIAGNOSTIC (demande G) : si rien n'a été reconnu comme coup ou commande, on affiche ce
       // que Chrome a réellement entendu. But : enrichir les dictionnaires sur des cas RÉELS,
@@ -6623,7 +6628,7 @@ maybeShowVoiceWelcome();
    elle va lire la version réellement en ligne (fetch no-store) et, si elle diffère,
    affiche un bandeau « Mise à jour disponible ». Un appui vide les caches, met à jour
    le service worker et recharge — plus besoin de vider le cache à la main. */
-const APP_VERSION = 'v20260603-CLEAN145';
+const APP_VERSION = 'v20260603-CLEAN146';
 let _updLastCheck = 0;
 function _updBanner(remoteV){
   if(document.getElementById('updBanner')) return;
