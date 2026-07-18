@@ -1414,7 +1414,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN144</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN145</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -6430,17 +6430,17 @@ const LEVEL_PROFILES=[
   /* 1 · 400  */ {mode:'skill', val:0,    depth:2,  time:150,  mpv:6, maxLoss:500},
   /* 2 · 600  */ {mode:'skill', val:1,    depth:3,  time:200,  mpv:6, maxLoss:380},
   /* 3 · 800  */ {mode:'skill', val:3,    depth:4,  time:250,  mpv:5, maxLoss:280},
-  /* 4 · 1000 */ {mode:'skill', val:5,    depth:5,  time:320,  mpv:5, maxLoss:200},
-  /* 5 · 1200 */ {mode:'skill', val:7,    depth:6,  time:400,  mpv:4, maxLoss:140},
-  /* 6 · 1400 */ {mode:'uci',   val:1400, depth:8,  time:500,  mpv:4, maxLoss:100},
-  /* 7 · 1600 */ {mode:'uci',   val:1600, depth:10, time:650,  mpv:3, maxLoss:70},
-  /* 8 · 1800 */ {mode:'uci',   val:1800, depth:12, time:800,  mpv:3, maxLoss:50},
-  /* 9 · 2000 */ {mode:'uci',   val:2000, depth:14, time:1000, mpv:2, maxLoss:35},
-  /* 10· 2200 */ {mode:'uci',   val:2200, depth:16, time:1300, mpv:2, maxLoss:25},
-  /* 11· 2400 */ {mode:'uci',   val:2400, depth:18, time:1700, mpv:1, maxLoss:15},
-  /* 12· 2600 */ {mode:'uci',   val:2600, depth:22, time:2200, mpv:1, maxLoss:12},
-  /* 13· 2800 */ {mode:'uci',   val:2800, depth:26, time:3000, mpv:1, maxLoss:12},
-  /* 14· 3000 */ {mode:'full',  val:20,   depth:30, time:5000, mpv:1, maxLoss:12},
+  /* 4 · 1000 */ {mode:'skill', val:5,    depth:5,  time:350,  mpv:5, maxLoss:200},
+  /* 5 · 1200 */ {mode:'skill', val:7,    depth:6,  time:450,  mpv:4, maxLoss:140},
+  /* 6 · 1400 */ {mode:'uci',   val:1400, depth:8,  time:700,  mpv:4, maxLoss:100},
+  /* 7 · 1600 */ {mode:'uci',   val:1600, depth:10, time:900,  mpv:3, maxLoss:70},
+  /* 8 · 1800 */ {mode:'uci',   val:1800, depth:12, time:1100,  mpv:3, maxLoss:50},
+  /* 9 · 2000 */ {mode:'uci',   val:2000, depth:14, time:1400, mpv:2, maxLoss:35},
+  /* 10· 2200 */ {mode:'uci',   val:2200, depth:16, time:1800, mpv:2, maxLoss:25},
+  /* 11· 2400 */ {mode:'uci',   val:2400, depth:18, time:2300, mpv:1, maxLoss:15},
+  /* 12· 2600 */ {mode:'uci',   val:2600, depth:22, time:3000, mpv:1, maxLoss:12},
+  /* 13· 2800 */ {mode:'uci',   val:2800, depth:26, time:4000, mpv:1, maxLoss:12},
+  /* 14· 3000 */ {mode:'full',  val:20,   depth:30, time:6000, mpv:1, maxLoss:12},
 ];
 function curLevelProfile(){ return LEVEL_PROFILES[Math.max(0,Math.min(LEVEL_MAX-1,currentLevel-1))]; }
 const ELO_TIERS=[
@@ -6623,7 +6623,7 @@ maybeShowVoiceWelcome();
    elle va lire la version réellement en ligne (fetch no-store) et, si elle diffère,
    affiche un bandeau « Mise à jour disponible ». Un appui vide les caches, met à jour
    le service worker et recharge — plus besoin de vider le cache à la main. */
-const APP_VERSION = 'v20260603-CLEAN144';
+const APP_VERSION = 'v20260603-CLEAN145';
 let _updLastCheck = 0;
 function _updBanner(remoteV){
   if(document.getElementById('updBanner')) return;
