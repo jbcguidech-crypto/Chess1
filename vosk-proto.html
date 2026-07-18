@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DYSC · Prototype Vosk (reconnaissance locale)</title>
+<style>
+  :root { --bg:#0f1621; --card:#16202f; --blue:#5B8DEF; --text:#e8eef8; --muted:#93a1b8; --ok:#55dda0; --err:#e07070; }
+  body { margin:0; padding:18px 14px 40px; background:var(--bg); color:var(--text); font-family:Manrope,system-ui,sans-serif; }
+  h1 { font-size:1.15rem; text-align:center; margin:6px 0 2px; }
+  .sub { text-align:center; color:var(--muted); font-size:.8rem; margin-bottom:14px; }
+  .card { background:var(--card); border:1px solid rgba(91,141,239,.25); border-radius:14px; padding:14px; max-width:520px; margin:0 auto 12px; }
+  #st { font-weight:700; font-size:.9rem; }
+  #st.ok { color:var(--ok); } #st.err { color:var(--err); }
+  #micBtn { display:block; width:100%; padding:16px; margin-top:10px; font:800 1.05rem Manrope; color:#fff;
+    background:var(--blue); border:none; border-radius:12px; cursor:pointer; }
+  #micBtn.on { background:#d04040; }
+  #micBtn:disabled { opacity:.5; }
+  label.tog { display:flex; align-items:center; gap:8px; font-size:.85rem; margin-top:10px; color:var(--muted); }
+  #partial { min-height:1.4em; color:var(--blue); font-style:italic; font-size:.95rem; }
+  .fin { padding:8px 10px; border-radius:9px; background:rgba(91,141,239,.10); margin-top:8px; font-size:.95rem; }
+  .fin .mv { font-weight:800; color:var(--ok); }
+  .fin .mv.none { color:var(--err); }
+  .fin .lat { float:right; color:var(--muted); font-size:.72rem; }
+  .hint { color:var(--muted); font-size:.78rem; line-height:1.5; }
+</style>
+</head>
+<body>
+<h1>🎙 Prototype Vosk — DYSC</h1>
+<div class="sub">Reconnaissance <b>locale</b> (hors-ligne) à vocabulaire d'échecs fermé</div>
+
+<div class="card">
+  <div id="st">Chargement du modèle français (~46 Mo, une seule fois — ensuite en cache)…</div>
+  <button id="micBtn" disabled>🎙 Parler</button>
+  <label class="tog"><input type="checkbox" id="gram" checked> Grammaire d'échecs fermée (décoché = dictée libre, pour comparer)</label>
+</div>
+
+<div class="card">
+  <div id="partial">…</div>
+  <div id="finals"></div>
+</div>
+
+<div class="card hint">
+  Dites par exemple : « cavalier f 3 », « e 4 », « tour prend d 5 », « petit roque », « annuler ».<br>
+  Chaque résultat affiche : la transcription brute de Vosk, le <b>coup interprété</b>, et la latence.
+  La bascule permet de mesurer l'apport de la grammaire fermée par rapport à la dictée libre.
+</div>
+
+<script src="vosk.js"></script>
+<script>
+// ── Vocabulaire d'échecs fermé (grammaire Kaldi) ──
+const PIECES = ['pion','tour','cavalier','fou','dame','reine','roi'];
+const FILES  = ['a','b','c','d','e','f','g','h'];
+const RANKS  = ['un','deux','trois','quatre','cinq','six','sept','huit'];
+const EXTRA  = ['prend','en','petit','grand','roque','annuler','indice','nouvelle','partie','échec','et','mat','[unk]'];
+const GRAMMAR = JSON.stringify([...PIECES, ...FILES, ...RANKS, ...EXTRA]);
+
+// ── Mini-interpréteur : texte Vosk → coup ──
+const RANK_MAP = {un:1,deux:2,trois:3,quatre:4,cinq:5,six:6,sept:7,huit:8,
+                  '1':1,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8};
+function interpret(text){
+  const toks = (text||'').toLowerCase().split(/\s+/).filter(t=>t && t!=='[unk]');
+  let piece=null, file=null, rank=null, flags=[];
+  for(const t of toks){
+    if(PIECES.includes(t)) piece = (t==='reine')?'dame':t;
+    else if(FILES.includes(t)) file=t;
+    else if(RANK_MAP[t]) rank=RANK_MAP[t];
+    else if(t==='roque'||t==='petit'||t==='grand'||t==='prend'||t==='annuler') flags.push(t);
+  }
+  if(flags.includes('annuler')) return 'Commande : ANNULER';
+  if(flags.includes('roque')) return flags.includes('grand') ? 'GRAND ROQUE' : 'PETIT ROQUE';
+  if(file && rank) return (piece? piece.charAt(0).toUpperCase()+piece.slice(1)+' ' : 'Pion ')
+                        + (flags.includes('prend')?'prend ':'') + file + rank;
+  return null;
+}
+
+// ── Boot Vosk ──
+const st=document.getElementById('st'), btn=document.getElementById('micBtn');
+const partial=document.getElementById('partial'), finals=document.getElementById('finals');
+const gramChk=document.getElementById('gram');
+let model=null, rec=null, ctx=null, stream=null, node=null, on=false, tSpeechStart=0;
+
+// Le modèle peut être fourni en 1 fichier OU en 2 morceaux (< 25 Mo chacun, limite
+// de l'upload web GitHub). On recolle les morceaux en mémoire — strictement identique.
+async function modelUrl(){
+  try{ const h=await fetch('vosk-model-small-fr.tar.gz',{method:'HEAD'}); if(h.ok) return 'vosk-model-small-fr.tar.gz'; }catch(e){}
+  const buf=[];
+  for(const p of ['vosk-model-small-fr.part1','vosk-model-small-fr.part2']){
+    const r=await fetch(p);
+    if(!r.ok) throw new Error('fichier modèle introuvable ('+p+')');
+    buf.push(await r.arrayBuffer());
+  }
+  return URL.createObjectURL(new Blob(buf,{type:'application/gzip'}));
+}
+async function boot(){
+  try{
+    model = await Vosk.createModel(await modelUrl());
+    st.textContent='✅ Modèle chargé — prêt (fonctionne hors-ligne).'; st.className='ok';
+    btn.disabled=false;
+  }catch(e){
+    st.textContent='❌ Échec chargement modèle : '+e.message+' — vérifiez que vosk-model-small-fr.tar.gz est à côté de cette page.'; st.className='err';
+  }
+}
+boot();
+
+function makeRec(sampleRate){
+  const r = gramChk.checked ? new model.KaldiRecognizer(sampleRate, GRAMMAR)
+                            : new model.KaldiRecognizer(sampleRate);
+  r.on('partialresult', m=>{
+    const p=(m.result && m.result.partial)||'';
+    if(p && !tSpeechStart) tSpeechStart=performance.now();
+    partial.textContent = p || '…';
+  });
+  r.on('result', m=>{
+    const text=(m.result && m.result.text)||'';
+    if(!text) return;
+    const lat = tSpeechStart ? Math.round(performance.now()-tSpeechStart) : 0;
+    tSpeechStart=0;
+    const mv = interpret(text);
+    const div=document.createElement('div'); div.className='fin';
+    div.innerHTML = '<span class="lat">'+lat+' ms</span>« '+text+' »<br>→ <span class="mv '+(mv?'':'none')+'">'+(mv||'aucun coup reconnu')+'</span>';
+    finals.prepend(div);
+    partial.textContent='…';
+  });
+  return r;
+}
+
+btn.onclick = async ()=>{
+  if(on){ // stop
+    on=false; btn.textContent='🎙 Parler'; btn.classList.remove('on');
+    try{ node && node.disconnect(); }catch(e){}
+    try{ stream && stream.getTracks().forEach(t=>t.stop()); }catch(e){}
+    try{ ctx && ctx.close(); }catch(e){}
+    rec=null; return;
+  }
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true, channelCount:1}});
+    ctx = new (window.AudioContext||window.webkitAudioContext)();
+    rec = makeRec(ctx.sampleRate);
+    const src = ctx.createMediaStreamSource(stream);
+    node = ctx.createScriptProcessor(4096,1,1);
+    node.onaudioprocess = (e)=>{ try{ rec.acceptWaveform(e.inputBuffer); }catch(err){} };
+    src.connect(node); node.connect(ctx.destination);
+    on=true; btn.textContent='⏹ Arrêter'; btn.classList.add('on');
+    st.textContent='🎙 Écoute en cours ('+(gramChk.checked?'grammaire fermée':'dictée libre')+')…'; st.className='ok';
+  }catch(e){
+    st.textContent='❌ Micro refusé : '+e.message; st.className='err';
+  }
+};
+gramChk.onchange = ()=>{ if(on) btn.onclick(); }; // stoppe si on bascule en cours d'écoute
+</script>
+</body>
+</html>
