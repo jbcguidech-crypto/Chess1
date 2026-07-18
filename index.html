@@ -1414,7 +1414,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN143</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN144</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -1466,7 +1466,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
     <div class="splash-diff-label">
       <span class="sd-elo"><svg class="voice-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4c1.6 1.8 2.5 4.2 2.5 8s-.9 6.2-2.5 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M9.5 6c1 1.3 1.6 2.8 1.6 6s-.6 4.7-1.6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5.5 8.5c.6.8 1 1.7 1 3.5s-.4 2.7-1 3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="sd-elo-niveau">niveau</span> <span id="splashEloVal">3</span></span>
     </div>
-    <input type="range" id="splashEloSlider" min="1" max="12" step="1" value="3"
+    <input type="range" id="splashEloSlider" min="1" max="14" step="1" value="3"
       oninput="onSplashLevelSlide(this.value)" onchange="onSplashLevelSlide(this.value)"
       style="touch-action:none;position:relative;z-index:10;">
   </div>
@@ -2396,7 +2396,7 @@ function startSplashListening(){
 // Interprète une commande vocale du splash → renvoie true si une action a été lancée
 function parseSplashCommand(text){
   const t = ' '+text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()+' ';
-  // Niveau parlé : "niveau 5" (1–12) ; à défaut, un Elo dicté (3–4 chiffres) → converti en niveau.
+  // Niveau parlé : "niveau 5" (1–14) ; à défaut, un Elo dicté (3–4 chiffres) → converti en niveau.
   let levelSet = false;
   let targetLevel = null;
   const mLvl = t.match(/\bniveau\s+(\d{1,2})\b/);
@@ -6416,8 +6416,8 @@ let currentElo=800;
 // ===== NIVEAUX (1–12, façon Lichess) =====
 // L'Elo reste la "force" interne qui pilote le moteur ; chaque niveau y est mappé.
 // (Courbe précise affinée plus tard — demande D.)
-const LEVEL_ELOS=[400,600,800,1000,1250,1500,1750,2000,2250,2500,2750,3000]; // idx 0 = niveau 1
-const LEVEL_MIN=1, LEVEL_MAX=12;
+const LEVEL_ELOS=[400,600,800,1000,1200,1400,1600,1800,2000,2200,2400,2600,2800,3000]; // idx 0 = niveau 1 (pas de 200)
+const LEVEL_MIN=1, LEVEL_MAX=14;
 let currentLevel=3; // défaut ≈ 800 Elo
 function levelToElo(n){ n=Math.max(LEVEL_MIN,Math.min(LEVEL_MAX,parseInt(n)||LEVEL_MIN)); return LEVEL_ELOS[n-1]; }
 function eloToLevel(elo){ let best=1,bd=Infinity; for(let i=0;i<LEVEL_ELOS.length;i++){ const d=Math.abs(LEVEL_ELOS[i]-elo); if(d<bd){bd=d;best=i+1;} } return best; }
@@ -6427,18 +6427,20 @@ function setLevel(n){ currentLevel=Math.max(LEVEL_MIN,Math.min(LEVEL_MAX,parseIn
 // mode 'skill' (bas, faiblesse + erreurs humaines) → 'uci' (milieu/haut, force prévisible) → 'full' (sommet).
 // depth/time montent ; mpv (candidats) et maxLoss (marge d'erreur tolérée, en centipions) descendent.
 const LEVEL_PROFILES=[
-  /* 1 */ {mode:'skill', val:0,  depth:2,  time:150,  mpv:6, maxLoss:500},
-  /* 2 */ {mode:'skill', val:1,  depth:3,  time:200,  mpv:6, maxLoss:350},
-  /* 3 */ {mode:'skill', val:3,  depth:4,  time:250,  mpv:5, maxLoss:250},
-  /* 4 */ {mode:'skill', val:5,  depth:5,  time:350,  mpv:5, maxLoss:160},
-  /* 5 */ {mode:'skill', val:7,  depth:7,  time:450,  mpv:4, maxLoss:110},
-  /* 6 */ {mode:'skill', val:9,  depth:8,  time:600,  mpv:4, maxLoss:80},
-  /* 7 */ {mode:'uci',   val:1700, depth:10, time:800,  mpv:3, maxLoss:55},
-  /* 8 */ {mode:'uci',   val:1950, depth:12, time:1000, mpv:3, maxLoss:40},
-  /* 9 */ {mode:'uci',   val:2200, depth:15, time:1300, mpv:2, maxLoss:28},
-  /* 10*/ {mode:'uci',   val:2500, depth:18, time:1800, mpv:2, maxLoss:18},
-  /* 11*/ {mode:'uci',   val:2850, depth:22, time:3000, mpv:1, maxLoss:12},
-  /* 12*/ {mode:'full',  val:20,   depth:30, time:5000, mpv:1, maxLoss:12},
+  /* 1 · 400  */ {mode:'skill', val:0,    depth:2,  time:150,  mpv:6, maxLoss:500},
+  /* 2 · 600  */ {mode:'skill', val:1,    depth:3,  time:200,  mpv:6, maxLoss:380},
+  /* 3 · 800  */ {mode:'skill', val:3,    depth:4,  time:250,  mpv:5, maxLoss:280},
+  /* 4 · 1000 */ {mode:'skill', val:5,    depth:5,  time:320,  mpv:5, maxLoss:200},
+  /* 5 · 1200 */ {mode:'skill', val:7,    depth:6,  time:400,  mpv:4, maxLoss:140},
+  /* 6 · 1400 */ {mode:'uci',   val:1400, depth:8,  time:500,  mpv:4, maxLoss:100},
+  /* 7 · 1600 */ {mode:'uci',   val:1600, depth:10, time:650,  mpv:3, maxLoss:70},
+  /* 8 · 1800 */ {mode:'uci',   val:1800, depth:12, time:800,  mpv:3, maxLoss:50},
+  /* 9 · 2000 */ {mode:'uci',   val:2000, depth:14, time:1000, mpv:2, maxLoss:35},
+  /* 10· 2200 */ {mode:'uci',   val:2200, depth:16, time:1300, mpv:2, maxLoss:25},
+  /* 11· 2400 */ {mode:'uci',   val:2400, depth:18, time:1700, mpv:1, maxLoss:15},
+  /* 12· 2600 */ {mode:'uci',   val:2600, depth:22, time:2200, mpv:1, maxLoss:12},
+  /* 13· 2800 */ {mode:'uci',   val:2800, depth:26, time:3000, mpv:1, maxLoss:12},
+  /* 14· 3000 */ {mode:'full',  val:20,   depth:30, time:5000, mpv:1, maxLoss:12},
 ];
 function curLevelProfile(){ return LEVEL_PROFILES[Math.max(0,Math.min(LEVEL_MAX-1,currentLevel-1))]; }
 const ELO_TIERS=[
@@ -6621,7 +6623,7 @@ maybeShowVoiceWelcome();
    elle va lire la version réellement en ligne (fetch no-store) et, si elle diffère,
    affiche un bandeau « Mise à jour disponible ». Un appui vide les caches, met à jour
    le service worker et recharge — plus besoin de vider le cache à la main. */
-const APP_VERSION = 'v20260603-CLEAN143';
+const APP_VERSION = 'v20260603-CLEAN144';
 let _updLastCheck = 0;
 function _updBanner(remoteV){
   if(document.getElementById('updBanner')) return;
