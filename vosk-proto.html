@@ -102,21 +102,36 @@ let model=null, rec=null, ctx=null, stream=null, node=null, on=false, tSpeechSta
 // de l'upload web GitHub). On recolle les morceaux en mémoire — strictement identique.
 async function exists(u){ try{ const r=await fetch(u,{method:'HEAD'}); return r.ok; }catch(e){ return false; } }
 async function firstExisting(cands){ for(const c of cands){ if(await exists(encodeURI(c))) return c; } return null; }
+async function fetchProgress(url, label, done, total){
+  const r=await fetch(encodeURI(url));
+  if(!r.ok) throw new Error('échec téléchargement '+url);
+  const len=+r.headers.get('Content-Length')||0;
+  const reader=r.body.getReader(); const chunks=[]; let got=0;
+  while(true){
+    const {done:fin, value}=await reader.read();
+    if(fin) break;
+    chunks.push(value); got+=value.length;
+    const mo=((done+got)/1048576).toFixed(1), tot=(total/1048576).toFixed(0);
+    st.textContent='⬇️ Téléchargement du modèle : '+mo+' / ~'+tot+' Mo ('+label+')…';
+  }
+  const buf=new Uint8Array(got); let off=0;
+  for(const c of chunks){ buf.set(c,off); off+=c.length; }
+  return buf.buffer;
+}
 async function modelUrl(){
-  // Modèle en 1 fichier ?
+  st.textContent='🔎 Recherche des fichiers du modèle…';
   const single=await firstExisting(['vosk-model-small-fr.tar.gz','vosk-model-small-fr-1.tar.gz','vosk-model-small-fr (1).tar.gz']);
-  if(single) return encodeURI(single);
-  // Sinon en 2 morceaux — en tolérant les renommages Android (suffixes -1, (1), etc.)
+  const TOTAL=46004187;
+  if(single){
+    const b=await fetchProgress(single,'fichier unique',0,TOTAL);
+    return URL.createObjectURL(new Blob([b],{type:'application/gzip'}));
+  }
   const p1=await firstExisting(['vosk-model-small-fr.part1','vosk-model-small-fr-1.part1','vosk-model-small-fr (1).part1','vosk-model-small-fr.part1-1']);
   const p2=await firstExisting(['vosk-model-small-fr.part2','vosk-model-small-fr-1.part2','vosk-model-small-fr (1).part2','vosk-model-small-fr.part2-1']);
   if(!p1||!p2) throw new Error('morceaux du modèle introuvables (part1: '+(p1||'✗')+', part2: '+(p2||'✗')+')');
-  const buf=[];
-  for(const p of [p1,p2]){
-    const r=await fetch(encodeURI(p));
-    if(!r.ok) throw new Error('échec téléchargement '+p);
-    buf.push(await r.arrayBuffer());
-  }
-  return URL.createObjectURL(new Blob(buf,{type:'application/gzip'}));
+  const b1=await fetchProgress(p1,'morceau 1/2',0,TOTAL);
+  const b2=await fetchProgress(p2,'morceau 2/2',b1.byteLength,TOTAL);
+  return URL.createObjectURL(new Blob([b1,b2],{type:'application/gzip'}));
 }
 async function boot(){
   // Diagnostic précis : on vérifie chaque fichier et on nomme le coupable exact.
@@ -125,13 +140,18 @@ async function boot(){
     st.className='err'; return;
   }
   try{
-    model = await Vosk.createModel(await modelUrl());
+    const url = await modelUrl();
+    st.textContent='📦 Décompression et initialisation du moteur (30 s – 1 min sur mobile)…';
+    model = await Vosk.createModel(url);
     st.textContent='✅ Modèle chargé — prêt (fonctionne hors-ligne).'; st.className='ok';
     btn.disabled=false;
   }catch(e){
     st.textContent='❌ Échec chargement du modèle : '+e.message+' — vérifiez que vosk-model-small-fr.part1 et .part2 sont bien à la racine, avec ces noms exacts.'; st.className='err';
   }
 }
+// Toute erreur silencieuse (worker, promesse) remonte à l'écran
+window.addEventListener('unhandledrejection', ev=>{ if(btn.disabled){ st.textContent='❌ Erreur : '+(ev.reason&&ev.reason.message||ev.reason); st.className='err'; } });
+window.addEventListener('error', ev=>{ if(btn.disabled && ev.message){ st.textContent='❌ Erreur : '+ev.message; st.className='err'; } });
 // vosk.js se charge en asynchrone : on démarre quand il est prêt (ou en échec avéré)
 if(typeof Vosk!=='undefined' || window._voskFailed) boot();
 else window._afterVosk = boot;
