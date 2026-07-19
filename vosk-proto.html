@@ -46,7 +46,25 @@
   La bascule permet de mesurer l'apport de la grammaire fermée par rapport à la dictée libre.
 </div>
 
-<script src="vosk.js"></script>
+<script>
+// Chargeur tolérant : Android renomme volontiers les téléchargements ("vosk (1).js", "vosk-1.js"…)
+// → on essaie plusieurs noms, le premier qui répond gagne.
+(function(){
+  // Noms locaux d'abord (objectif hors-ligne), puis repli CDN (permet de tester
+  // même si vosk.js n'a pas pu être téléversé dans le dépôt).
+  const names=['vosk.js','vosk-1.js','vosk (1).js','vosk(1).js','vosk.js.js',
+               'https://cdn.jsdelivr.net/npm/vosk-browser@0.0.8/dist/vosk.js'];
+  function next(i){
+    if(i>=names.length){ window._voskFailed=true; if(window._afterVosk) window._afterVosk(); return; }
+    const s=document.createElement('script');
+    s.src=encodeURI(names[i]);
+    s.onload=()=>{ window._voskSrc=names[i]; if(window._afterVosk) window._afterVosk(); };
+    s.onerror=()=>next(i+1);
+    document.head.appendChild(s);
+  }
+  next(0);
+})();
+</script>
 <script>
 // ── Vocabulaire d'échecs fermé (grammaire Kaldi) ──
 const PIECES = ['pion','tour','cavalier','fou','dame','reine','roi'];
@@ -82,12 +100,20 @@ let model=null, rec=null, ctx=null, stream=null, node=null, on=false, tSpeechSta
 
 // Le modèle peut être fourni en 1 fichier OU en 2 morceaux (< 25 Mo chacun, limite
 // de l'upload web GitHub). On recolle les morceaux en mémoire — strictement identique.
+async function exists(u){ try{ const r=await fetch(u,{method:'HEAD'}); return r.ok; }catch(e){ return false; } }
+async function firstExisting(cands){ for(const c of cands){ if(await exists(encodeURI(c))) return c; } return null; }
 async function modelUrl(){
-  try{ const h=await fetch('vosk-model-small-fr.tar.gz',{method:'HEAD'}); if(h.ok) return 'vosk-model-small-fr.tar.gz'; }catch(e){}
+  // Modèle en 1 fichier ?
+  const single=await firstExisting(['vosk-model-small-fr.tar.gz','vosk-model-small-fr-1.tar.gz','vosk-model-small-fr (1).tar.gz']);
+  if(single) return encodeURI(single);
+  // Sinon en 2 morceaux — en tolérant les renommages Android (suffixes -1, (1), etc.)
+  const p1=await firstExisting(['vosk-model-small-fr.part1','vosk-model-small-fr-1.part1','vosk-model-small-fr (1).part1','vosk-model-small-fr.part1-1']);
+  const p2=await firstExisting(['vosk-model-small-fr.part2','vosk-model-small-fr-1.part2','vosk-model-small-fr (1).part2','vosk-model-small-fr.part2-1']);
+  if(!p1||!p2) throw new Error('morceaux du modèle introuvables (part1: '+(p1||'✗')+', part2: '+(p2||'✗')+')');
   const buf=[];
-  for(const p of ['vosk-model-small-fr.part1','vosk-model-small-fr.part2']){
-    const r=await fetch(p);
-    if(!r.ok) throw new Error('fichier modèle introuvable ('+p+')');
+  for(const p of [p1,p2]){
+    const r=await fetch(encodeURI(p));
+    if(!r.ok) throw new Error('échec téléchargement '+p);
     buf.push(await r.arrayBuffer());
   }
   return URL.createObjectURL(new Blob(buf,{type:'application/gzip'}));
@@ -95,7 +121,7 @@ async function modelUrl(){
 async function boot(){
   // Diagnostic précis : on vérifie chaque fichier et on nomme le coupable exact.
   if(typeof Vosk === 'undefined'){
-    st.innerHTML='❌ <b>vosk.js ne s\'est pas chargé.</b> Vérifiez sur GitHub que le fichier s\'appelle exactement <b>vosk.js</b> (pas « vosk (1).js ») à la racine, puis testez son URL directe : <b>/vosk.js</b> — elle doit afficher du code, pas une page 404.';
+    st.innerHTML='❌ <b>vosk.js introuvable</b> — ni en local (vosk.js, vosk-1.js…) ni via le CDN (réseau ?). Téléversez vosk.js à la racine, ou réessayez avec du réseau.';
     st.className='err'; return;
   }
   try{
@@ -106,7 +132,9 @@ async function boot(){
     st.textContent='❌ Échec chargement du modèle : '+e.message+' — vérifiez que vosk-model-small-fr.part1 et .part2 sont bien à la racine, avec ces noms exacts.'; st.className='err';
   }
 }
-boot();
+// vosk.js se charge en asynchrone : on démarre quand il est prêt (ou en échec avéré)
+if(typeof Vosk!=='undefined' || window._voskFailed) boot();
+else window._afterVosk = boot;
 
 function makeRec(sampleRate){
   const r = gramChk.checked ? new model.KaldiRecognizer(sampleRate, GRAMMAR)
