@@ -93,12 +93,17 @@ async function modelUrl(){
   return URL.createObjectURL(new Blob(buf,{type:'application/gzip'}));
 }
 async function boot(){
+  // Diagnostic précis : on vérifie chaque fichier et on nomme le coupable exact.
+  if(typeof Vosk === 'undefined'){
+    st.innerHTML='❌ <b>vosk.js ne s\'est pas chargé.</b> Vérifiez sur GitHub que le fichier s\'appelle exactement <b>vosk.js</b> (pas « vosk (1).js ») à la racine, puis testez son URL directe : <b>/vosk.js</b> — elle doit afficher du code, pas une page 404.';
+    st.className='err'; return;
+  }
   try{
     model = await Vosk.createModel(await modelUrl());
     st.textContent='✅ Modèle chargé — prêt (fonctionne hors-ligne).'; st.className='ok';
     btn.disabled=false;
   }catch(e){
-    st.textContent='❌ Échec chargement modèle : '+e.message+' — vérifiez que vosk-model-small-fr.tar.gz est à côté de cette page.'; st.className='err';
+    st.textContent='❌ Échec chargement du modèle : '+e.message+' — vérifiez que vosk-model-small-fr.part1 et .part2 sont bien à la racine, avec ces noms exacts.'; st.className='err';
   }
 }
 boot();
