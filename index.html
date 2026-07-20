@@ -1414,7 +1414,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN149</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN150</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -5143,6 +5143,7 @@ function processVoiceCandidates(candidates, candMeta, anyFinal, displayHeard){
 function startListening(){
   // Routage moteur : Vosk (local) prioritaire dès qu'il est prêt ; sinon Web Speech.
   if(voskReady && voiceEnginePref!=='webspeech'){
+    try{ if(recognition){ recognition.abort(); } }catch(e){} // un seul moteur à la fois
     if(!voskActive) voskStart();
     return;
   }
@@ -5212,6 +5213,7 @@ function startListening(){
     if(voiceContinuous){
       setTimeout(()=>{
         if(!voiceContinuous || listening) return;
+        if(voskActive || (voskReady && voiceEnginePref!=='webspeech')){ startListening(); return; } // Vosk aux commandes
         try{ recognition.start(); }
         catch(e){
           setTimeout(()=>{ try{ if(voiceContinuous && !listening) recognition.start(); }catch(_){} }, 250);
@@ -6478,9 +6480,13 @@ function speak(text, onEnd, who){
     if(onEnd) setTimeout(onEnd, 1500);
     return;
   }
-  // 🎙 Stratégie unifiée : micro laissé actif pendant que l'IA parle.
-  // onresult ignore tout tant que aiSpeaking est vrai (+ garde anti-écho après l'annonce).
+  // 🎙 Stratégie : Web Speech reste actif pendant l'annonce (onresult filtre) ; mais si
+  // VOSK est le moteur, on LIBÈRE sa capture le temps de parler — la capture continue
+  // (getUserMedia) fait passer Android en mode « communication », ce qui ÉTOUFFE le son
+  // (l'IA devient inaudible) et déphase tout le dialogue. L'écoute Vosk reprend
+  // automatiquement ~1 s après la fin de l'annonce (chemins de reprise existants).
   aiSpeaking = true;
+  try{ voskStop(); }catch(e){}
   const myEpoch = speechEpoch;
   window.speechSynthesis.cancel();
   // Petit carillon doux AVANT l'annonce de l'IA (pour distinguer sa voix de la vôtre)
@@ -6745,7 +6751,7 @@ maybeShowVoiceWelcome();
    elle va lire la version réellement en ligne (fetch no-store) et, si elle diffère,
    affiche un bandeau « Mise à jour disponible ». Un appui vide les caches, met à jour
    le service worker et recharge — plus besoin de vider le cache à la main. */
-const APP_VERSION = 'v20260603-CLEAN149';
+const APP_VERSION = 'v20260603-CLEAN150';
 let _updLastCheck = 0;
 function _updBanner(remoteV){
   if(document.getElementById('updBanner')) return;
