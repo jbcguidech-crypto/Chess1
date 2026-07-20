@@ -1415,7 +1415,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN156</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN157</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -4953,26 +4953,36 @@ function voskOnResult(m){
     const rep=_voskRepair; _voskRepair=null;
     if(Date.now()-rep.t < 10000){
       try{ const a=parseVoiceToAction('annuler'); if(a) executeVoiceAction(a, false); }catch(e){}
-      setTimeout(()=>{ processVoiceCandidates([rep.swapText],[{text:rep.swapText,rank:0,conf:null}],true,rep.swapText); }, 350);
+      if(rep.swapText){
+        // paire b↔d : on joue directement l'autre colonne
+        setTimeout(()=>{ processVoiceCandidates([rep.swapText],[{text:rep.swapText,rank:0,conf:null}],true,rep.swapText); }, 350);
+      } else {
+        // autre confusion (ex: f↔h) : coup annulé, à vous de redire (alias OTAN bienvenus)
+        setTimeout(()=>{
+          setStatus(currentLang==='fr' ? '🎤 Coup annulé — répétez votre coup' : '🎤 Undone — repeat your move','');
+          try{ speak(currentLang==='fr' ? 'Répétez votre coup' : 'Repeat your move', null, 'ai'); }catch(e){}
+        }, 400);
+      }
       return;
     }
   }
   // « oui » / « non » isolés hors fenêtre : on les ignore en silence (pas de ❓ parasite)
   if(/^(oui|ouais|non)$/.test(low)){ _voskRepair=null; return; }
 
-  // Arme la réparation si le coup dicté vise une colonne confusable (b ou d)
-  let swapText=null;
+  // Arme la réparation dès qu'une colonne est dictée : b/d → échange auto par « non » ;
+  // toute autre colonne (ex: f entendu h) → « non » annule et invite à répéter.
+  let swapText=null, hasFile=false;
   const toks=text.split(/\s+/);
   for(let j=0;j<toks.length;j++){
     const f=_fileOfWord(toks[j].toLowerCase());
-    if(f && _CONF_PAIRS[f]){
-      const st=toks.slice(); st[j]=_CONF_PAIRS[f];
-      swapText=st.join(' ');
+    if(f){
+      hasFile=true;
+      if(_CONF_PAIRS[f]){ const st=toks.slice(); st[j]=_CONF_PAIRS[f]; swapText=st.join(' '); }
       break;
     }
   }
   processVoiceCandidates([text],[{text:text,rank:0,conf:null}],true,text);
-  _voskRepair = swapText ? { swapText:swapText, t:Date.now() } : null;
+  _voskRepair = hasFile ? { swapText:swapText, t:Date.now() } : null;
 }
 
 function voskStart(){
@@ -6554,7 +6564,13 @@ function speak(text, onEnd, who){
     // début du son. Une courte pause silencieuse évite que « Pion » devienne « ion ».
     const u = new SpeechSynthesisUtterance('… ' + text);
     u.lang = currentLang==='fr' ? 'fr-FR' : 'en-US';
-    const chosen = getVoiceFor(who || 'me');
+    let chosen = getVoiceFor(who || 'me');
+    // Une préférence de voix peut pointer vers une voix désinstallée → l'énoncé échoue
+    // EN SILENCE (c'est ainsi que l'écho de VOS coups disparaissait). On valide.
+    try{
+      const avail = window.speechSynthesis.getVoices() || [];
+      if(chosen && !avail.some(v=>v.voiceURI===chosen.voiceURI || v.name===chosen.name)) chosen=null;
+    }catch(e){}
     if(chosen) u.voice = chosen;
     u.pitch = 1.0;
     u.rate = 1.0;
@@ -6569,6 +6585,17 @@ function speak(text, onEnd, who){
       }, 1100);
     };
     u.onerror = ()=>{
+      // Si l'échec vient de la voix personnalisée : une reprise, voix par défaut.
+      if(u.voice && !u._retried){
+        try{
+          const u2=new SpeechSynthesisUtterance(u.text);
+          u2.lang=u.lang; u2.pitch=u.pitch; u2.rate=u.rate; u2._retried=true;
+          u2.onend=u.onend; u2.onerror=()=>{ if(typeof u.onerror==='function'){} };
+          window.speechSynthesis.resume();
+          window.speechSynthesis.speak(u2);
+          return;
+        }catch(e){}
+      }
       aiSpeaking = false;
       _aiAnnounceEnd = Date.now();
       if(onEnd) setTimeout(onEnd, 300);
@@ -6812,7 +6839,7 @@ maybeShowVoiceWelcome();
    elle va lire la version réellement en ligne (fetch no-store) et, si elle diffère,
    affiche un bandeau « Mise à jour disponible ». Un appui vide les caches, met à jour
    le service worker et recharge — plus besoin de vider le cache à la main. */
-const APP_VERSION = 'v20260603-CLEAN156';
+const APP_VERSION = 'v20260603-CLEAN157';
 let _updLastCheck = 0;
 function _updBanner(remoteV){
   if(document.getElementById('updBanner')) return;
