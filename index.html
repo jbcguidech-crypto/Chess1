@@ -1415,7 +1415,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN152</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN153</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -4888,6 +4888,8 @@ let voiceEnginePref = (localStorage.getItem('dysc_voice_engine')==='webspeech') 
 const VOSK_GRAMMAR = JSON.stringify([
   'pion','tour','cavalier','fou','dame','reine','roi',
   'a','b','c','d','e','f','g','h',
+  'alpha','bravo','charlie','delta','echo','écho','foxtrot','fox','golf','hotel','hôtel',  // alias OTAN : inconfondables (d↔b…)
+  'alpha','bravo','charlie','delta','echo','écho','foxtrot','golf','hotel','hôtel',
   'un','deux','trois','quatre','cinq','six','sept','huit','neuf','dix','onze','douze','treize','quatorze',
   'prend','en','passant','petit','grand','roque','promotion',
   'annuler','indice','menu','accueil','nouvelle','partie','abandonner','abandonne',
@@ -6763,7 +6765,7 @@ maybeShowVoiceWelcome();
    elle va lire la version réellement en ligne (fetch no-store) et, si elle diffère,
    affiche un bandeau « Mise à jour disponible ». Un appui vide les caches, met à jour
    le service worker et recharge — plus besoin de vider le cache à la main. */
-const APP_VERSION = 'v20260603-CLEAN152';
+const APP_VERSION = 'v20260603-CLEAN153';
 let _updLastCheck = 0;
 function _updBanner(remoteV){
   if(document.getElementById('updBanner')) return;
