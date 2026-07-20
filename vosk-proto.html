@@ -120,15 +120,23 @@ async function fetchProgress(url, label, done, total){
 }
 async function modelUrl(){
   st.textContent='🔎 Recherche des fichiers du modèle…';
+  // 1) Fichier unique local (idéal, streamé par le moteur → mémoire minimale)
   const single=await firstExisting(['vosk-model-small-fr.tar.gz','vosk-model-small-fr-1.tar.gz','vosk-model-small-fr (1).tar.gz']);
-  const TOTAL=46004187;
-  if(single){
-    const b=await fetchProgress(single,'fichier unique',0,TOTAL);
-    return URL.createObjectURL(new Blob([b],{type:'application/gzip'}));
+  if(single) return encodeURI(single);
+  // 2) URL directe distante (même modèle, hébergé publiquement, CORS ouvert) :
+  //    le moteur la streame → ~2× moins de mémoire que le recollage. C'est la voie
+  //    recommandée pour les téléphones où le recollage sature la RAM.
+  for(const remote of [
+    'https://cdn.jsdelivr.net/gh/ccoreilly/vosk-browser@gh-pages/models/vosk-model-small-fr-pguyot-0.3.tar.gz',
+    'https://raw.githubusercontent.com/ccoreilly/vosk-browser/gh-pages/models/vosk-model-small-fr-pguyot-0.3.tar.gz'
+  ]){
+    if(await exists(remote)){ st.textContent='🌐 Modèle streamé depuis le CDN (économe en mémoire)…'; return remote; }
   }
+  // 3) Dernier recours : recollage des 2 morceaux locaux (gourmand en RAM)
+  const TOTAL=46004187;
   const p1=await firstExisting(['vosk-model-small-fr.part1','vosk-model-small-fr-1.part1','vosk-model-small-fr (1).part1','vosk-model-small-fr.part1-1']);
   const p2=await firstExisting(['vosk-model-small-fr.part2','vosk-model-small-fr-1.part2','vosk-model-small-fr (1).part2','vosk-model-small-fr.part2-1']);
-  if(!p1||!p2) throw new Error('morceaux du modèle introuvables (part1: '+(p1||'✗')+', part2: '+(p2||'✗')+')');
+  if(!p1||!p2) throw new Error('modèle introuvable (ni local, ni CDN, ni morceaux)');
   const b1=await fetchProgress(p1,'morceau 1/2',0,TOTAL);
   const b2=await fetchProgress(p2,'morceau 2/2',b1.byteLength,TOTAL);
   return URL.createObjectURL(new Blob([b1,b2],{type:'application/gzip'}));
