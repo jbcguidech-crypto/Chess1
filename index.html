@@ -1414,7 +1414,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN148</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN149</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -2146,11 +2146,11 @@ function setSplashElo(elo) {
   onSplashEloSlide(elo);
 }
 
-// Gestionnaire tactile explicite : calcule le NIVEAU (1–12) depuis la position du doigt
+// Gestionnaire tactile explicite : calcule le NIVEAU (1–14) depuis la position du doigt
 function attachSliderTouch(){
   const sl = document.getElementById('splashEloSlider');
   if(!sl) return;
-  const MIN = 1, MAX = 12, STEP = 1; // niveaux (littéraux : appelé au chargement, avant les const LEVEL_*)
+  const MIN = 1, MAX = 14, STEP = 1; // niveaux (littéraux : appelé au chargement, avant les const LEVEL_*)
   function valueFromTouch(clientX){
     const rect = sl.getBoundingClientRect();
     let ratio = (clientX - rect.left) / rect.width;
@@ -6534,7 +6534,7 @@ document.addEventListener('touchend', onUserInteract);
 
 // ===== ELO SYSTEM =====
 let currentElo=800;
-// ===== NIVEAUX (1–12, façon Lichess) =====
+// ===== NIVEAUX (1–14, façon Lichess) =====
 // L'Elo reste la "force" interne qui pilote le moteur ; chaque niveau y est mappé.
 // (Courbe précise affinée plus tard — demande D.)
 const LEVEL_ELOS=[400,600,800,1000,1200,1400,1600,1800,2000,2200,2400,2600,2800,3000]; // idx 0 = niveau 1 (pas de 200)
@@ -6745,7 +6745,7 @@ maybeShowVoiceWelcome();
    elle va lire la version réellement en ligne (fetch no-store) et, si elle diffère,
    affiche un bandeau « Mise à jour disponible ». Un appui vide les caches, met à jour
    le service worker et recharge — plus besoin de vider le cache à la main. */
-const APP_VERSION = 'v20260603-CLEAN148';
+const APP_VERSION = 'v20260603-CLEAN149';
 let _updLastCheck = 0;
 function _updBanner(remoteV){
   if(document.getElementById('updBanner')) return;
