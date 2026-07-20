@@ -1415,7 +1415,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN157</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN158</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -6557,7 +6557,10 @@ function speak(text, onEnd, who){
   try{ window.speechSynthesis.resume(); }catch(e){}  // dé-gèle le moteur TTS Android (cf. écho muet)
   // Petit carillon doux AVANT l'annonce de l'IA (pour distinguer sa voix de la vôtre)
   const _isAi = (who==='ai');
-  if(_isAi){ try{ playSound('bell'); }catch(e){} }
+  // Carillon pour TOUTES les annonces (IA ET écho de vos coups) : après l'arrêt de la
+  // capture Vosk, Android rouvre la sortie audio paresseusement — sans ce son préalable,
+  // la première seconde de l'énoncé était avalée (« Pion d4 » → « …atre »).
+  try{ playSound('bell'); }catch(e){}
   setTimeout(()=>{
     if(myEpoch !== speechEpoch){ aiSpeaking=false; return; } // parole annulée (ex: retour au menu)
     // Petit « tampon » en tête : sur Android, le moteur TTS avale souvent le tout
@@ -6839,7 +6842,7 @@ maybeShowVoiceWelcome();
    elle va lire la version réellement en ligne (fetch no-store) et, si elle diffère,
    affiche un bandeau « Mise à jour disponible ». Un appui vide les caches, met à jour
    le service worker et recharge — plus besoin de vider le cache à la main. */
-const APP_VERSION = 'v20260603-CLEAN157';
+const APP_VERSION = 'v20260603-CLEAN158';
 let _updLastCheck = 0;
 function _updBanner(remoteV){
   if(document.getElementById('updBanner')) return;
