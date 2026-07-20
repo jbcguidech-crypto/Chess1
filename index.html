@@ -1110,6 +1110,7 @@ input[type=range]::-webkit-slider-thumb {
   box-shadow:0 0 0 3px var(--surface);
 }
 /* écoute active = micro rouge qui pulse, sans barre */
+#voiceBtn.vosk { outline:2px solid rgba(85,221,160,.55); outline-offset:3px; border-radius:50%; }
 #voiceBtn.listening {
   background:linear-gradient(160deg,#ff9090,var(--red) 70%,#d63a3f);
   color:#fff;border-color:var(--red);
@@ -1414,7 +1415,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN150</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN152</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -4919,14 +4920,21 @@ async function initVosk(){
   try{
     if(!(await _voskScriptLoad())) return;               // pas de lib → Web Speech restera actif
     const url=await _voskModelUrl(); if(!url) return;    // pas de modèle → idem
+    try{ const el=document.getElementById('stateVoiceEngine'); if(el && voiceEnginePref==='vosk') el.textContent='Vosk (chargement…)'; }catch(e){}
     voskModel=await Vosk.createModel(url);               // long au 1er lancement, puis cache navigateur
     voskReady=true;
+    try{ const el=document.getElementById('stateVoiceEngine'); if(el && voiceEnginePref==='vosk') el.textContent='Vosk (local) ✓ prêt'; }catch(e){}
     console.log('✅ Vosk prêt (moteur vocal local)');
   }catch(e){ console.log('Vosk indisponible → Web Speech conservé :', e && e.message); }
 }
 function voskStart(){
   if(!voskReady || voskActive) return false;
-  navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,channelCount:1}}).then(stream=>{
+  navigator.mediaDevices.getUserMedia({audio:{
+    echoCancellation:true,        // garde : évite de capter le haut-parleur
+    noiseSuppression:false,       // OFF : sa convergence (~1 s) mangeait le début des phrases
+    autoGainControl:false,        // OFF : idem — le micro redémarre à chaque tour depuis CLEAN150,
+    channelCount:1                //       et l'AGC instable dégradait les premières syllabes (d→b)
+  }}).then(stream=>{
     voskStream=stream;
     voskCtx=new (window.AudioContext||window.webkitAudioContext)();
     voskRec=new voskModel.KaldiRecognizer(voskCtx.sampleRate, VOSK_GRAMMAR);
@@ -4941,8 +4949,12 @@ function voskStart(){
     voskNode.onaudioprocess=function(e){ try{ voskRec.acceptWaveform(e.inputBuffer); }catch(err){} };
     src.connect(voskNode); voskNode.connect(voskCtx.destination);
     voskActive=true; listening=true;
-    const vb=document.getElementById('voiceBtn'); if(vb) vb.classList.add('listening');
-    const vt=document.getElementById('voiceBtnText'); if(vt) vt.textContent='🎙 Écoute (Vosk)…';
+    const vb=document.getElementById('voiceBtn'); if(vb){ vb.classList.add('listening'); vb.classList.add('vosk'); vb.title='Commande vocale — moteur Vosk (local)'; }
+    if(!voskStart._announced){
+      voskStart._announced=true;
+      try{ showToast('🎙 Vosk actif — reconnaissance locale', ''); }catch(e){}
+    }
+    try{ const el=document.getElementById('stateVoiceEngine'); if(el) el.textContent='Vosk (local) ✓ actif'; }catch(e){}
   }).catch(function(e){ setStatus(currentLang==='fr'?'⚠️ Autorisez le micro dans Chrome':'⚠️ Allow mic','error'); });
   return true;
 }
@@ -4953,7 +4965,7 @@ function voskStop(){
   try{ voskStream && voskStream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){}
   try{ voskCtx && voskCtx.close(); }catch(e){}
   voskRec=null; voskCtx=null; voskStream=null; voskNode=null;
-  const vb=document.getElementById('voiceBtn'); if(vb) vb.classList.remove('listening');
+  const vb=document.getElementById('voiceBtn'); if(vb){ vb.classList.remove('listening'); vb.classList.remove('vosk'); }
 }
 function toggleVoiceEngine(){
   voiceEnginePref = (voiceEnginePref==='vosk') ? 'webspeech' : 'vosk';
@@ -6751,7 +6763,7 @@ maybeShowVoiceWelcome();
    elle va lire la version réellement en ligne (fetch no-store) et, si elle diffère,
    affiche un bandeau « Mise à jour disponible ». Un appui vide les caches, met à jour
    le service worker et recharge — plus besoin de vider le cache à la main. */
-const APP_VERSION = 'v20260603-CLEAN150';
+const APP_VERSION = 'v20260603-CLEAN152';
 let _updLastCheck = 0;
 function _updBanner(remoteV){
   if(document.getElementById('updBanner')) return;
