@@ -1415,7 +1415,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN153</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN154</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -4893,6 +4893,7 @@ const VOSK_GRAMMAR = JSON.stringify([
   'un','deux','trois','quatre','cinq','six','sept','huit','neuf','dix','onze','douze','treize','quatorze',
   'prend','en','passant','petit','grand','roque','promotion',
   'annuler','indice','menu','accueil','nouvelle','partie','abandonner','abandonne',
+  'oui','ouais','non',   // micro-confirmation b/d (désambiguïsation par confiance)
   'precedent','précédent','suivant','debut','début','direct','niveau','muet','silence','parle','repete','répète','etat','état',
   '[unk]'
 ]);
@@ -4929,6 +4930,86 @@ async function initVosk(){
     console.log('✅ Vosk prêt (moteur vocal local)');
   }catch(e){ console.log('Vosk indisponible → Web Speech conservé :', e && e.message); }
 }
+// ── Désambiguïsation b/d par CONFIANCE (solution « sans delta ») ─────────────
+// Vosk donne une confiance par mot. Si la colonne entendue est b ou d avec une
+// confiance FAIBLE et que les DEUX interprétations sont légales (le seul cas qui
+// jouait un mauvais coup), on pose une micro-question : « b5 ? oui ou non ».
+// « non » joue l'autre colonne. Sinon : aucun changement, aucune friction.
+const _VOSK_CONF_THRESH = 0.85;
+const _CONF_PAIRS = { b:'d', d:'b' };
+let _voskPendingConfirm = null;   // { heardText, swapText, heardLabel, swapLabel, t }
+
+function _fileOfWord(w){
+  for(const [k,arr] of Object.entries(_PHON_FILES)) if(arr.includes(w)) return k;
+  return null;
+}
+function _legalTextMove(text){
+  try{
+    const act = parseVoiceToAction(text);
+    if(act && (act.kind==='move'||act.kind==='castle') && _isActionLegal(act)) return act;
+  }catch(e){}
+  return null;
+}
+function voskOnResult(m){
+  const res = (m && m.result) || {};
+  const text = (res.text||'').replace(/\[unk\]/g,' ').replace(/\s+/g,' ').trim();
+  if(!text) return;
+
+  // Réponse à une micro-confirmation en attente ?
+  if(_voskPendingConfirm){
+    const pc=_voskPendingConfirm;
+    if(Date.now()-pc.t < 12000){
+      const t=text.toLowerCase();
+      if(/\b(oui|ouais)\b/.test(t)){
+        _voskPendingConfirm=null;
+        processVoiceCandidates([pc.heardText],[{text:pc.heardText,rank:0,conf:null}],true,pc.heardText);
+        return;
+      }
+      if(/\bnon\b/.test(t)){
+        _voskPendingConfirm=null;
+        processVoiceCandidates([pc.swapText],[{text:pc.swapText,rank:0,conf:null}],true,pc.swapText);
+        return;
+      }
+    }
+    _voskPendingConfirm=null; // autre phrase (ex: « delta 5 ») → traitement normal ci-dessous
+  }
+
+  // Confiance de la colonne entendue (si b ou d)
+  const words = Array.isArray(res.result) ? res.result : [];
+  let weak=null; // { idx, file }
+  for(let i=0;i<words.length;i++){
+    const f=_fileOfWord((words[i].word||'').toLowerCase());
+    if(f && _CONF_PAIRS[f] && typeof words[i].conf==='number' && words[i].conf < _VOSK_CONF_THRESH){
+      weak={idx:i, file:f, word:words[i].word}; break;
+    }
+  }
+  if(weak){
+    const swapFile=_CONF_PAIRS[weak.file];
+    const toks=text.split(/\s+/);
+    // retrouve le jeton correspondant dans le texte (même mot)
+    const j=toks.findIndex(t=>t.toLowerCase()===String(weak.word).toLowerCase());
+    if(j>=0){
+      const swapToks=toks.slice(); swapToks[j]=swapFile;
+      const swapText=swapToks.join(' ');
+      const actH=_legalTextMove(text), actS=_legalTextMove(swapText);
+      if(actH && actS){
+        // Les deux sont légaux → on demande, plutôt que de risquer le mauvais.
+        const rank=(text.match(/\b(un|deux|trois|quatre|cinq|six|sept|huit|[1-8])\b/)||[''])[0];
+        const heardLabel=weak.file+(rank?(' '+rank):''), swapLabel=swapFile+(rank?(' '+rank):'');
+        _voskPendingConfirm={heardText:text, swapText:swapText, t:Date.now()};
+        const q=(currentLang==='fr')
+          ? ('J\'ai entendu '+heardLabel+'. Dites oui pour '+heardLabel+', non pour '+swapLabel+'.')
+          : ('I heard '+heardLabel+'. Say yes for '+heardLabel+', no for '+swapLabel+'.');
+        setStatus('❔ '+heardLabel+' ? — oui / non ('+swapLabel+')','');
+        try{ speak(q,'ai'); }catch(e){}
+        return;
+      }
+      // un seul légal (ou aucun) → pipeline normal : la légalité + le rattrapage b↔d font le tri
+    }
+  }
+  processVoiceCandidates([text],[{text:text,rank:0,conf:null}],true,text);
+}
+
 function voskStart(){
   if(!voskReady || voskActive) return false;
   navigator.mediaDevices.getUserMedia({audio:{
@@ -4940,12 +5021,8 @@ function voskStart(){
     voskStream=stream;
     voskCtx=new (window.AudioContext||window.webkitAudioContext)();
     voskRec=new voskModel.KaldiRecognizer(voskCtx.sampleRate, VOSK_GRAMMAR);
-    voskRec.on('result', m=>{
-      const text=((m.result&&m.result.text)||'').replace(/\[unk\]/g,' ').replace(/\s+/g,' ').trim();
-      if(!text) return;
-      // Une transcription finale Vosk = un candidat unique, déjà contraint à la grammaire d'échecs.
-      processVoiceCandidates([text], [{text:text, rank:0, conf:null}], true, text);
-    });
+    try{ voskRec.setWords(true); }catch(e){}   // confiance mot à mot (désambiguïsation b/d)
+    voskRec.on('result', voskOnResult);
     const src=voskCtx.createMediaStreamSource(stream);
     voskNode=voskCtx.createScriptProcessor(4096,1,1);
     voskNode.onaudioprocess=function(e){ try{ voskRec.acceptWaveform(e.inputBuffer); }catch(err){} };
@@ -6765,7 +6842,7 @@ maybeShowVoiceWelcome();
    elle va lire la version réellement en ligne (fetch no-store) et, si elle diffère,
    affiche un bandeau « Mise à jour disponible ». Un appui vide les caches, met à jour
    le service worker et recharge — plus besoin de vider le cache à la main. */
-const APP_VERSION = 'v20260603-CLEAN153';
+const APP_VERSION = 'v20260603-CLEAN154';
 let _updLastCheck = 0;
 function _updBanner(remoteV){
   if(document.getElementById('updBanner')) return;
