@@ -1415,7 +1415,7 @@ canvas#eloChart { width:100%!important;height:90px!important; }
   <div class="splash-pieces splash-pieces-sm" id="splashPieces"></div>
   <div class="splash-title">Do You<br><span>Speak Chess?</span></div>
   <p class="splash-sub">Parlez, jouez, matez</p>
-  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN154</div>
+  <div style="font-size:.6rem;color:#5b8def;opacity:.6;text-align:center;margin-top:-4px;">v20260603-CLEAN155</div>
   <!-- Logo (essai) à la place de l'échiquier — le logo lui-même active la voix -->
   <div class="splash-board-wrap">
     <button class="splash-logo-test" id="splashVoiceBtn" onclick="toggleSplashVoice()" aria-label="Activer la commande vocale" title="Parler" style="background:none;border:none;cursor:pointer;padding:0;">
@@ -6580,6 +6580,7 @@ function speak(text, onEnd, who){
   try{ voskStop(); }catch(e){}
   const myEpoch = speechEpoch;
   window.speechSynthesis.cancel();
+  try{ window.speechSynthesis.resume(); }catch(e){}  // dé-gèle le moteur TTS Android (cf. écho muet)
   // Petit carillon doux AVANT l'annonce de l'IA (pour distinguer sa voix de la vôtre)
   const _isAi = (who==='ai');
   if(_isAi){ try{ playSound('bell'); }catch(e){} }
@@ -6610,7 +6611,12 @@ function speak(text, onEnd, who){
       if(voiceContinuous && !listening && !aiThinking) setTimeout(()=>{ if(!aiSpeaking) startListening(); }, 800);
     };
     if(_isAi){
-      setTimeout(()=>{ try{ window.speechSynthesis.speak(u); }catch(e){} }, 450);
+      setTimeout(()=>{
+        // Android : après l'arrêt d'une capture micro, speechSynthesis reste parfois « paused »
+        // et les annonces sans carillon préalable (l'écho de VOTRE coup) partaient en silence.
+        try{ window.speechSynthesis.resume(); }catch(e){}
+        try{ window.speechSynthesis.speak(u); }catch(e){}
+      }, 450);
     } else {
       window.speechSynthesis.speak(u);
     }
@@ -6842,7 +6848,7 @@ maybeShowVoiceWelcome();
    elle va lire la version réellement en ligne (fetch no-store) et, si elle diffère,
    affiche un bandeau « Mise à jour disponible ». Un appui vide les caches, met à jour
    le service worker et recharge — plus besoin de vider le cache à la main. */
-const APP_VERSION = 'v20260603-CLEAN154';
+const APP_VERSION = 'v20260603-CLEAN155';
 let _updLastCheck = 0;
 function _updBanner(remoteV){
   if(document.getElementById('updBanner')) return;
