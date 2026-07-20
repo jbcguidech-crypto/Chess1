@@ -139,14 +139,27 @@ async function boot(){
     st.innerHTML='❌ <b>vosk.js introuvable</b> — ni en local (vosk.js, vosk-1.js…) ni via le CDN (réseau ?). Téléversez vosk.js à la racine, ou réessayez avec du réseau.';
     st.className='err'; return;
   }
+  let wake=null, timers=[];
   try{
+    // Garde l'écran allumé : si l'écran se verrouille, Chrome gèle l'onglet et
+    // l'initialisation semble « bloquée » à jamais.
+    try{ wake = await navigator.wakeLock.request('screen'); }catch(e){}
     const url = await modelUrl();
-    st.textContent='📦 Décompression et initialisation du moteur (30 s – 1 min sur mobile)…';
+    const t0=Date.now();
+    const tick=(s,msg)=>timers.push(setTimeout(()=>{ st.textContent=msg; }, s*1000));
+    st.textContent='📦 Décompression et initialisation… (gardez l\'écran allumé et la page au premier plan)';
+    tick(45, '📦 Initialisation toujours en cours (45 s)… c\'est long la première fois sur mobile, ne quittez pas la page.');
+    tick(120,'📦 Toujours en cours (2 min)… téléphone au travail, patience.');
+    tick(240,'⚠️ 4 minutes — c\'est anormalement long. Fermez les autres onglets et rechargez la page pour réessayer ; si ça se reproduit, envoyez une capture.');
     model = await Vosk.createModel(url);
+    timers.forEach(clearTimeout);
+    try{ wake && wake.release(); }catch(e){}
     st.textContent='✅ Modèle chargé — prêt (fonctionne hors-ligne).'; st.className='ok';
     btn.disabled=false;
   }catch(e){
-    st.textContent='❌ Échec chargement du modèle : '+e.message+' — vérifiez que vosk-model-small-fr.part1 et .part2 sont bien à la racine, avec ces noms exacts.'; st.className='err';
+    timers.forEach(clearTimeout);
+    try{ wake && wake.release(); }catch(err){}
+    st.textContent='❌ Échec chargement du modèle : '+e.message; st.className='err';
   }
 }
 // Toute erreur silencieuse (worker, promesse) remonte à l'écran
